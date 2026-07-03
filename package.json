@@ -1,0 +1,13 @@
+{
+  "name": "telephone-message-app",
+  "version": "1.0.0",
+  "description": "Telephone Message App",
+  "main": "backend/index.js",
+  "scripts": {
+    "install-all": "npm install --prefix backend && npm install --prefix frontend",
+    "build": "npm run build --prefix frontend",
+    "start": "node backend/index.js",
+    "postinstall": "npm run install-all"
+  },
+  "dependencies": {}
+}
