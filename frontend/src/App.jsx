@@ -3,11 +3,13 @@ import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-do
 import Dashboard from './components/Dashboard';
 import MobileView from './components/MobileView';
 import HistoryView from './components/HistoryView';
+import MasterManagement from './components/MasterManagement';
 
 function AppContent() {
   const [departments, setDepartments] = useState([]);
   const [users, setUsers] = useState([]);
   const [messages, setMessages] = useState([]);
+  const [currentUser, setCurrentUser] = useState(null); // Mock Login state
   const location = useLocation();
 
   const fetchData = async () => {
@@ -47,7 +49,7 @@ function AppContent() {
     <div className={`app-container ${isMobile ? 'mobile-view' : ''}`}>
       <header className="glass">
         <div className="logo">CallSync ✨</div>
-        {!isHistory && (
+        {!isHistory && location.pathname !== '/master' && (
           <div className="view-toggle">
             <Link to="/" className={location.pathname === '/' ? 'active btn' : 'btn'} style={{textDecoration: 'none'}}>
               事務員ビュー
@@ -57,11 +59,34 @@ function AppContent() {
             </Link>
           </div>
         )}
-        {isHistory && (
-          <Link to="/" className="btn btn-primary" style={{textDecoration: 'none'}}>
-            戻る
-          </Link>
-        )}
+        
+        {/* Mock Login Selector */}
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <select 
+            value={currentUser ? currentUser.id : ''} 
+            onChange={(e) => {
+              const u = users.find(user => user.id === parseInt(e.target.value));
+              setCurrentUser(u || null);
+            }}
+            className="input"
+            style={{ padding: '0.3rem', fontSize: '0.9rem', width: '150px' }}
+          >
+            <option value="">(仮)操作者を選択</option>
+            {users.map(u => (
+              <option key={u.id} value={u.id}>{u.name}</option>
+            ))}
+          </select>
+          
+          {(isHistory || location.pathname === '/master') ? (
+            <Link to="/" className="btn btn-primary" style={{textDecoration: 'none'}}>
+              戻る
+            </Link>
+          ) : (
+            <Link to="/master" className="btn btn-secondary" style={{textDecoration: 'none'}}>
+              ⚙️ マスタ管理
+            </Link>
+          )}
+        </div>
       </header>
       
       <main>
@@ -71,7 +96,8 @@ function AppContent() {
               departments={departments} 
               users={users} 
               messages={messages} 
-              onDataChanged={handleDataChanged} 
+              onDataChanged={handleDataChanged}
+              currentUser={currentUser}
             />
           } />
           <Route path="/mobile" element={
@@ -80,10 +106,18 @@ function AppContent() {
               users={users} 
               messages={messages} 
               onDataChanged={handleDataChanged}
+              currentUser={currentUser}
             />
           } />
           <Route path="/history" element={
             <HistoryView />
+          } />
+          <Route path="/master" element={
+            <MasterManagement 
+              departments={departments} 
+              users={users} 
+              onDataChanged={handleDataChanged} 
+            />
           } />
         </Routes>
       </main>

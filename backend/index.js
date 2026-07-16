@@ -94,6 +94,62 @@ app.get('/api/users', (req, res) => {
   });
 });
 
+// --- Master Management Endpoints ---
+
+// Departments
+app.post('/api/departments', (req, res) => {
+  const { name } = req.body;
+  if (!name) return res.status(400).json({ error: 'Name is required' });
+  db.run('INSERT INTO departments (name) VALUES (?)', [name], function(err) {
+    if (err) return res.status(500).json({ error: err.message });
+    res.status(201).json({ id: this.lastID, name });
+  });
+});
+
+app.put('/api/departments/:id', (req, res) => {
+  const { name } = req.body;
+  if (!name) return res.status(400).json({ error: 'Name is required' });
+  db.run('UPDATE departments SET name = ? WHERE id = ?', [name, req.params.id], function(err) {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ success: true, changes: this.changes });
+  });
+});
+
+app.delete('/api/departments/:id', (req, res) => {
+  // Option: also handle deleting associated users or message targets, but for now just simple delete
+  db.run('DELETE FROM departments WHERE id = ?', [req.params.id], function(err) {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ success: true, changes: this.changes });
+  });
+});
+
+// Users
+app.post('/api/users', (req, res) => {
+  const { name, department_id } = req.body;
+  if (!name) return res.status(400).json({ error: 'Name is required' });
+  db.run('INSERT INTO users (name, department_id) VALUES (?, ?)', [name, department_id || null], function(err) {
+    if (err) return res.status(500).json({ error: err.message });
+    res.status(201).json({ id: this.lastID, name, department_id });
+  });
+});
+
+app.put('/api/users/:id', (req, res) => {
+  const { name, department_id } = req.body;
+  if (!name) return res.status(400).json({ error: 'Name is required' });
+  db.run('UPDATE users SET name = ?, department_id = ? WHERE id = ?', [name, department_id || null, req.params.id], function(err) {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ success: true, changes: this.changes });
+  });
+});
+
+app.delete('/api/users/:id', (req, res) => {
+  db.run('DELETE FROM users WHERE id = ?', [req.params.id], function(err) {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ success: true, changes: this.changes });
+  });
+});
+
+
 const getMessagesQuery = `
   SELECT m.*, 
     json_group_array(
@@ -124,14 +180,29 @@ app.get('/api/messages', (req, res) => {
 });
 
 app.get('/api/messages/search', (req, res) => {
-  const { q } = req.query;
+  const { q, department_id, user_id } = req.query;
   let query = `${getMessagesQuery} `;
   let params = [];
+  let conditions = [];
   
   if (q) {
-    query += `WHERE m.message LIKE ? OR m.caller_name LIKE ? OR m.receiver_name LIKE ? `;
+    conditions.push(`(m.message LIKE ? OR m.caller_name LIKE ? OR m.receiver_name LIKE ?)`);
     const searchStr = `%${q}%`;
-    params = [searchStr, searchStr, searchStr];
+    params.push(searchStr, searchStr, searchStr);
+  }
+  
+  if (department_id) {
+    conditions.push(`mt.department_id = ?`);
+    params.push(department_id);
+  }
+  
+  if (user_id) {
+    conditions.push(`mt.user_id = ?`);
+    params.push(user_id);
+  }
+  
+  if (conditions.length > 0) {
+    query += `WHERE ` + conditions.join(' AND ') + ` `;
   }
   
   query += `GROUP BY m.id ORDER BY m.created_at DESC LIMIT 100`;

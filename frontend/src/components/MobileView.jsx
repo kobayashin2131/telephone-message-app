@@ -3,16 +3,16 @@ import { formatDistanceToNow } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import { Link } from 'react-router-dom';
 
-function MobileView({ departments, users, messages, onDataChanged }) {
-  const [currentUser, setCurrentUser] = useState(users.length > 0 ? users[0].id : '');
+function MobileView({ departments, users, messages, onDataChanged, currentUser }) {
   const [resolvingId, setResolvingId] = useState(null);
   const [memo, setMemo] = useState('');
   const [tab, setTab] = useState('unresolved'); // 'unresolved' or 'resolved'
+  const [scope, setScope] = useState('mine'); // 'mine' or 'all'
 
-  const activeUser = users.find(u => u.id === parseInt(currentUser));
+  const activeUser = currentUser;
 
   const filteredMessages = useMemo(() => {
-    if (!activeUser) return messages;
+    if (!activeUser || scope === 'all') return messages;
     return messages.filter(msg => {
       // 宛先の中に自分、または自分の部署が含まれているか、または緊急か
       const isTarget = msg.targets.some(t => {
@@ -22,7 +22,7 @@ function MobileView({ departments, users, messages, onDataChanged }) {
       });
       return isTarget || msg.is_urgent;
     });
-  }, [messages, activeUser]);
+  }, [messages, activeUser, scope]);
 
   const unresolvedMessages = filteredMessages.filter(m => !m.is_resolved);
   const resolvedMessages = filteredMessages.filter(m => m.is_resolved);
@@ -53,10 +53,7 @@ function MobileView({ departments, users, messages, onDataChanged }) {
     return (
       <div className="card glass">
         <h2 className="card-title">ユーザー選択</h2>
-        <select className="form-control" value={currentUser} onChange={e => setCurrentUser(e.target.value)}>
-          <option value="">選択してください...</option>
-          {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
-        </select>
+        <p>画面上部の「(仮)操作者を選択」から、ご自身のお名前を選択してください。</p>
       </div>
     );
   }
@@ -65,13 +62,22 @@ function MobileView({ departments, users, messages, onDataChanged }) {
     <div>
       <div className="mobile-filters" style={{justifyContent: 'space-between', alignItems: 'center'}}>
         <div className="form-group" style={{marginBottom: 0, flex: 1, marginRight: '1rem'}}>
-          <select className="form-control" value={currentUser} onChange={e => setCurrentUser(e.target.value)}>
-            {users.map(u => <option key={u.id} value={u.id}>{u.name} (担当)</option>)}
-          </select>
+          <div style={{color: 'white', fontWeight: 'bold'}}>
+            👤 {activeUser.name} 様の担当分
+          </div>
         </div>
         <Link to="/history" className="btn" style={{backgroundColor: 'var(--surface-color)', padding: '0.5rem 1rem', width: 'auto'}}>
           🔍 履歴
         </Link>
+      </div>
+
+      <div className="view-toggle" style={{marginBottom: '1rem', width: '100%', display: 'flex', fontSize: '0.9rem'}}>
+        <button style={{flex: 1, padding: '0.5rem'}} className={scope === 'mine' ? 'active' : ''} onClick={() => setScope('mine')}>
+          自分/部署宛てのみ
+        </button>
+        <button style={{flex: 1, padding: '0.5rem'}} className={scope === 'all' ? 'active' : ''} onClick={() => setScope('all')}>
+          社内の全連絡
+        </button>
       </div>
 
       <div className="view-toggle" style={{marginBottom: '1rem', width: '100%', display: 'flex'}}>

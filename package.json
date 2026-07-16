@@ -9,5 +9,7 @@
     "start": "node backend/index.js",
     "postinstall": "npm run install-all"
   },
-  "dependencies": {}
+  "dependencies": {
+    "pptxgenjs": "^4.0.1"
+  }
 }

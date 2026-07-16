@@ -1,13 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import { Link } from 'react-router-dom';
 
-function Dashboard({ departments, users, messages, onDataChanged }) {
+function Dashboard({ departments, users, messages, onDataChanged, currentUser }) {
   const [receiverName, setReceiverName] = useState('');
   const [callerName, setCallerName] = useState('');
   const [callerNumber, setCallerNumber] = useState('');
-  const [selectedDeptId, setSelectedDeptId] = useState('');
+  const [selectedDeptIds, setSelectedDeptIds] = useState([]);
   const [targetMode, setTargetMode] = useState('department'); // 'department' or 'individual'
   const [selectedUserIds, setSelectedUserIds] = useState([]);
   const [message, setMessage] = useState('');
@@ -15,24 +15,35 @@ function Dashboard({ departments, users, messages, onDataChanged }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [monitorTab, setMonitorTab] = useState('unresolved'); // 'unresolved' or 'resolved'
+  const [filterDept, setFilterDept] = useState('');
+  const [filterUser, setFilterUser] = useState('');
+
+  useEffect(() => {
+    if (currentUser && receiverName === '') {
+      setReceiverName(currentUser.name);
+    }
+  }, [currentUser]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!receiverName || !callerName || !message || !selectedDeptId) {
-      alert("必須項目を入力してください");
+    if (!receiverName || !callerName || !message || selectedDeptIds.length === 0) {
+      alert("必須項目（宛先部署など）を入力してください");
       return;
     }
     
     let targets = [];
     if (targetMode === 'department') {
-      targets.push({ type: 'department', department_id: selectedDeptId });
+      selectedDeptIds.forEach(did => {
+        targets.push({ type: 'department', department_id: parseInt(did) });
+      });
     } else {
       if (selectedUserIds.length === 0) {
         alert("個人を1名以上選択してください");
         return;
       }
       selectedUserIds.forEach(uid => {
-        targets.push({ type: 'user', department_id: selectedDeptId, user_id: uid });
+        const u = users.find(user => user.id === uid);
+        targets.push({ type: 'user', department_id: u ? u.department_id : null, user_id: uid });
       });
     }
 
@@ -58,12 +69,25 @@ function Dashboard({ departments, users, messages, onDataChanged }) {
         setMessage('');
         setIsUrgent(false);
         setSelectedUserIds([]);
+        setSelectedDeptIds([]);
         onDataChanged();
       }
     } catch (err) {
       console.error(err);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const toggleDeptSelection = (id) => {
+    if (selectedDeptIds.includes(id)) {
+      setSelectedDeptIds(selectedDeptIds.filter(d => d !== id));
+      // Remove users that don't belong to selected departments anymore
+      const updatedDepts = selectedDeptIds.filter(d => d !== id);
+      const validUsers = users.filter(u => updatedDepts.includes(u.department_id)).map(u => u.id);
+      setSelectedUserIds(selectedUserIds.filter(uid => validUsers.includes(uid)));
+    } else {
+      setSelectedDeptIds([...selectedDeptIds, id]);
     }
   };
 
@@ -81,8 +105,24 @@ function Dashboard({ departments, users, messages, onDataChanged }) {
     return diffHours > 1;
   };
 
-  const unresolvedMessages = messages.filter(m => !m.is_resolved);
-  const resolvedMessages = messages.filter(m => m.is_resolved);
+  const filteredByList = messages.filter(m => {
+    if (!filterDept && !filterUser) return true;
+    return m.targets.some(t => {
+      let matchDept = false;
+      let matchUser = false;
+      if (filterDept && t.department_id === parseInt(filterDept)) matchDept = true;
+      if (filterUser && t.user_id === parseInt(filterUser)) matchUser = true;
+      // If both filters are active, match either (OR) or match both (AND)?
+      // For simplicity, if a filter is active, it must match.
+      if (filterDept && filterUser) return matchDept && matchUser;
+      if (filterDept) return matchDept;
+      if (filterUser) return matchUser;
+      return false;
+    });
+  });
+
+  const unresolvedMessages = filteredByList.filter(m => !m.is_resolved);
+  const resolvedMessages = filteredByList.filter(m => m.is_resolved);
   const displayMessages = monitorTab === 'unresolved' ? unresolvedMessages : resolvedMessages;
 
   return (
@@ -126,14 +166,22 @@ function Dashboard({ departments, users, messages, onDataChanged }) {
           </div>
           
           <div className="form-group">
-            <label>宛先: 部署を選択 (必須)</label>
-            <select className="form-control" value={selectedDeptId} onChange={e => {setSelectedDeptId(e.target.value); setSelectedUserIds([]);}} required>
-              <option value="">選択してください...</option>
-              {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-            </select>
+            <label>宛先: 部署を選択 (複数選択可) (必須)</label>
+            <div style={{display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.5rem'}}>
+              {departments.map(d => (
+                <button 
+                  key={d.id} 
+                  type="button" 
+                  onClick={() => toggleDeptSelection(d.id)}
+                  className={`filter-chip ${selectedDeptIds.includes(d.id) ? 'active' : ''}`}
+                >
+                  {selectedDeptIds.includes(d.id) ? '✓ ' : ''}{d.name}
+                </button>
+              ))}
+            </div>
           </div>
 
-          {selectedDeptId && (
+          {selectedDeptIds.length > 0 && (
             <div className="form-group glass" style={{padding: '1rem', borderRadius: 'var(--radius-md)'}}>
               <label>宛先範囲</label>
               <div style={{display: 'flex', gap: '1rem', marginBottom: '1rem'}}>
@@ -149,7 +197,10 @@ function Dashboard({ departments, users, messages, onDataChanged }) {
                 <div>
                   <label>対象者 (複数選択可)</label>
                   <div style={{display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.5rem'}}>
-                    {users.filter(u => u.department_id === parseInt(selectedDeptId)).map(u => (
+                    {users.filter(u => selectedDeptIds.includes(u.department_id)).length === 0 && (
+                      <span style={{color: 'var(--text-secondary)'}}>選択した部署にユーザーがいません。</span>
+                    )}
+                    {users.filter(u => selectedDeptIds.includes(u.department_id)).map(u => (
                       <button 
                         key={u.id} 
                         type="button" 
@@ -191,11 +242,22 @@ function Dashboard({ departments, users, messages, onDataChanged }) {
       </div>
 
       <div>
-        <div className="card glass" style={{marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+        <div className="card glass" style={{marginBottom: '1rem', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '1rem'}}>
           <h2 className="card-title" style={{margin: 0}}>📋 状況モニター</h2>
-          <Link to="/history" className="btn" style={{backgroundColor: 'var(--surface-color-light)', color: 'white', padding: '0.5rem 1rem'}}>
-            🔍 履歴を検索
-          </Link>
+          
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+            <select className="form-control" style={{width: '150px', padding: '0.5rem'}} value={filterDept} onChange={e => setFilterDept(e.target.value)}>
+              <option value="">全ての部署</option>
+              {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+            </select>
+            <select className="form-control" style={{width: '150px', padding: '0.5rem'}} value={filterUser} onChange={e => setFilterUser(e.target.value)}>
+              <option value="">全ての個人</option>
+              {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+            </select>
+            <Link to="/history" className="btn btn-secondary" style={{padding: '0.5rem 1rem', textDecoration: 'none'}}>
+              🔍 詳細検索
+            </Link>
+          </div>
         </div>
 
         <div className="view-toggle" style={{marginBottom: '1rem', width: '100%', display: 'flex'}}>
