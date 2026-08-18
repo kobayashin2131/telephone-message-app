@@ -1,70 +1,104 @@
-# 🚀 CallSync（社内チャット ✕ 電話連絡DX統合SaaS）プロジェクト引継ぎ書
+# 📋 Connect Suite プロジェクト詳細仕様書 (PROJECT_CONTEXT)
 
-## 1. プロジェクト基本情報
-- **プロダクト名**: CallSync（社内チャット ✕ 電話連絡DX統合SaaS）
-- **公開Webアプリ（Cloudflare Pages）**: https://callsync-app.pages.dev
-- **APIバックエンド（Cloudflare Workers）**: https://callsync-backend.nonba30.workers.dev
-- **クラウドDB（Cloudflare D1）**: `callsync-db` (ID: `2a03cb3a-3c27-4c48-9b42-2057e0a0da57`)
-- **カスタムドメイン予定**: `callsync.easystance.app` (Cloudflare Dashboard > callsync-app > Custom Domains から追加)
-- **OneDrive同期パス**: `C:\Users\nonba\OneDrive\telephone-message-app` (または `C:\Users\PC03\OneDrive\telephone-message-app`)
+## 1. データベース設計 (Cloudflare D1 / SQLite)
 
----
+```sql
+-- ユーザー
+CREATE TABLE users (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  email TEXT UNIQUE,
+  department_id INTEGER,
+  role TEXT DEFAULT 'user', -- 'admin' | 'user'
+  avatar_color TEXT DEFAULT '#4f46e5',
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
 
-## 2. 実装完了済みの機能一覧
-1. **💬 クローズド社内チャット（Google Chat / LINE仕様）**:
-   - **1 on 1（個人DM）**: リアルタイム送受信 ＆ LINE風の「✓ 既読 / 未読」表示。
-   - **👥 都度グループ作成**:
-     - **ハイブリッド選択UI**: 「部門ごと一括選択（例：営業部全員）」と「個別メンバー選択」を組み合わせて即座にグループ作成。
-     - カスタムアイコン（🚀, 🚨, 💡, 🛠 など）と説明設定。
-   - **🏢 部門公式チャンネル**: 部署全員への公式アナウンスライン。
-   - **👁 既読確認システム**:
-     - グループ・部門チャットで「既読 ○人」を表示。クリックで誰が何時何分に読んだか一覧ポップアップ。
-   - **スレッド返信**: メッセージ・受電カードごとのスレッド機能。
-2. **📞 受電メモ ✕ チャットカード統合（コア機能）**:
-   - 宛先（個人DM / グループ / 部門）へリッチな受電カードを即時投稿。
-   - 🚨 緊急受電 / 📞 折り返し希望 / ℹ️ 伝言のみ の色分けバッジ。
-   - カード上のボタンから直接「⏳ 対応中にする」「✓ 完了にする」をワンタップ切り替え（対応結果メモ入力付き）。
-   - 電話番号タップで即座に発信連携（`tel:`リンク）。
-   - スレッド内で折り返し状況や引き継ぎメモを会話完結。
-3. **📞 事務員ビュー（デスク受電モニターモード）**:
-   - 左側：高速受電メモ入力フォーム（受電者名、会社名サジェスト、宛先部署・個人の一括指定、種別切り替え）。
-   - 右側：未対応受電のリアルタイムカンバンボード（⚠️ 未対応 / 全件 / ✓ 完了済 のワンクリック切り替え ＆ キーワード検索）。
-4. **📱 現場ビュー（スマホ・マイ受電モード）**:
-   - 自分宛て・自部署宛ての受電メモが見やすいカード形式で一覧表示。
-   - 電話番号タップで即発信（`tel:`）、ワンタップで「⏳ 対応中」「✓ 完了」。
-5. **📇 受電先・顧客台帳（CRMプレビュー）**:
-   - よくかかってくる会社・担当者・電話番号・定番用件のリスト管理。
-   - 受電メモ作成時に会社名を入力するとインクリメンタルサジェストで自動補完。
-   - 過去の受電回数カウントや最終受電日時の確認。
-6. **⚙️ 管理者メニュー（組織・アカウント管理）**:
-   - 社員アカウントの追加・編集・権限設定（管理者/一般）。
-   - 部門マスタの自由追加・編集。
+-- 部署マスター
+CREATE TABLE departments (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  parent_id INTEGER,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
 
----
+-- グループ / チャンネル
+CREATE TABLE groups (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  description TEXT,
+  icon TEXT DEFAULT '💬',
+  created_by INTEGER,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
 
-## 3. 次回作業予定のタスク（ネクストステップ・拡張案）
-- **🌐 カスタムドメイン設定**: Cloudflareダッシュボードで `callsync.easystance.app` または `call.easystance.app` をバインド。
-- **🔔 プッシュ通知連携**: Web Push または スマホアプリ化（Capacitor）による受電時の即時着信通知。
-- **📎 画像・ファイル添付**: Cloudflare R2 を利用した画像やPDF（図面・見積書）のチャット添付機能。
-- **📊 受電分析ダッシュボード**: 入電の多い取引先や曜日・時間帯別入電数のグラフ可視化。
+-- メッセージ (通常テキスト ＆ 電話メモ通知)
+CREATE TABLE messages (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  target_type TEXT NOT NULL, -- 'group' | 'dm' | 'department'
+  target_id INTEGER NOT NULL,
+  sender_id INTEGER NOT NULL,
+  content TEXT NOT NULL,
+  message_type TEXT DEFAULT 'text', -- 'text' | 'call_memo' | 'system'
+  call_memo_id INTEGER,
+  parent_id INTEGER, -- スレッド返信用
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
 
----
+-- 電話連絡メモ
+CREATE TABLE call_memos (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  company_name TEXT NOT NULL,
+  contact_person TEXT,
+  phone_number TEXT,
+  target_type TEXT NOT NULL, -- 'department' | 'user' | 'dm'
+  target_id INTEGER NOT NULL,
+  call_type TEXT DEFAULT 'callback', -- 'callback' | 'take_message' | 'will_call_again' | 'notice'
+  subject TEXT,
+  body TEXT,
+  status TEXT DEFAULT 'unhandled', -- 'unhandled' | 'in_progress' | 'resolved'
+  resolved_by INTEGER,
+  resolved_at DATETIME,
+  resolved_note TEXT,
+  created_by INTEGER NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
 
-## 4. nonbaPCでの開発・起動コマンド
-
-```bash
-# 1. OneDrive上のプロジェクトディレクトリへ移動
-cd C:\Users\nonba\OneDrive\telephone-message-app
-
-# 2. ローカル起動（API + フロントエンド）
-.\アプリ起動.bat
-
-# 3. Cloudflareデプロイ
-# バックエンド
-npx wrangler deploy
-
-# フロントエンド
-cd frontend
-npm run build
-npx wrangler pages deploy dist --project-name=callsync-app
+-- 受電先台帳 (取引先連絡先)
+CREATE TABLE contacts (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  company_name TEXT NOT NULL,
+  contact_person TEXT,
+  phone_number TEXT,
+  furigana TEXT,
+  notes TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
 ```
+
+---
+
+## 2. API エンドポイント一覧
+
+ベースURL: `https://callsync-backend.nonba30.workers.dev/api`
+
+| メソッド | パス | 説明 |
+| :--- | :--- | :--- |
+| `GET` | `/api/users` | 全ユーザー取得 |
+| `POST` | `/api/users` | ユーザー作成 |
+| `PUT` | `/api/users/:id` | ユーザー更新 |
+| `DELETE` | `/api/users/:id` | ユーザー削除 |
+| `GET` | `/api/departments` | 全部署取得 |
+| `POST` | `/api/departments` | 部署作成 |
+| `GET` | `/api/groups` | 全グループ取得 |
+| `POST` | `/api/groups` | グループ作成 |
+| `GET` | `/api/messages` | メッセージ取得（クエリ: `target_type`, `target_id`, `current_user_id`） |
+| `POST` | `/api/messages` | メッセージ送信（スレッド返信時は `parent_id` 指定） |
+| `POST` | `/api/messages/mark-read` | 既読フラグ更新 |
+| `GET` | `/api/call-memos` | 全電話メモ取得（ステータス・日付降順） |
+| `POST` | `/api/call-memos` | 電話メモ新規登録（チャットへの自動投稿通知も同時に実行） |
+| `PUT` | `/api/call-memos/:id/status` | ステータス更新（未対応 ➜ 対応中 ➜ 完了） |
+| `GET` | `/api/contacts` | 受電先台帳一覧 |
+| `POST` | `/api/contacts` | 取引先登録 |
+| `PUT` | `/api/contacts/:id` | 取引先更新 |
+| `DELETE` | `/api/contacts/:id` | 取引先削除 |
