@@ -125,11 +125,14 @@ export default function App() {
     return () => clearInterval(timer);
   }, [currentUserId, notifyEnabled]);
 
+  const hasAutoSelectedChatRef = useRef(false);
+
   useEffect(() => {
     if (users.length > 0) {
       const found = users.find(u => u.id === currentUserId) || users[0];
       setCurrentUser(found);
-      if (!activeChat && groups.length > 0) {
+      if (!hasAutoSelectedChatRef.current && !activeChat && groups.length > 0) {
+        hasAutoSelectedChatRef.current = true;
         setActiveChat({
           type: 'group',
           id: groups[0].id,

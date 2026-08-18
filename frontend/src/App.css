@@ -1485,6 +1485,24 @@ button, input, select, textarea {
   color: #fff;
 }
 
+.btn-back-mobile {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.btn-back-mobile:hover {
+  background: var(--surface-alt);
+}
+
 @media (max-width: 900px) {
   .desk-monitor-layout {
     grid-template-columns: 1fr;
@@ -1498,8 +1516,8 @@ button, input, select, textarea {
     display: none;
   }
   .chat-sidebar {
-    width: 240px;
-    min-width: 240px;
+    width: 280px;
+    min-width: 280px;
   }
   .thread-drawer {
     position: fixed;
@@ -1508,5 +1526,114 @@ button, input, select, textarea {
     bottom: 0;
     z-index: 60;
     box-shadow: var(--shadow-lg);
+  }
+}
+
+/* ============================================================
+   Phone-width layout — the app is a two-column (sidebar + main)
+   desktop shell by default; below this width it becomes a single
+   pane that swaps between the list and the active view.
+   ============================================================ */
+@media (max-width: 640px) {
+  .suite-header {
+    flex-wrap: wrap;
+    height: auto;
+    min-height: 54px;
+    padding: 8px 10px;
+    row-gap: 6px;
+  }
+  .suite-left {
+    gap: 10px;
+  }
+  .suite-brand-text .suite-subtitle {
+    display: none;
+  }
+  .suite-brand-text .suite-title {
+    font-size: 0.95rem;
+  }
+  .suite-nav-tabs {
+    gap: 2px;
+    padding: 3px;
+  }
+  .suite-tab-btn {
+    padding: 7px 9px;
+  }
+  .suite-tab-btn span:not(.suite-badge-pill) {
+    display: none;
+  }
+  .suite-right {
+    gap: 6px;
+  }
+  .btn-suite-quick-call span {
+    display: none;
+  }
+  .btn-suite-quick-call {
+    padding: 8px;
+  }
+  .suite-user-label {
+    display: none;
+  }
+  .suite-user-select {
+    max-width: 84px;
+    font-size: 0.72rem;
+  }
+  .suite-user-badge {
+    padding: 4px 8px;
+  }
+
+  /* Chat: sidebar and conversation each take the full pane; only
+     one is visible at a time, based on whether a chat is open. */
+  .chat-sidebar,
+  .chat-main-area {
+    width: 100%;
+    min-width: 100%;
+  }
+  .chat-main-area {
+    display: none;
+  }
+  .chat-app-container.has-active-chat .chat-sidebar {
+    display: none;
+  }
+  .chat-app-container.has-active-chat .chat-main-area {
+    display: flex;
+  }
+  .btn-back-mobile {
+    display: flex;
+  }
+
+  /* CallSync: let the subnav and toolbar wrap instead of overflowing */
+  .callsync-header-bar {
+    flex-wrap: wrap;
+    height: auto;
+    min-height: 52px;
+    padding: 8px 12px;
+    row-gap: 8px;
+  }
+  .callsync-subnav-tabs {
+    flex-wrap: wrap;
+  }
+  .callsync-board-view {
+    padding: 12px;
+  }
+  .board-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .board-search-box {
+    min-width: 0;
+    width: 100%;
+  }
+  .cards-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-overlay {
+    padding: 0;
+    align-items: flex-end;
+  }
+  .modal-content {
+    max-width: 100%;
+    max-height: 92vh;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   }
 }

@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Send, Phone, Users, Building2, MessageSquare, Check, Eye, Smile, Paperclip, Search, PlusCircle
+import {
+  Send, Phone, Users, Building2, MessageSquare, Check, Eye, Smile, Paperclip, Search, PlusCircle, ArrowLeft
 } from 'lucide-react';
 import CallMemoCard from './CallMemoCard';
 
 const EMOJIS = ['👍', '🙌', '🙏', '🙇', '❤️', '🔥', '✅', '👀'];
 
 export default function ChatArea({
-  activeChat, currentUser, messages, onSendMessage, onUpdateStatus, onOpenThread, onOpenNewCallMemo
+  activeChat, currentUser, messages, onSendMessage, onUpdateStatus, onOpenThread, onOpenNewCallMemo, onBack
 }) {
   const [text, setText] = useState('');
   const [activeReadersPopover, setActiveReadersPopover] = useState(null);
@@ -48,6 +48,9 @@ export default function ChatArea({
       {/* Header */}
       <div className="chat-header">
         <div className="chat-header-info">
+          <button className="btn-back-mobile" onClick={onBack} aria-label="チャット一覧に戻る">
+            <ArrowLeft size={18} />
+          </button>
           <span style={{ fontSize: '1.4rem' }}>{activeChat.icon || '💬'}</span>
           <div>
             <div className="chat-header-title">

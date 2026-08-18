@@ -74,6 +74,17 @@ CREATE TABLE contacts (
   notes TEXT,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Push通知の購読情報 (2026-08-18追加)
+CREATE TABLE push_subscriptions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  endpoint TEXT NOT NULL UNIQUE,
+  p256dh TEXT NOT NULL,
+  auth TEXT NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);
 ```
 
 ---
@@ -102,3 +113,6 @@ CREATE TABLE contacts (
 | `POST` | `/api/contacts` | 取引先登録 |
 | `PUT` | `/api/contacts/:id` | 取引先更新 |
 | `DELETE` | `/api/contacts/:id` | 取引先削除 |
+| `GET` | `/api/push/vapid-public-key` | Web Push用VAPID公開鍵の取得 |
+| `POST` | `/api/push/subscribe` | Push購読の登録・更新 |
+| `POST` | `/api/push/unsubscribe` | Push購読の解除 |

@@ -36,7 +36,7 @@ export default function ChatApp({
   );
 
   return (
-    <div className="chat-app-container">
+    <div className={`chat-app-container ${activeChat ? 'has-active-chat' : ''}`}>
       {/* 1. Chat-specific Left Sidebar */}
       <aside className="chat-sidebar">
         <div className="chat-sidebar-header">
@@ -128,7 +128,7 @@ export default function ChatApp({
 
       {/* 2. Main Chat Area */}
       <main className="chat-main-area">
-        <ChatArea 
+        <ChatArea
           activeChat={activeChat}
           currentUser={currentUser}
           messages={messages}
@@ -136,6 +136,7 @@ export default function ChatApp({
           onUpdateStatus={onUpdateStatus}
           onOpenThread={onOpenThread}
           onOpenNewCallMemo={onOpenNewCallMemo}
+          onBack={() => onSelectChat(null)}
         />
       </main>
 
