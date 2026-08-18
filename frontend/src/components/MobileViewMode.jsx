@@ -1,0 +1,79 @@
+import React, { useState } from 'react';
+import { Phone, CheckCircle, Clock, AlertTriangle, User, Building2, Search } from 'lucide-react';
+import CallMemoCard from './CallMemoCard';
+
+export default function MobileViewMode({
+  callMemos, currentUser, onUpdateStatus, onOpenThread
+}) {
+  const [tab, setTab] = useState('unresolved'); // 'unresolved' or 'resolved'
+
+  const myMemos = callMemos.filter(m => {
+    if (tab === 'unresolved' && m.status === 'resolved') return false;
+    if (tab === 'resolved' && m.status !== 'resolved') return false;
+    return true;
+  });
+
+  return (
+    <div style={{ flex: 1, overflowY: 'auto', padding: '20px', background: '#f8fafc', maxWidth: '720px', margin: '0 auto', width: '100%' }}>
+      {/* Mobile Top Header */}
+      <div style={{ background: '#ffffff', borderRadius: '18px', padding: '16px 20px', marginBottom: '16px', boxShadow: '0 2px 10px rgba(0,0,0,0.04)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <div style={{ fontWeight: 800, fontSize: '1.1rem', color: '#0f172a' }}>📱 現場・マイ受電一覧</div>
+          <div style={{ fontSize: '0.8rem', color: '#64748b' }}>ログイン: {currentUser?.name}</div>
+        </div>
+        <div style={{ display: 'flex', gap: '6px' }}>
+          <button 
+            className={`tab-mode-btn ${tab === 'unresolved' ? 'active' : ''}`}
+            onClick={() => setTab('unresolved')}
+            style={{ padding: '6px 12px', borderRadius: '10px' }}
+          >
+            ⚠️ 未対応
+          </button>
+          <button 
+            className={`tab-mode-btn ${tab === 'resolved' ? 'active' : ''}`}
+            onClick={() => setTab('resolved')}
+            style={{ padding: '6px 12px', borderRadius: '10px' }}
+          >
+            ✓ 完了
+          </button>
+        </div>
+      </div>
+
+      {/* Cards Stream */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        {myMemos.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '60px', color: '#94a3b8', background: '#ffffff', borderRadius: '18px' }}>
+            受電メモはありません
+          </div>
+        ) : (
+          myMemos.map(m => {
+            const adaptedMsg = {
+              id: m.id,
+              memo_id: m.id,
+              memo_company: m.company_name,
+              memo_contact: m.contact_person,
+              memo_phone: m.phone_number,
+              memo_subject: m.subject,
+              memo_body: m.body,
+              memo_type: m.call_type,
+              memo_status: m.status,
+              memo_resolved_note: m.resolved_note,
+              memo_resolved_at: m.resolved_at,
+              memo_resolver_name: m.resolver_name,
+              thread_count: 0
+            };
+            return (
+              <CallMemoCard 
+                key={m.id}
+                memo={adaptedMsg}
+                onUpdateStatus={onUpdateStatus}
+                onOpenThread={() => onOpenThread(adaptedMsg)}
+                currentUserId={currentUser?.id}
+              />
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,12 @@
+{
+  "name": "callsync-backend",
+  "main": "backend/worker.js",
+  "compatibility_date": "2026-08-18",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "callsync-db",
+      "database_id": "2a03cb3a-3c27-4c48-9b42-2057e0a0da57"
+    }
+  ]
+}

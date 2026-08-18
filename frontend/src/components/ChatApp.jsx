@@ -1,0 +1,153 @@
+import React, { useState } from 'react';
+import { 
+  Users, MessageSquare, Plus, Search, ChevronRight, Hash, Sparkles
+} from 'lucide-react';
+import ChatArea from './ChatArea';
+import ThreadDrawer from './ThreadDrawer';
+
+export default function ChatApp({
+  currentUser,
+  users,
+  groups,
+  activeChat,
+  onSelectChat,
+  messages,
+  onSendMessage,
+  onUpdateStatus,
+  onOpenNewGroup,
+  onOpenNewCallMemo,
+  activeThread,
+  onOpenThread,
+  onCloseThread,
+  onSendThreadReply
+}) {
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Filter direct messages (exclude self)
+  const dmUsers = users.filter(u => u.id !== currentUser?.id);
+
+  const filteredGroups = groups.filter(g => 
+    g.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const filteredUsers = dmUsers.filter(u => 
+    u.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    (u.department_name && u.department_name.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+
+  return (
+    <div className="chat-app-container">
+      {/* 1. Chat-specific Left Sidebar */}
+      <aside className="chat-sidebar">
+        <div className="chat-sidebar-header">
+          <div className="chat-sidebar-title-row">
+            <span className="chat-sidebar-title">💬 チャンネル & DM</span>
+            <button className="btn-icon-circle-add" onClick={onOpenNewGroup} title="新規グループ・チャンネル作成">
+              <Plus size={16} />
+            </button>
+          </div>
+          <div className="chat-search-bar">
+            <Search size={14} className="search-icon" />
+            <input 
+              type="text" 
+              placeholder="チャンネルやメンバーを検索..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+        </div>
+
+        <div className="chat-sidebar-scroll">
+          {/* Groups / Channels */}
+          <div className="chat-sidebar-section">
+            <div className="chat-section-label">
+              <span>グループ・部署チャンネル ({filteredGroups.length})</span>
+            </div>
+            <div className="chat-list">
+              {filteredGroups.map(g => {
+                const isSelected = activeChat?.type === 'group' && activeChat?.id === g.id;
+                return (
+                  <button 
+                    key={`group-${g.id}`}
+                    className={`chat-list-item ${isSelected ? 'active' : ''}`}
+                    onClick={() => onSelectChat({
+                      type: 'group',
+                      id: g.id,
+                      name: g.name,
+                      icon: g.icon,
+                      memberCount: g.member_count,
+                      description: g.description
+                    })}
+                  >
+                    <span className="chat-item-icon">{g.icon || '💬'}</span>
+                    <div className="chat-item-info">
+                      <div className="chat-item-name">{g.name}</div>
+                      <div className="chat-item-sub">{g.member_count}名参加 {g.description ? `• ${g.description}` : ''}</div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Direct Messages */}
+          <div className="chat-sidebar-section">
+            <div className="chat-section-label">
+              <span>ダイレクトメッセージ ({filteredUsers.length})</span>
+            </div>
+            <div className="chat-list">
+              {filteredUsers.map(u => {
+                const isSelected = activeChat?.type === 'dm' && activeChat?.id === u.id;
+                return (
+                  <button 
+                    key={`user-${u.id}`}
+                    className={`chat-list-item ${isSelected ? 'active' : ''}`}
+                    onClick={() => onSelectChat({
+                      type: 'dm',
+                      id: u.id,
+                      name: u.name,
+                      icon: '👤',
+                      avatarColor: u.avatar_color,
+                      department: u.department_name
+                    })}
+                  >
+                    <div className="chat-user-avatar" style={{ backgroundColor: u.avatar_color || '#6366f1' }}>
+                      {u.name.charAt(0)}
+                    </div>
+                    <div className="chat-item-info">
+                      <div className="chat-item-name">{u.name}</div>
+                      <div className="chat-item-sub">{u.department_name || '一般'}</div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      {/* 2. Main Chat Area */}
+      <main className="chat-main-area">
+        <ChatArea 
+          activeChat={activeChat}
+          currentUser={currentUser}
+          messages={messages}
+          onSendMessage={onSendMessage}
+          onUpdateStatus={onUpdateStatus}
+          onOpenThread={onOpenThread}
+          onOpenNewCallMemo={onOpenNewCallMemo}
+        />
+      </main>
+
+      {/* 3. Thread Drawer (if active) */}
+      {activeThread && (
+        <ThreadDrawer 
+          parentMessage={activeThread}
+          currentUser={currentUser}
+          onClose={onCloseThread}
+          onSendReply={(content) => onSendThreadReply(activeThread.id, content)}
+        />
+      )}
+    </div>
+  );
+}
