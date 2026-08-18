@@ -227,7 +227,7 @@ export default function DeskMonitorView({
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '16px' }}>
+        <div className="cards-grid">
           {filteredMemos.length === 0 ? (
             <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '60px', color: '#94a3b8' }}>
               受電メモはありません

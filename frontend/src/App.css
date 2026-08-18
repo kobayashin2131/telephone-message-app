@@ -1636,4 +1636,11 @@ button, input, select, textarea {
     max-height: 92vh;
     border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   }
+
+  .thread-drawer {
+    width: 100%;
+    min-width: 100%;
+    left: 0;
+    top: 0;
+  }
 }
