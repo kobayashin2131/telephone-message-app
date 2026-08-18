@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import AppHeader from './components/AppHeader';
 import ChatApp from './components/ChatApp';
 import CallSyncApp from './components/CallSyncApp';
@@ -6,6 +6,8 @@ import NewGroupModal from './components/NewGroupModal';
 import NewCallMemoModal from './components/NewCallMemoModal';
 import ContactsDirectoryModal from './components/ContactsDirectoryModal';
 import AdminModal from './components/AdminModal';
+import { playChime } from './utils/chime';
+import { subscribeToPush, unsubscribeFromPush } from './utils/push';
 import './App.css';
 
 const API_BASE = 'https://callsync-backend.nonba30.workers.dev/api';
@@ -32,6 +34,67 @@ export default function App() {
   const [showNewCallMemoModal, setShowNewCallMemoModal] = useState(false);
   const [showContactsModal, setShowContactsModal] = useState(false);
   const [showAdminModal, setShowAdminModal] = useState(false);
+  const [callMemoDefaultTarget, setCallMemoDefaultTarget] = useState(null);
+  const [callMemoPrefillContact, setCallMemoPrefillContact] = useState(null);
+
+  const openNewCallMemo = (opts = {}) => {
+    setCallMemoDefaultTarget(opts.target || null);
+    setCallMemoPrefillContact(opts.contact || null);
+    setShowNewCallMemoModal(true);
+  };
+
+  // Chime + browser notification on new incoming calls
+  const [notifyEnabled, setNotifyEnabled] = useState(() => localStorage.getItem('callsync_notify') === '1');
+  const seenPendingIdsRef = useRef(null); // null = not yet initialized (skip first load)
+
+  const onToggleNotify = async () => {
+    if (!notifyEnabled) {
+      if ('Notification' in window && Notification.permission === 'default') {
+        await Notification.requestPermission();
+      }
+      playChime(); // unlocks audio playback with this user gesture
+      try {
+        await subscribeToPush(currentUserId); // タブを閉じていても届くPush通知
+      } catch (e) {
+        console.error('push subscribe failed', e);
+      }
+      setNotifyEnabled(true);
+      localStorage.setItem('callsync_notify', '1');
+    } else {
+      try {
+        await unsubscribeFromPush();
+      } catch (e) {
+        console.error('push unsubscribe failed', e);
+      }
+      setNotifyEnabled(false);
+      localStorage.setItem('callsync_notify', '0');
+    }
+  };
+
+  const notifyNewCalls = (memos) => {
+    const pending = memos.filter(m => m.status === 'pending');
+    const pendingIds = new Set(pending.map(m => m.id));
+
+    if (seenPendingIdsRef.current === null) {
+      seenPendingIdsRef.current = pendingIds;
+      return;
+    }
+
+    const newOnes = pending.filter(m => !seenPendingIdsRef.current.has(m.id) && m.created_by !== currentUserId);
+    seenPendingIdsRef.current = pendingIds;
+
+    if (newOnes.length === 0 || !notifyEnabled) return;
+
+    playChime();
+    if ('Notification' in window && Notification.permission === 'granted') {
+      newOnes.forEach(m => {
+        new Notification(`📞 ${m.company_name} より受電`, {
+          body: m.contact_person ? `${m.contact_person} 様` : (m.subject || '内容を確認してください'),
+          tag: `call-memo-${m.id}`
+        });
+      });
+    }
+  };
 
   const fetchAllData = async () => {
     try {
@@ -46,7 +109,11 @@ export default function App() {
       if (dRes.ok) setDepartments(await dRes.json());
       if (gRes.ok) setGroups(await gRes.json());
       if (cRes.ok) setContacts(await cRes.json());
-      if (mRes.ok) setCallMemos(await mRes.json());
+      if (mRes.ok) {
+        const memos = await mRes.json();
+        notifyNewCalls(memos);
+        setCallMemos(memos);
+      }
     } catch (e) {
       console.error('Error fetching initial data', e);
     }
@@ -56,7 +123,7 @@ export default function App() {
     fetchAllData();
     const timer = setInterval(fetchAllData, 3000);
     return () => clearInterval(timer);
-  }, []);
+  }, [currentUserId, notifyEnabled]);
 
   useEffect(() => {
     if (users.length > 0) {
@@ -292,7 +359,7 @@ export default function App() {
     }
   };
 
-  const unhandledCallsCount = callMemos.filter(m => m.status === 'unhandled').length;
+  const unhandledCallsCount = callMemos.filter(m => m.status === 'pending').length;
 
   return (
     <div className="suite-root">
@@ -303,10 +370,12 @@ export default function App() {
         currentUser={currentUser}
         users={users}
         onSwitchUser={setCurrentUserId}
-        onOpenNewCallMemo={() => setShowNewCallMemoModal(true)}
+        onOpenNewCallMemo={() => openNewCallMemo()}
         onOpenContacts={() => setShowContactsModal(true)}
         onOpenAdmin={() => setShowAdminModal(true)}
         callMemosCount={{ unhandled: unhandledCallsCount, total: callMemos.length }}
+        notifyEnabled={notifyEnabled}
+        onToggleNotify={onToggleNotify}
       />
 
       {/* 2. Main App Content (Chat or CallSync) */}
@@ -322,7 +391,7 @@ export default function App() {
             onSendMessage={handleSendMessage}
             onUpdateStatus={handleUpdateCallStatus}
             onOpenNewGroup={() => setShowNewGroupModal(true)}
-            onOpenNewCallMemo={() => setShowNewCallMemoModal(true)}
+            onOpenNewCallMemo={(target) => openNewCallMemo({ target })}
             activeThread={activeThread}
             onOpenThread={(msg) => setActiveThread(msg)}
             onCloseThread={() => setActiveThread(null)}
@@ -344,7 +413,7 @@ export default function App() {
               setActiveThread(msg);
               setActiveApp('chat');
             }}
-            onOpenNewCallMemo={() => setShowNewCallMemoModal(true)}
+            onOpenNewCallMemo={() => openNewCallMemo()}
             onOpenContacts={() => setShowContactsModal(true)}
           />
         )}
@@ -352,33 +421,39 @@ export default function App() {
 
       {/* 3. Global Shared Modals */}
       {showNewCallMemoModal && (
-        <NewCallMemoModal 
+        <NewCallMemoModal
           users={users}
           departments={departments}
           groups={groups}
           contacts={contacts}
-          currentUser={currentUser}
+          currentUserId={currentUserId}
+          defaultTarget={callMemoDefaultTarget}
+          prefillContact={callMemoPrefillContact}
           onClose={() => setShowNewCallMemoModal(false)}
-          onSubmit={handleSubmitCallMemo}
+          onSubmitCallMemo={handleSubmitCallMemo}
         />
       )}
 
       {showNewGroupModal && (
-        <NewGroupModal 
+        <NewGroupModal
           users={users}
           departments={departments}
-          currentUser={currentUser}
+          currentUserId={currentUserId}
           onClose={() => setShowNewGroupModal(false)}
-          onSubmit={handleCreateGroup}
+          onCreateGroup={handleCreateGroup}
         />
       )}
 
       {showContactsModal && (
-        <ContactsDirectoryModal 
+        <ContactsDirectoryModal
           contacts={contacts}
           onClose={() => setShowContactsModal(false)}
-          onSave={handleSaveContact}
-          onDelete={handleDeleteContact}
+          onSaveContact={handleSaveContact}
+          onDeleteContact={handleDeleteContact}
+          onOpenCallMemoForContact={(contact) => {
+            setShowContactsModal(false);
+            openNewCallMemo({ contact });
+          }}
         />
       )}
 

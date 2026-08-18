@@ -5,6 +5,7 @@ import {
 import DeskMonitorView from './DeskMonitorView';
 import MobileViewMode from './MobileViewMode';
 import CallMemoCard from './CallMemoCard';
+import { adaptCallMemo } from '../utils/memoAdapter';
 
 export default function CallSyncApp({
   callMemos,
@@ -25,7 +26,7 @@ export default function CallSyncApp({
 
   // Stats calculation
   const totalCalls = callMemos.length;
-  const unhandledCalls = callMemos.filter(m => m.status === 'unhandled').length;
+  const unhandledCalls = callMemos.filter(m => m.status === 'pending').length;
   const inProgressCalls = callMemos.filter(m => m.status === 'in_progress').length;
   const resolvedCalls = callMemos.filter(m => m.status === 'resolved').length;
 
@@ -42,7 +43,7 @@ export default function CallSyncApp({
       const isForMe = (m.target_type === 'dm' || m.target_type === 'user') && Number(m.target_id) === Number(currentUser?.id);
       if (!isForMe) return false;
     } else if (filterScope === 'unhandled') {
-      if (m.status !== 'unhandled') return false;
+      if (m.status !== 'pending') return false;
     } else if (filterScope === 'in_progress') {
       if (m.status !== 'in_progress') return false;
     } else if (filterScope === 'resolved') {
@@ -74,35 +75,35 @@ export default function CallSyncApp({
             onClick={() => setSubView('board')}
           >
             <LayoutDashboard size={16} />
-            <span>📋 電話メモ一覧・ボード</span>
+            <span>電話メモ一覧・ボード</span>
           </button>
-          <button 
+          <button
             className={`subnav-tab ${subView === 'desk' ? 'active' : ''}`}
             onClick={() => setSubView('desk')}
           >
             <Clock size={16} />
-            <span>🖥️ 事務員デスクモニター</span>
+            <span>事務員デスクモニター</span>
           </button>
-          <button 
+          <button
             className={`subnav-tab ${subView === 'mobile' ? 'active' : ''}`}
             onClick={() => setSubView('mobile')}
           >
             <Smartphone size={16} />
-            <span>📱 現場モバイルビュー</span>
+            <span>現場モバイルビュー</span>
           </button>
-          <button 
+          <button
             className="subnav-tab"
             onClick={onOpenContacts}
           >
             <BookOpen size={16} />
-            <span>📇 受電先台帳 ({contacts.length})</span>
+            <span>受電先台帳（{contacts.length}）</span>
           </button>
         </div>
 
         <div className="callsync-actions-right">
           <button className="btn-pop-call" onClick={onOpenNewCallMemo}>
             <Phone size={16} />
-            <span>📞 受電メモを新規登録</span>
+            <span>受電メモを新規登録</span>
           </button>
         </div>
       </div>
@@ -207,15 +208,18 @@ export default function CallSyncApp({
               </div>
             ) : (
               <div className="cards-grid">
-                {filteredMemos.map(memo => (
-                  <CallMemoCard 
-                    key={memo.id}
-                    memo={memo}
-                    currentUser={currentUser}
-                    onUpdateStatus={onUpdateStatus}
-                    onOpenThread={onOpenThread}
-                  />
-                ))}
+                {filteredMemos.map(memo => {
+                  const adapted = adaptCallMemo(memo);
+                  return (
+                    <CallMemoCard
+                      key={memo.id}
+                      memo={adapted}
+                      currentUserId={currentUser?.id}
+                      onUpdateStatus={onUpdateStatus}
+                      onOpenThread={() => onOpenThread(adapted)}
+                    />
+                  );
+                })}
               </div>
             )}
           </div>

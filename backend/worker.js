@@ -1,3 +1,38 @@
+import { deserializeVapidKeys, sendPushNotification } from 'web-push-browser';
+
+async function sendPushToSubscribers(env, excludeUserId, memo) {
+  const { results: subs } = await env.DB.prepare('SELECT * FROM push_subscriptions WHERE user_id != ?')
+    .bind(excludeUserId || -1).all();
+  if (!subs || subs.length === 0) return;
+
+  const vapidKeys = await deserializeVapidKeys({
+    publicKey: env.VAPID_PUBLIC_KEY,
+    privateKey: env.VAPID_PRIVATE_KEY
+  });
+
+  const payload = JSON.stringify({
+    title: `📞 ${memo.company_name} より受電`,
+    body: memo.contact_person ? `${memo.contact_person} 様` : (memo.subject || '内容を確認してください'),
+    memoId: memo.id
+  });
+
+  await Promise.all(subs.map(async (sub) => {
+    try {
+      const res = await sendPushNotification(
+        vapidKeys,
+        { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+        'support@easystance.app',
+        payload
+      );
+      if (res.status === 404 || res.status === 410) {
+        await env.DB.prepare('DELETE FROM push_subscriptions WHERE endpoint = ?').bind(sub.endpoint).run();
+      }
+    } catch (e) {
+      console.error('push send failed', sub.id, e.message);
+    }
+  }));
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -231,7 +266,35 @@ export default {
             .bind(messageId, body.created_by || 1).run();
         }
 
+        ctx.waitUntil(sendPushToSubscribers(env, body.created_by || 1, {
+          id: memoId,
+          company_name: body.company_name,
+          contact_person: body.contact_person,
+          subject: body.subject
+        }));
+
         return jsonResponse({ id: memoId, company_name: body.company_name, status: 'pending' });
+      }
+
+      // 5b. Push Notification Subscriptions
+      if (path === '/api/push/vapid-public-key' && request.method === 'GET') {
+        return jsonResponse({ publicKey: env.VAPID_PUBLIC_KEY });
+      }
+
+      if (path === '/api/push/subscribe' && request.method === 'POST') {
+        const body = await request.json();
+        await db.prepare(`
+          INSERT INTO push_subscriptions (user_id, endpoint, p256dh, auth)
+          VALUES (?, ?, ?, ?)
+          ON CONFLICT(endpoint) DO UPDATE SET user_id = excluded.user_id, p256dh = excluded.p256dh, auth = excluded.auth
+        `).bind(body.user_id, body.endpoint, body.keys?.p256dh, body.keys?.auth).run();
+        return jsonResponse({ success: true });
+      }
+
+      if (path === '/api/push/unsubscribe' && request.method === 'POST') {
+        const body = await request.json();
+        await db.prepare('DELETE FROM push_subscriptions WHERE endpoint = ?').bind(body.endpoint).run();
+        return jsonResponse({ success: true });
       }
 
       if (path.startsWith('/api/call-memos/') && path.endsWith('/status') && request.method === 'PUT') {

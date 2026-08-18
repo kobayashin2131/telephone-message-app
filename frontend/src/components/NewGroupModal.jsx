@@ -3,9 +3,7 @@ import { X, Users, Check, Building2, User } from 'lucide-react';
 
 const ICONS = ['👥', '🚀', '🚨', '💡', '🛠', '📢', '🏆', '📦', '💼', '🤝', '🎯', '⚡'];
 
-export default function NewGroupModal({ isOpen, onClose, users, departments, currentUserId, onCreateGroup }) {
-  if (!isOpen) return null;
-
+export default function NewGroupModal({ onClose, users, departments, currentUserId, onCreateGroup }) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [icon, setIcon] = useState('👥');
@@ -153,7 +151,7 @@ export default function NewGroupModal({ isOpen, onClose, users, departments, cur
                           {u.name.charAt(0)}
                         </div>
                         <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#1e293b' }}>{u.name}</span>
-                        <span style={{ fontSize: '0.7rem', color: '#64748b', background: '#f1f5f9', padding: '1px 6px', borderRaidus: '4px' }}>
+                        <span style={{ fontSize: '0.7rem', color: '#64748b', background: '#f1f5f9', padding: '1px 6px', borderRadius: '4px' }}>
                           {u.department_name || '未所属'}
                         </span>
                       </div>

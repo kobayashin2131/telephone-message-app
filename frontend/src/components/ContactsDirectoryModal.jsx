@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
 import { X, BookOpen, Plus, Search, Phone, Edit, Trash2, Building2 } from 'lucide-react';
 
-export default function ContactsDirectoryModal({ isOpen, onClose, contacts, onSaveContact, onDeleteContact, onOpenCallMemoForContact }) {
-  if (!isOpen) return null;
-
+export default function ContactsDirectoryModal({ onClose, contacts, onSaveContact, onDeleteContact, onOpenCallMemoForContact }) {
   const [search, setSearch] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({ id: null, company_name: '', contact_person: '', phone_number: '', frequent_notes: '' });

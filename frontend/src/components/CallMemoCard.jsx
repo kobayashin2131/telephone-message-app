@@ -14,11 +14,11 @@ export default function CallMemoCard({ memo, onUpdateStatus, onOpenThread, curre
       <div className="call-pop-header">
         <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
           {isUrgent ? (
-            <span className="call-badge-tag tag-urgent"><AlertTriangle size={13} /> 🚨 緊急受電</span>
+            <span className="call-badge-tag tag-urgent"><AlertTriangle size={13} /> 緊急受電</span>
           ) : isCallback ? (
-            <span className="call-badge-tag tag-callback"><Phone size={13} /> 📞 折り返し要</span>
+            <span className="call-badge-tag tag-callback"><Phone size={13} /> 折り返し要</span>
           ) : (
-            <span className="call-badge-tag tag-info"><Clock size={13} /> ℹ️ 伝言のみ</span>
+            <span className="call-badge-tag tag-info"><Clock size={13} /> 伝言のみ</span>
           )}
           <span className={`status-pill ${memo.memo_status || 'pending'}`}>
             {isResolved ? '✓ 完了' : isInProgress ? '⏳ 対応中' : '⚠️ 未対応'}
@@ -40,9 +40,9 @@ export default function CallMemoCard({ memo, onUpdateStatus, onOpenThread, curre
 
       {memo.memo_phone && (
         <a href={`tel:${memo.memo_phone}`} className="phone-pill-btn">
-          <Phone size={14} color="#2563eb" />
+          <Phone size={14} color="#128c6e" />
           <span>{memo.memo_phone}</span>
-          <span style={{ fontSize: '0.72rem', color: '#6366f1', fontWeight: 500 }}>（タップで発信）</span>
+          <span style={{ fontSize: '0.72rem', color: '#128c6e', fontWeight: 500 }}>（タップで発信）</span>
         </a>
       )}
 

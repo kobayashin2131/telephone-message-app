@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Phone, AlertTriangle, Clock, CheckCircle, Search, Filter, Plus, User, Building2, ExternalLink } from 'lucide-react';
 import CallMemoCard from './CallMemoCard';
+import { adaptCallMemo } from '../utils/memoAdapter';
 
 export default function DeskMonitorView({
   users, departments, groups, contacts, callMemos, currentUser, 
@@ -233,21 +234,7 @@ export default function DeskMonitorView({
             </div>
           ) : (
             filteredMemos.map(m => {
-              const adaptedMsg = {
-                id: m.id,
-                memo_id: m.id,
-                memo_company: m.company_name,
-                memo_contact: m.contact_person,
-                memo_phone: m.phone_number,
-                memo_subject: m.subject,
-                memo_body: m.body,
-                memo_type: m.call_type,
-                memo_status: m.status,
-                memo_resolved_note: m.resolved_note,
-                memo_resolved_at: m.resolved_at,
-                memo_resolver_name: m.resolver_name,
-                thread_count: 0
-              };
+              const adaptedMsg = adaptCallMemo(m);
               return (
                 <CallMemoCard 
                   key={m.id}

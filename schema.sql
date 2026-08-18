@@ -139,3 +139,13 @@ INSERT INTO messages (target_type, target_id, sender_id, message_type, content, 
   ('dm', 2, 5, 'call_card', '株式会社オアシス商事 山田様よりお電話がありました。折り返しをお願いします。', 1);
 
 INSERT INTO message_reads (message_id, user_id) VALUES (1, 1), (1, 2), (1, 4), (2, 5);
+
+CREATE TABLE push_subscriptions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  endpoint TEXT NOT NULL UNIQUE,
+  p256dh TEXT NOT NULL,
+  auth TEXT NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);

@@ -3,16 +3,14 @@ import { X, Phone, User, Building2, Users, AlertTriangle, Clock, Check, Search, 
 
 const COMMON_SUBJECTS = ['折り返しのお願い', '見積もり仕様確認の件', '納期・出荷日の確認', '現場施工日程の調整', '定期保守・点検の件', 'ご挨拶・アポイント'];
 
-export default function NewCallMemoModal({ 
-  isOpen, onClose, users, departments, groups, contacts, currentUserId, defaultTarget, onSubmitCallMemo 
+export default function NewCallMemoModal({
+  onClose, users, departments, groups, contacts, currentUserId, defaultTarget, prefillContact, onSubmitCallMemo
 }) {
-  if (!isOpen) return null;
-
-  const [companyName, setCompanyName] = useState('');
-  const [contactPerson, setContactPerson] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [frequentNotes, setFrequentNotes] = useState('');
-  const [selectedContactId, setSelectedContactId] = useState(null);
+  const [companyName, setCompanyName] = useState(prefillContact?.company_name || '');
+  const [contactPerson, setContactPerson] = useState(prefillContact?.contact_person || '');
+  const [phoneNumber, setPhoneNumber] = useState(prefillContact?.phone_number || '');
+  const [frequentNotes, setFrequentNotes] = useState(prefillContact?.frequent_notes || '');
+  const [selectedContactId, setSelectedContactId] = useState(prefillContact?.id || null);
   const [saveContact, setSaveContact] = useState(true);
 
   // Search suggestions

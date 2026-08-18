@@ -3,11 +3,9 @@ import { X, Settings, Users, Building2, Plus, Edit, Trash2, ShieldCheck, UserChe
 
 const COLORS = ['#2563eb', '#059669', '#d97706', '#7c3aed', '#db2777', '#0284c7', '#dc2626', '#475569'];
 
-export default function AdminModal({ 
-  isOpen, onClose, users, departments, onSaveUser, onDeleteUser, onSaveDept, onDeleteDept 
+export default function AdminModal({
+  onClose, users, departments, onSaveUser, onDeleteUser, onSaveDept, onDeleteDept
 }) {
-  if (!isOpen) return null;
-
   const [activeTab, setActiveTab] = useState('users'); // 'users' or 'departments'
 
   // User form

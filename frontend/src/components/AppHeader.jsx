@@ -1,6 +1,6 @@
 import React from 'react';
-import { 
-  MessageSquare, Phone, Plus, BookOpen, Settings, Users, Sparkles, Building2, ChevronDown
+import {
+  MessageSquare, Phone, Plus, BookOpen, Settings, Users, Sparkles, Building2, ChevronDown, Bell, BellOff
 } from 'lucide-react';
 
 export default function AppHeader({
@@ -13,7 +13,9 @@ export default function AppHeader({
   onOpenContacts,
   onOpenAdmin,
   callMemosCount,
-  unreadMessagesCount
+  unreadMessagesCount,
+  notifyEnabled,
+  onToggleNotify
 }) {
   const unhandledCalls = callMemosCount?.unhandled || 0;
 
@@ -32,23 +34,23 @@ export default function AppHeader({
         </div>
 
         <div className="suite-nav-tabs">
-          <button 
-            className={`suite-tab-btn ${activeApp === 'chat' ? 'active chat-active' : ''}`}
+          <button
+            className={`suite-tab-btn ${activeApp === 'chat' ? 'active' : ''}`}
             onClick={() => onChangeApp('chat')}
           >
             <MessageSquare size={16} />
-            <span>💬 社内チャット</span>
+            <span>社内チャット</span>
             {unreadMessagesCount > 0 && (
               <span className="suite-badge-pill unread-pill">{unreadMessagesCount}</span>
             )}
           </button>
 
-          <button 
-            className={`suite-tab-btn ${activeApp === 'callsync' ? 'active callsync-active' : ''}`}
+          <button
+            className={`suite-tab-btn ${activeApp === 'callsync' ? 'active' : ''}`}
             onClick={() => onChangeApp('callsync')}
           >
             <Phone size={16} />
-            <span>📞 電話連絡 (CallSync)</span>
+            <span>電話連絡（CallSync）</span>
             {unhandledCalls > 0 && (
               <span className="suite-badge-pill urgent-pill">{unhandledCalls}件 未対応</span>
             )}
@@ -66,6 +68,15 @@ export default function AppHeader({
         <button className="btn-suite-icon" onClick={onOpenContacts} title="受電先台帳・取引先名簿">
           <BookOpen size={16} />
           <span className="btn-label-desktop">台帳</span>
+        </button>
+
+        <button
+          className={`btn-suite-icon ${notifyEnabled ? 'btn-notify-on' : ''}`}
+          onClick={onToggleNotify}
+          title={notifyEnabled ? '着信音・通知（タブを閉じても届きます）：ON（クリックでOFF）' : '着信音・通知（タブを閉じても届きます）：OFF（クリックでON）'}
+        >
+          {notifyEnabled ? <Bell size={16} /> : <BellOff size={16} />}
+          <span className="btn-label-desktop">{notifyEnabled ? '通知ON' : '通知OFF'}</span>
         </button>
 
         {currentUser?.role === 'admin' && (
