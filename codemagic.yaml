@@ -217,8 +217,10 @@ workflows:
       - name: Increment build number
         script: |
           cd $CM_BUILD_DIR/frontend/ios/App
-          LATEST_BUILD_NUMBER=$(app-store-connect get-latest-app-store-build-number "com.easystance.connectsuite")
-          agvtool new-version -all $(($LATEST_BUILD_NUMBER + 1))
+          # Apple側への問い合わせ(get-latest-app-store-build-number)は反映ラグで
+          # 直前にアップロードした番号を拾えず衝突することがあるため、
+          # gitのコミット数という確実に単調増加する値を使う
+          agvtool new-version -all $(git -C $CM_BUILD_DIR rev-list --count HEAD)
       - name: Build ipa for distribution
         script: |
           xcode-project build-ipa --project "frontend/ios/App/App.xcodeproj" --scheme "App"
