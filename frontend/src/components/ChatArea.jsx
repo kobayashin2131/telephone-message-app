@@ -1,16 +1,26 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  Send, Phone, Users, Building2, MessageSquare, Check, Eye, Smile, Paperclip, Search, PlusCircle, ArrowLeft
+  Send, Phone, Users, Building2, MessageSquare, Check, Eye, Smile, Paperclip, Search, PlusCircle, ArrowLeft, FileText, X, Loader2
 } from 'lucide-react';
 import CallMemoCard from './CallMemoCard';
+import { uploadAttachment, ALLOWED_ATTACHMENT_TYPES } from '../utils/upload';
 
 const EMOJIS = ['👍', '🙌', '🙏', '🙇', '❤️', '🔥', '✅', '👀'];
 
+function formatFileSize(bytes) {
+  if (!bytes) return '';
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)}KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
+}
+
 export default function ChatArea({
-  activeChat, currentUser, messages, onSendMessage, onUpdateStatus, onOpenThread, onOpenNewCallMemo, onBack
+  activeChat, currentUser, messages, organizationId, onSendMessage, onUpdateStatus, onOpenThread, onOpenNewCallMemo, onBack
 }) {
   const [text, setText] = useState('');
   const [activeReadersPopover, setActiveReadersPopover] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+  const fileInputRef = useRef(null);
   const timelineEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -32,6 +42,23 @@ export default function ChatArea({
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend(e);
+    }
+  };
+
+  const handleFileSelected = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // 同じファイルを連続で選んでもonChangeが発火するように
+    if (!file) return;
+
+    setUploadError('');
+    setUploading(true);
+    try {
+      const uploaded = await uploadAttachment(file, organizationId);
+      onSendMessage('', uploaded);
+    } catch (err) {
+      setUploadError(err.message);
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -121,12 +148,29 @@ export default function ChatArea({
                   </div>
 
                   {isCallCard ? (
-                    <CallMemoCard 
+                    <CallMemoCard
                       memo={m}
                       onUpdateStatus={onUpdateStatus}
                       onOpenThread={onOpenThread}
                       currentUserId={currentUser?.id}
                     />
+                  ) : m.attachment_url ? (
+                    <div className="message-attachment">
+                      {m.message_type === 'image' ? (
+                        <a href={m.attachment_url} target="_blank" rel="noopener noreferrer">
+                          <img src={m.attachment_url} alt={m.attachment_name || '添付画像'} className="attachment-image" />
+                        </a>
+                      ) : (
+                        <a href={m.attachment_url} target="_blank" rel="noopener noreferrer" className="attachment-file-chip">
+                          <FileText size={20} />
+                          <div className="attachment-file-info">
+                            <div className="attachment-file-name">{m.attachment_name || 'ファイル'}</div>
+                            <div className="attachment-file-size">{formatFileSize(m.attachment_size)}</div>
+                          </div>
+                        </a>
+                      )}
+                      {m.content && <div className="message-text" style={{ marginTop: '6px' }}>{m.content}</div>}
+                    </div>
                   ) : (
                     <div className="message-text">
                       {m.content}
@@ -193,6 +237,12 @@ export default function ChatArea({
 
       {/* Input Bar */}
       <div className="chat-input-bar">
+        {uploadError && (
+          <div className="attachment-error-banner">
+            <span>{uploadError}</span>
+            <button type="button" onClick={() => setUploadError('')}><X size={13} /></button>
+          </div>
+        )}
         <form onSubmit={handleSend}>
           <div className="input-box-wrapper">
             <textarea 
@@ -216,6 +266,23 @@ export default function ChatArea({
                     {emoji}
                   </button>
                 ))}
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  accept={ALLOWED_ATTACHMENT_TYPES.join(',')}
+                  style={{ display: 'none' }}
+                  onChange={handleFileSelected}
+                />
+                <button
+                  type="button"
+                  className="btn-tool"
+                  style={{ padding: '2px 4px' }}
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  title="画像・PDFを添付"
+                >
+                  {uploading ? <Loader2 size={16} className="spin-icon" /> : <Paperclip size={16} />}
+                </button>
               </div>
 
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>

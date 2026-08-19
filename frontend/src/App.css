@@ -830,6 +830,88 @@ button, input, select, textarea {
   display: inline-block;
 }
 
+.message-attachment {
+  display: inline-block;
+}
+
+.attachment-image {
+  display: block;
+  max-width: 280px;
+  max-height: 280px;
+  width: auto;
+  height: auto;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  object-fit: cover;
+}
+
+.attachment-file-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 9px 13px;
+  text-decoration: none;
+  color: var(--ink);
+  max-width: 260px;
+  transition: border-color 0.15s ease;
+}
+
+.attachment-file-chip:hover {
+  border-color: var(--brand);
+}
+
+.attachment-file-info {
+  min-width: 0;
+}
+
+.attachment-file-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.attachment-file-size {
+  font-size: 0.72rem;
+  color: var(--ink-faint);
+}
+
+.attachment-error-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: var(--status-pending-soft);
+  color: var(--status-pending);
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 7px 12px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 8px;
+}
+
+.attachment-error-banner button {
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  display: flex;
+}
+
+.spin-icon {
+  animation: spin-anim 0.8s linear infinite;
+}
+
+@keyframes spin-anim {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 .message-meta-footer {
   display: flex;
   align-items: center;

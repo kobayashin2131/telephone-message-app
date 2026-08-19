@@ -463,9 +463,9 @@ export default {
       if (path === '/api/messages' && request.method === 'POST') {
         const body = await request.json();
         const info = await db.prepare(`
-          INSERT INTO messages (target_type, target_id, sender_id, message_type, content, call_memo_id, parent_id)
-          VALUES (?, ?, ?, ?, ?, ?, ?)
-        `).bind(body.target_type, body.target_id, body.sender_id, body.message_type || 'text', body.content || '', body.call_memo_id || null, body.parent_id || null).run();
+          INSERT INTO messages (target_type, target_id, sender_id, message_type, content, call_memo_id, parent_id, attachment_url, attachment_name, attachment_type, attachment_size)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).bind(body.target_type, body.target_id, body.sender_id, body.message_type || 'text', body.content || '', body.call_memo_id || null, body.parent_id || null, body.attachment_url || null, body.attachment_name || null, body.attachment_type || null, body.attachment_size || null).run();
 
         const msgId = info.meta.last_row_id;
         await db.prepare('INSERT OR IGNORE INTO message_reads (message_id, user_id) VALUES (?, ?)')
@@ -493,6 +493,45 @@ export default {
           ORDER BY m.created_at ASC
         `).bind(parentId).all();
         return jsonResponse(results);
+      }
+
+      // 6b. Chat attachments (images / PDF)
+      if (path === '/api/upload' && request.method === 'POST') {
+        const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'];
+        const MAX_SIZE = 15 * 1024 * 1024; // 15MB
+
+        const formData = await request.formData();
+        const file = formData.get('file');
+        const orgId = parseOrgId(formData.get('organization_id'));
+
+        if (!file || typeof file === 'string') {
+          return jsonResponse({ error: 'ファイルが見つかりません' }, 400);
+        }
+        if (!ALLOWED_TYPES.includes(file.type)) {
+          return jsonResponse({ error: '画像またはPDFのみアップロードできます' }, 400);
+        }
+        if (file.size > MAX_SIZE) {
+          return jsonResponse({ error: 'ファイルサイズは15MBまでです' }, 400);
+        }
+        if (!env.ATTACHMENTS) {
+          return jsonResponse({ error: 'ストレージが設定されていません' }, 500);
+        }
+
+        const extension = (file.name.split('.').pop() || 'bin').toLowerCase();
+        const key = `orgs/${orgId}/${Date.now()}-${crypto.randomUUID()}.${extension}`;
+
+        const arrayBuffer = await file.arrayBuffer();
+        await env.ATTACHMENTS.put(key, arrayBuffer, {
+          httpMetadata: { contentType: file.type }
+        });
+
+        const publicUrl = `https://${env.R2_PUBLIC_DOMAIN}/${key}`;
+        return jsonResponse({
+          url: publicUrl,
+          name: file.name,
+          type: file.type,
+          size: file.size
+        });
       }
 
       // 7. Auth

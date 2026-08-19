@@ -12,6 +12,7 @@ export default function ChatApp({
   activeChat,
   onSelectChat,
   messages,
+  organizationId,
   onSendMessage,
   onUpdateStatus,
   onOpenNewGroup,
@@ -132,6 +133,7 @@ export default function ChatApp({
           activeChat={activeChat}
           currentUser={currentUser}
           messages={messages}
+          organizationId={organizationId}
           onSendMessage={onSendMessage}
           onUpdateStatus={onUpdateStatus}
           onOpenThread={onOpenThread}

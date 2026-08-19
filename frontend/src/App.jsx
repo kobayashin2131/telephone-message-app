@@ -184,9 +184,12 @@ export default function App() {
     fetchMessages();
   }, [activeChat, currentUserId]);
 
-  const handleSendMessage = async (content) => {
-    if (!activeChat || !content.trim()) return;
+  const handleSendMessage = async (content, attachment = null) => {
+    if (!activeChat || (!content.trim() && !attachment)) return;
     try {
+      const messageType = attachment
+        ? (attachment.type.startsWith('image/') ? 'image' : 'file')
+        : 'text';
       const res = await fetch(`${API_BASE}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -195,7 +198,11 @@ export default function App() {
           target_id: activeChat.id,
           sender_id: currentUserId,
           content: content.trim(),
-          message_type: 'text'
+          message_type: messageType,
+          attachment_url: attachment?.url || null,
+          attachment_name: attachment?.name || null,
+          attachment_type: attachment?.type || null,
+          attachment_size: attachment?.size || null
         })
       });
       if (res.ok) fetchMessages();
@@ -405,13 +412,14 @@ export default function App() {
       {/* 2. Main App Content (Chat or CallSync) */}
       <div className="suite-app-body">
         {activeApp === 'chat' && (
-          <ChatApp 
+          <ChatApp
             currentUser={currentUser}
             users={users}
             groups={groups}
             activeChat={activeChat}
             onSelectChat={setActiveChat}
             messages={messages}
+            organizationId={auth?.user?.organization_id}
             onSendMessage={handleSendMessage}
             onUpdateStatus={handleUpdateCallStatus}
             onOpenNewGroup={() => setShowNewGroupModal(true)}

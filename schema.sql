@@ -102,6 +102,10 @@ CREATE TABLE messages (
   content TEXT,
   call_memo_id INTEGER,
   parent_id INTEGER,
+  attachment_url TEXT,
+  attachment_name TEXT,
+  attachment_type TEXT,
+  attachment_size INTEGER,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (sender_id) REFERENCES users(id),
   FOREIGN KEY (call_memo_id) REFERENCES call_memos(id)

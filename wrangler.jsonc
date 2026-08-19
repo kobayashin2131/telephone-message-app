@@ -3,13 +3,20 @@
   "main": "backend/worker.js",
   "compatibility_date": "2026-08-18",
   "vars": {
-    "GOOGLE_CLIENT_ID": "291797704774-b4vasdifrsch05n9mog6hhl1n962454i.apps.googleusercontent.com"
+    "GOOGLE_CLIENT_ID": "291797704774-b4vasdifrsch05n9mog6hhl1n962454i.apps.googleusercontent.com",
+    "R2_PUBLIC_DOMAIN": "pub-63d6d73205084f4aa99e917275a72360.r2.dev"
   },
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "callsync-db",
       "database_id": "2a03cb3a-3c27-4c48-9b42-2057e0a0da57"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "ATTACHMENTS",
+      "bucket_name": "callsync-attachments"
     }
   ]
 }
