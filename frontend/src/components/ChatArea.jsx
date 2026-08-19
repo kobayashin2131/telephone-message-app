@@ -37,7 +37,7 @@ export default function ChatArea({
 
   if (!activeChat) {
     return (
-      <div className="main-chat" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8' }}>
+      <div className="main-chat" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#99a599' }}>
         左側のリストからチャットまたはグループを選択してください
       </div>
     );
@@ -56,7 +56,7 @@ export default function ChatArea({
             <div className="chat-header-title">
               <span className="chat-header-title-text">{activeChat.name}</span>
               {activeChat.memberCount !== undefined && (
-                <span style={{ flexShrink: 0, fontSize: '0.75rem', background: '#eff6ff', color: '#2563eb', padding: '2px 8px', borderRadius: '12px', fontWeight: 600 }}>
+                <span style={{ flexShrink: 0, fontSize: '0.75rem', background: '#f7f3fb', color: '#7d68a8', padding: '2px 8px', borderRadius: '12px', fontWeight: 600 }}>
                   {activeChat.memberCount}名参加
                 </span>
               )}
@@ -70,7 +70,7 @@ export default function ChatArea({
         <div className="chat-header-actions">
           <button
             className="btn-secondary"
-            style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', borderColor: '#bfdbfe', color: '#1e40af', background: '#eff6ff' }}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', borderColor: '#ddd0ee', color: '#6b5590', background: '#f7f3fb' }}
             onClick={() => onOpenNewCallMemo(activeChat)}
           >
             <Phone size={14} /> <span className="btn-label-desktop">このチャットに受電メモ投稿</span>
@@ -81,9 +81,9 @@ export default function ChatArea({
       {/* Timeline */}
       <div className="chat-timeline">
         {messages.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '60px 20px', color: '#94a3b8' }}>
+          <div style={{ textAlign: 'center', padding: '60px 20px', color: '#99a599' }}>
             <div style={{ fontSize: '2.5rem', marginBottom: '8px' }}>💬</div>
-            <div style={{ fontWeight: 600, fontSize: '1rem', color: '#475569' }}>まだメッセージはありません</div>
+            <div style={{ fontWeight: 600, fontSize: '1rem', color: '#4a5750' }}>まだメッセージはありません</div>
             <div style={{ fontSize: '0.85rem' }}>最初のメッセージや受電メモを投稿してみましょう！</div>
           </div>
         ) : (
@@ -95,7 +95,7 @@ export default function ChatArea({
             if (isSystem) {
               return (
                 <div key={m.id} style={{ textAlign: 'center', margin: '8px 0' }}>
-                  <span style={{ background: '#e2e8f0', color: '#475569', fontSize: '0.75rem', padding: '3px 12px', borderRadius: '12px' }}>
+                  <span style={{ background: '#e8e2d8', color: '#4a5750', fontSize: '0.75rem', padding: '3px 12px', borderRadius: '12px' }}>
                     {m.content}
                   </span>
                 </div>
@@ -106,7 +106,7 @@ export default function ChatArea({
               <div key={m.id} className="message-item">
                 <div 
                   className="message-avatar" 
-                  style={{ backgroundColor: m.sender_avatar || '#3b82f6' }}
+                  style={{ backgroundColor: m.sender_avatar || '#9b84c4' }}
                 >
                   {m.sender_name?.charAt(0)}
                 </div>
@@ -156,7 +156,7 @@ export default function ChatArea({
                         {activeReadersPopover === m.id && (
                           <div style={{
                             position: 'absolute', bottom: '100%', left: 0, zIndex: 60,
-                            background: '#1e293b', color: '#fff', padding: '8px 12px', borderRadius: '6px',
+                            background: '#38443c', color: '#fff', padding: '8px 12px', borderRadius: '6px',
                             fontSize: '0.75rem', minWidth: '160px', boxShadow: '0 4px 12px rgba(0,0,0,0.25)'
                           }}>
                             <div style={{ fontWeight: 700, marginBottom: '4px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '2px' }}>
@@ -165,7 +165,7 @@ export default function ChatArea({
                             {m.readers?.map(r => (
                               <div key={r.user_id} style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
                                 <span>{r.name}</span>
-                                <span style={{ color: '#94a3b8' }}>
+                                <span style={{ color: '#99a599' }}>
                                   {new Date(r.read_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                 </span>
                               </div>
@@ -225,7 +225,7 @@ export default function ChatArea({
                   style={{ fontSize: '0.75rem', padding: '4px 8px', display: 'flex', alignItems: 'center', gap: '4px' }}
                   onClick={() => onOpenNewCallMemo(activeChat)}
                 >
-                  <Phone size={12} color="#2563eb" /> 受電メモ
+                  <Phone size={12} color="#7d68a8" /> 受電メモ
                 </button>
                 <button type="submit" className="btn-send" disabled={!text.trim()}>
                   <Send size={14} /> 送信

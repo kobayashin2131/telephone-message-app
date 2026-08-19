@@ -58,7 +58,7 @@ export default function NewGroupModal({ onClose, users, departments, currentUser
       <div className="modal-content">
         <div className="modal-header">
           <div className="modal-title">
-            <Users size={20} color="#2563eb" />
+            <Users size={20} color="#7d68a8" />
             新規グループ作成
           </div>
           <button className="btn-close" onClick={onClose}><X size={18} /></button>
@@ -68,7 +68,7 @@ export default function NewGroupModal({ onClose, users, departments, currentUser
           <div className="modal-body">
             {/* Group Name & Icon */}
             <div className="form-group">
-              <label className="form-label">アイコン ＆ グループ名 <span style={{ color: '#ef4444' }}>*</span></label>
+              <label className="form-label">アイコン ＆ グループ名 <span style={{ color: '#d97a6c' }}>*</span></label>
               <div style={{ display: 'flex', gap: '8px' }}>
                 <select 
                   className="form-select" 
@@ -106,7 +106,7 @@ export default function NewGroupModal({ onClose, users, departments, currentUser
             <div className="form-group">
               <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span>🏢 部門ごと一括選択</span>
-                <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 400 }}>クリックで部門全員をON/OFF</span>
+                <span style={{ fontSize: '0.75rem', color: '#66766c', fontWeight: 400 }}>クリックで部門全員をON/OFF</span>
               </label>
               <div className="dept-chips-grid">
                 {departments.map(dept => {
@@ -119,7 +119,7 @@ export default function NewGroupModal({ onClose, users, departments, currentUser
                     >
                       <Building2 size={14} />
                       <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{dept.name}</span>
-                      {active && <Check size={14} color="#2563eb" />}
+                      {active && <Check size={14} color="#7d68a8" />}
                     </div>
                   );
                 })}
@@ -130,7 +130,7 @@ export default function NewGroupModal({ onClose, users, departments, currentUser
             <div className="form-group">
               <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span>👤 個別メンバー選択</span>
-                <span style={{ fontSize: '0.75rem', color: '#2563eb', fontWeight: 600 }}>
+                <span style={{ fontSize: '0.75rem', color: '#7d68a8', fontWeight: 600 }}>
                   選択中: {selectedUserIds.length}名
                 </span>
               </label>
@@ -150,8 +150,8 @@ export default function NewGroupModal({ onClose, users, departments, currentUser
                         >
                           {u.name.charAt(0)}
                         </div>
-                        <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#1e293b' }}>{u.name}</span>
-                        <span style={{ fontSize: '0.7rem', color: '#64748b', background: '#f1f5f9', padding: '1px 6px', borderRadius: '4px' }}>
+                        <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#38443c' }}>{u.name}</span>
+                        <span style={{ fontSize: '0.7rem', color: '#66766c', background: '#f2ede1', padding: '1px 6px', borderRadius: '4px' }}>
                           {u.department_name || '未所属'}
                         </span>
                       </div>
@@ -168,7 +168,7 @@ export default function NewGroupModal({ onClose, users, departments, currentUser
             </div>
 
             {/* Selected Preview summary */}
-            <div style={{ fontSize: '0.8rem', color: '#475569', background: '#f8fafc', padding: '8px 12px', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+            <div style={{ fontSize: '0.8rem', color: '#4a5750', background: '#f8f5ef', padding: '8px 12px', borderRadius: '6px', border: '1px solid #e8e2d8' }}>
               <strong>👥 参加予定:</strong> {selectedUsersList.map(u => u.name.split('（')[0]).join(', ') || 'なし'}
             </div>
           </div>

@@ -25,7 +25,7 @@ export default function CallMemoCard({ memo, onUpdateStatus, onOpenThread, curre
           </span>
         </div>
         {memo.memo_resolved_at && (
-          <span style={{ fontSize: '0.75rem', color: '#059669', fontWeight: 700 }}>
+          <span style={{ fontSize: '0.75rem', color: '#6fa382', fontWeight: 700 }}>
             完了: {memo.memo_resolver_name || '担当者'}
           </span>
         )}
@@ -33,16 +33,16 @@ export default function CallMemoCard({ memo, onUpdateStatus, onOpenThread, curre
 
       <div className="caller-title">
         🏢 {memo.memo_company} 
-        <span style={{ fontSize: '0.92rem', fontWeight: 600, color: '#475569' }}>
+        <span style={{ fontSize: '0.92rem', fontWeight: 600, color: '#4a5750' }}>
           {memo.memo_contact}
         </span>
       </div>
 
       {memo.memo_phone && (
         <a href={`tel:${memo.memo_phone}`} className="phone-pill-btn">
-          <Phone size={14} color="#128c6e" />
+          <Phone size={14} color="#7aab8f" />
           <span>{memo.memo_phone}</span>
-          <span style={{ fontSize: '0.72rem', color: '#128c6e', fontWeight: 500 }}>（タップで発信）</span>
+          <span style={{ fontSize: '0.72rem', color: '#7aab8f', fontWeight: 500 }}>（タップで発信）</span>
         </a>
       )}
 
@@ -59,7 +59,7 @@ export default function CallMemoCard({ memo, onUpdateStatus, onOpenThread, curre
       )}
 
       {memo.memo_resolved_note && (
-        <div style={{ fontSize: '0.8rem', background: '#ecfdf5', border: '1px solid #a7f3d0', padding: '8px 12px', borderRadius: '8px', color: '#065f46', marginBottom: '10px' }}>
+        <div style={{ fontSize: '0.8rem', background: '#e6f2ea', border: '1px solid #c3ddc9', padding: '8px 12px', borderRadius: '8px', color: '#4f7a60', marginBottom: '10px' }}>
           <strong>📝 対応結果メモ:</strong> {memo.memo_resolved_note}
         </div>
       )}

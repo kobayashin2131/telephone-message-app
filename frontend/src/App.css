@@ -1,43 +1,49 @@
 :root {
-  /* Brand — a grounded teal-green, evokes "つながる" without borrowing a
-     specific chat app's exact hue. Used sparingly; most of the UI stays
-     neutral so the brand color still reads as an accent, not wallpaper. */
-  --brand: #128c6e;
-  --brand-dark: #0b6b54;
-  --brand-darker: #0a3d31;
-  --brand-soft: #e3f3ec;
-  --brand-softer: #f2faf6;
+  /* Brand — soft sage green, natural/pastel direction (2026-08-19 redesign) */
+  --brand: #7aab8f;
+  --brand-dark: #5c8f74;
+  --brand-darker: #4a7361;
+  --brand-soft: #e3f0e8;
+  --brand-softer: #f3f9f5;
 
-  /* Accent — warm, used only for the "quick call" CTA family */
-  --accent: #e8672b;
-  --accent-dark: #c8531f;
-  --accent-soft: #fdeae0;
+  /* Lavender — secondary pastel accent, used for links/active states that
+     used to borrow generic Tailwind blue */
+  --lavender: #9b84c4;
+  --lavender-dark: #7d68a8;
+  --lavender-soft: #efe9f8;
+  --lavender-softer: #f7f3fb;
 
-  /* Status semantics (shared by badges, pills, card borders) */
-  --status-pending: #d8473a;
-  --status-pending-soft: #fbe4e1;
-  --status-progress: #b9820f;
-  --status-progress-soft: #faf0d8;
-  --status-resolved: #1e8f5f;
-  --status-resolved-soft: #e1f3e9;
+  /* Accent — warm peach/terracotta, used for the "quick call" CTA family */
+  --accent: #d99a6c;
+  --accent-dark: #c17f4d;
+  --accent-soft: #faeee0;
 
-  /* Neutrals — warm, slight green bias so they read as chosen */
-  --ink: #16211c;
-  --ink-soft: #57655c;
-  --ink-faint: #8b978f;
-  --bg-page: #f3f5f1;
+  /* Status semantics (shared by badges, pills, card borders) — softened but
+     kept distinct enough to scan for urgency at a glance */
+  --status-pending: #d97a6c;
+  --status-pending-soft: #fbe8e4;
+  --status-progress: #c9a04a;
+  --status-progress-soft: #f8f0dc;
+  --status-resolved: #6fa382;
+  --status-resolved-soft: #e6f2ea;
+
+  /* Neutrals — warm cream bias instead of cool gray, for the "natural" feel */
+  --ink: #2d3830;
+  --ink-soft: #66766c;
+  --ink-faint: #99a599;
+  --bg-page: #faf8f4;
   --surface: #ffffff;
-  --surface-alt: #f7f9f6;
-  --border: #e1e7e1;
-  --border-strong: #c9d2c8;
+  --surface-alt: #f8f5ef;
+  --border: #e8e2d8;
+  --border-strong: #d4ccbc;
 
-  --shadow-sm: 0 1px 2px rgba(20, 30, 20, 0.06);
-  --shadow-md: 0 4px 14px -4px rgba(20, 30, 20, 0.14);
-  --shadow-lg: 0 16px 34px -10px rgba(20, 30, 20, 0.22);
+  --shadow-sm: 0 1px 2px rgba(45, 40, 20, 0.05);
+  --shadow-md: 0 4px 14px -4px rgba(45, 40, 20, 0.12);
+  --shadow-lg: 0 16px 34px -10px rgba(45, 40, 20, 0.18);
 
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 18px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
 }
 
 * {

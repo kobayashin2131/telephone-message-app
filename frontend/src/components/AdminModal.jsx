@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, Settings, Users, Building2, Plus, Edit, Trash2, ShieldCheck, UserCheck } from 'lucide-react';
 
-const COLORS = ['#2563eb', '#059669', '#d97706', '#7c3aed', '#db2777', '#0284c7', '#dc2626', '#475569'];
+const COLORS = ['#7d68a8', '#6fa382', '#c9a04a', '#7d68a8', '#c97a94', '#6b8fa3', '#c2604f', '#4a5750'];
 
 export default function AdminModal({
   onClose, users, departments, onSaveUser, onDeleteUser, onSaveDept, onDeleteDept
@@ -9,7 +9,7 @@ export default function AdminModal({
   const [activeTab, setActiveTab] = useState('users'); // 'users' or 'departments'
 
   // User form
-  const [userEdit, setUserEdit] = useState({ id: null, name: '', email: '', password: '', department_id: '', role: 'user', avatar_color: '#2563eb' });
+  const [userEdit, setUserEdit] = useState({ id: null, name: '', email: '', password: '', department_id: '', role: 'user', avatar_color: '#7d68a8' });
   const [isEditingUser, setIsEditingUser] = useState(false);
 
   // Dept form
@@ -25,7 +25,7 @@ export default function AdminModal({
         password: '',
         department_id: u.department_id || '',
         role: u.role || 'user',
-        avatar_color: u.avatar_color || '#2563eb'
+        avatar_color: u.avatar_color || '#7d68a8'
       });
     } else {
       setUserEdit({ id: null, name: '', email: '', password: 'password123', department_id: departments[0]?.id || '', role: 'user', avatar_color: COLORS[Math.floor(Math.random() * COLORS.length)] });
@@ -53,20 +53,20 @@ export default function AdminModal({
       <div className="modal-content" style={{ maxWidth: '680px' }}>
         <div className="modal-header">
           <div className="modal-title">
-            <Settings size={20} color="#2563eb" />
+            <Settings size={20} color="#7d68a8" />
             管理者メニュー（組織・アカウント管理）
           </div>
           <button className="btn-close" onClick={onClose}><X size={18} /></button>
         </div>
 
         {/* Tab Headers */}
-        <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', background: '#f8fafc', padding: '0 20px' }}>
+        <div style={{ display: 'flex', borderBottom: '1px solid #e8e2d8', background: '#f8f5ef', padding: '0 20px' }}>
           <button 
             style={{
               padding: '12px 16px', border: 'none', background: 'transparent',
               fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer',
-              color: activeTab === 'users' ? '#2563eb' : '#64748b',
-              borderBottom: activeTab === 'users' ? '2px solid #2563eb' : '2px solid transparent'
+              color: activeTab === 'users' ? '#7d68a8' : '#66766c',
+              borderBottom: activeTab === 'users' ? '2px solid #7d68a8' : '2px solid transparent'
             }}
             onClick={() => setActiveTab('users')}
           >
@@ -76,8 +76,8 @@ export default function AdminModal({
             style={{
               padding: '12px 16px', border: 'none', background: 'transparent',
               fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer',
-              color: activeTab === 'departments' ? '#2563eb' : '#64748b',
-              borderBottom: activeTab === 'departments' ? '2px solid #2563eb' : '2px solid transparent'
+              color: activeTab === 'departments' ? '#7d68a8' : '#66766c',
+              borderBottom: activeTab === 'departments' ? '2px solid #7d68a8' : '2px solid transparent'
             }}
             onClick={() => setActiveTab('departments')}
           >
@@ -90,11 +90,11 @@ export default function AdminModal({
             <div>
               {isEditingUser ? (
                 <form onSubmit={handleSaveUser} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#1e293b' }}>
+                  <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#38443c' }}>
                     {userEdit.id ? '社員アカウントの編集' : '新規アカウント追加'}
                   </div>
                   <div className="form-group">
-                    <label className="form-label">氏名 <span style={{ color: '#ef4444' }}>*</span></label>
+                    <label className="form-label">氏名 <span style={{ color: '#d97a6c' }}>*</span></label>
                     <input 
                       type="text" 
                       className="form-input" 
@@ -105,7 +105,7 @@ export default function AdminModal({
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                     <div className="form-group">
-                      <label className="form-label">メールアドレス <span style={{ color: '#ef4444' }}>*</span></label>
+                      <label className="form-label">メールアドレス <span style={{ color: '#d97a6c' }}>*</span></label>
                       <input 
                         type="email" 
                         className="form-input" 
@@ -165,7 +165,7 @@ export default function AdminModal({
               ) : (
                 <>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                    <span style={{ fontSize: '0.85rem', color: '#64748b' }}>所属部署や管理者権限を設定できます</span>
+                    <span style={{ fontSize: '0.85rem', color: '#66766c' }}>所属部署や管理者権限を設定できます</span>
                     <button 
                       className="btn-primary" 
                       style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem' }}
@@ -180,7 +180,7 @@ export default function AdminModal({
                       <div 
                         key={u.id}
                         style={{
-                          border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px 14px',
+                          border: '1px solid #e8e2d8', borderRadius: '8px', padding: '10px 14px',
                           display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#ffffff'
                         }}
                       >
@@ -189,15 +189,15 @@ export default function AdminModal({
                             {u.name.charAt(0)}
                           </div>
                           <div>
-                            <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#2d3830', display: 'flex', alignItems: 'center', gap: '6px' }}>
                               {u.name}
                               {u.role === 'admin' ? (
-                                <span style={{ fontSize: '0.65rem', background: '#dbeafe', color: '#1d4ed8', padding: '1px 5px', borderRadius: '4px' }}>管理者</span>
+                                <span style={{ fontSize: '0.65rem', background: '#efe9f8', color: '#7d68a8', padding: '1px 5px', borderRadius: '4px' }}>管理者</span>
                               ) : (
-                                <span style={{ fontSize: '0.65rem', background: '#f1f5f9', color: '#64748b', padding: '1px 5px', borderRadius: '4px' }}>一般</span>
+                                <span style={{ fontSize: '0.65rem', background: '#f2ede1', color: '#66766c', padding: '1px 5px', borderRadius: '4px' }}>一般</span>
                               )}
                             </div>
-                            <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                            <div style={{ fontSize: '0.75rem', color: '#66766c' }}>
                               {u.email} | 🏢 {u.department_name || '未所属'}
                             </div>
                           </div>
@@ -210,7 +210,7 @@ export default function AdminModal({
                           {users.length > 1 && (
                             <button 
                               className="btn-secondary" 
-                              style={{ padding: '6px', color: '#ef4444' }}
+                              style={{ padding: '6px', color: '#d97a6c' }}
                               onClick={() => {
                                 if (window.confirm(`「${u.name}」を削除してもよろしいですか？`)) onDeleteUser(u.id);
                               }}
@@ -254,14 +254,14 @@ export default function AdminModal({
                   <div 
                     key={d.id}
                     style={{
-                      border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px 14px',
+                      border: '1px solid #e8e2d8', borderRadius: '8px', padding: '10px 14px',
                       display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#ffffff'
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <Building2 size={16} color="#2563eb" />
-                      <span style={{ fontWeight: 600, fontSize: '0.9rem', color: '#0f172a' }}>{d.name}</span>
-                      <span style={{ fontSize: '0.75rem', color: '#64748b', background: '#f8fafc', padding: '2px 6px', borderRadius: '4px' }}>
+                      <Building2 size={16} color="#7d68a8" />
+                      <span style={{ fontWeight: 600, fontSize: '0.9rem', color: '#2d3830' }}>{d.name}</span>
+                      <span style={{ fontSize: '0.75rem', color: '#66766c', background: '#f8f5ef', padding: '2px 6px', borderRadius: '4px' }}>
                         所属: {d.user_count}名
                       </span>
                     </div>
@@ -279,7 +279,7 @@ export default function AdminModal({
                       </button>
                       <button 
                         className="btn-secondary" 
-                        style={{ padding: '6px', color: '#ef4444' }}
+                        style={{ padding: '6px', color: '#d97a6c' }}
                         onClick={() => {
                           if (window.confirm(`部門「${d.name}」を削除してもよろしいですか？`)) onDeleteDept(d.id);
                         }}

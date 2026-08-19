@@ -111,7 +111,7 @@ export default function ChatApp({
                       department: u.department_name
                     })}
                   >
-                    <div className="chat-user-avatar" style={{ backgroundColor: u.avatar_color || '#6366f1' }}>
+                    <div className="chat-user-avatar" style={{ backgroundColor: u.avatar_color || '#9b84c4' }}>
                       {u.name.charAt(0)}
                     </div>
                     <div className="chat-item-info">

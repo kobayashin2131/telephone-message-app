@@ -42,8 +42,8 @@ export default function ThreadDrawer({
   return (
     <div className="thread-drawer">
       <div className="thread-header">
-        <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <MessageSquare size={16} color="#2563eb" />
+        <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#2d3830', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <MessageSquare size={16} color="#7d68a8" />
           スレッド
         </div>
         <button className="btn-close" onClick={onClose}><X size={18} /></button>
@@ -57,7 +57,7 @@ export default function ThreadDrawer({
               {parentMessage.sender_name?.charAt(0)}
             </div>
             <span style={{ fontWeight: 700, fontSize: '0.85rem' }}>{parentMessage.sender_name}</span>
-            <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
+            <span style={{ fontSize: '0.7rem', color: '#99a599' }}>
               {new Date(parentMessage.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </span>
           </div>
@@ -70,14 +70,14 @@ export default function ThreadDrawer({
               currentUserId={currentUserId}
             />
           ) : (
-            <div style={{ fontSize: '0.9rem', color: '#334155', whiteSpace: 'pre-wrap' }}>
+            <div style={{ fontSize: '0.9rem', color: '#4a5750', whiteSpace: 'pre-wrap' }}>
               {parentMessage.content}
             </div>
           )}
         </div>
 
         {/* Replies List */}
-        <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 700, margin: '8px 0 4px' }}>
+        <div style={{ fontSize: '0.75rem', color: '#66766c', fontWeight: 700, margin: '8px 0 4px' }}>
           返信 ({replies.length}件)
         </div>
 
@@ -86,14 +86,14 @@ export default function ThreadDrawer({
             <div className="user-avatar-badge" style={{ width: '26px', height: '26px', fontSize: '0.7rem', backgroundColor: r.sender_avatar }}>
               {r.sender_name?.charAt(0)}
             </div>
-            <div style={{ flex: 1, background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '8px 12px' }}>
+            <div style={{ flex: 1, background: '#ffffff', border: '1px solid #e8e2d8', borderRadius: '8px', padding: '8px 12px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
-                <span style={{ fontWeight: 700, fontSize: '0.8rem', color: '#0f172a' }}>{r.sender_name}</span>
-                <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
+                <span style={{ fontWeight: 700, fontSize: '0.8rem', color: '#2d3830' }}>{r.sender_name}</span>
+                <span style={{ fontSize: '0.7rem', color: '#99a599' }}>
                   {new Date(r.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </span>
               </div>
-              <div style={{ fontSize: '0.85rem', color: '#334155', whiteSpace: 'pre-wrap' }}>
+              <div style={{ fontSize: '0.85rem', color: '#4a5750', whiteSpace: 'pre-wrap' }}>
                 {r.content}
               </div>
             </div>
@@ -102,7 +102,7 @@ export default function ThreadDrawer({
       </div>
 
       {/* Reply Input */}
-      <form onSubmit={handleSend} style={{ padding: '12px 16px', borderTop: '1px solid #e2e8f0', background: '#ffffff' }}>
+      <form onSubmit={handleSend} style={{ padding: '12px 16px', borderTop: '1px solid #e8e2d8', background: '#ffffff' }}>
         <div style={{ display: 'flex', gap: '6px' }}>
           <input 
             type="text" 

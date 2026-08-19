@@ -78,7 +78,7 @@ export default function NewCallMemoModal({
       <div className="modal-content" style={{ maxWidth: '640px' }}>
         <div className="modal-header">
           <div className="modal-title">
-            <Phone size={20} color="#2563eb" />
+            <Phone size={20} color="#7d68a8" />
             受電メモ登録（チャットカード連携）
           </div>
           <button className="btn-close" onClick={onClose}><X size={18} /></button>
@@ -88,8 +88,8 @@ export default function NewCallMemoModal({
           <div className="modal-body">
             
             {/* 1. Destination Picker */}
-            <div className="form-group" style={{ background: '#eff6ff', padding: '10px 12px', borderRadius: '8px', border: '1px solid #bfdbfe' }}>
-              <label className="form-label" style={{ color: '#1e40af' }}>📢 通知先チャット（宛先） <span style={{ color: '#ef4444' }}>*</span></label>
+            <div className="form-group" style={{ background: '#f7f3fb', padding: '10px 12px', borderRadius: '8px', border: '1px solid #ddd0ee' }}>
+              <label className="form-label" style={{ color: '#6b5590' }}>📢 通知先チャット（宛先） <span style={{ color: '#d97a6c' }}>*</span></label>
               <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '8px' }}>
                 <select 
                   className="form-select"
@@ -127,9 +127,9 @@ export default function NewCallMemoModal({
             {/* 2. Caller Contact Info with Autocomplete */}
             <div className="form-group" style={{ position: 'relative' }}>
               <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span>🏢 相手先会社名（受電先リストから検索・登録） <span style={{ color: '#ef4444' }}>*</span></span>
+                <span>🏢 相手先会社名（受電先リストから検索・登録） <span style={{ color: '#d97a6c' }}>*</span></span>
                 {selectedContactId && (
-                  <span style={{ fontSize: '0.75rem', color: '#059669', fontWeight: 600 }}>✓ 登録済み受電先を選択中</span>
+                  <span style={{ fontSize: '0.75rem', color: '#6fa382', fontWeight: 600 }}>✓ 登録済み受電先を選択中</span>
                 )}
               </label>
               <input 
@@ -148,24 +148,24 @@ export default function NewCallMemoModal({
               {showSuggestions && (
                 <div style={{
                   position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50,
-                  background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px',
+                  background: '#ffffff', border: '1px solid #d4ccbc', borderRadius: '8px',
                   boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', maxHeight: '200px', overflowY: 'auto'
                 }}>
                   {suggestions.map(s => (
                     <div 
                       key={s.id}
-                      style={{ padding: '8px 12px', borderBottom: '1px solid #f1f5f9', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                      style={{ padding: '8px 12px', borderBottom: '1px solid #f2ede1', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
                       onClick={() => selectContact(s)}
-                      onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'}
+                      onMouseEnter={(e) => e.currentTarget.style.background = '#f8f5ef'}
                       onMouseLeave={(e) => e.currentTarget.style.background = '#ffffff'}
                     >
                       <div>
-                        <div style={{ fontWeight: 600, fontSize: '0.9rem', color: '#0f172a' }}>{s.company_name}</div>
-                        <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                        <div style={{ fontWeight: 600, fontSize: '0.9rem', color: '#2d3830' }}>{s.company_name}</div>
+                        <div style={{ fontSize: '0.75rem', color: '#66766c' }}>
                           担当: {s.contact_person || '指定なし'} | 📞 {s.phone_number}
                         </div>
                       </div>
-                      <span style={{ fontSize: '0.7rem', background: '#eff6ff', color: '#2563eb', padding: '2px 6px', borderRadius: '4px', fontWeight: 600 }}>
+                      <span style={{ fontSize: '0.7rem', background: '#f7f3fb', color: '#7d68a8', padding: '2px 6px', borderRadius: '4px', fontWeight: 600 }}>
                         過去{s.call_count}回受電
                       </span>
                     </div>
@@ -200,13 +200,13 @@ export default function NewCallMemoModal({
 
             {/* Frequent Notes (CRM preview) */}
             {frequentNotes && (
-              <div style={{ fontSize: '0.8rem', background: '#fefce8', border: '1px solid #fef08a', padding: '6px 10px', borderRadius: '6px', color: '#854d0e' }}>
+              <div style={{ fontSize: '0.8rem', background: '#f8f0dc', border: '1px solid #ecdba0', padding: '6px 10px', borderRadius: '6px', color: '#8a6d33' }}>
                 💡 <strong>この相手の定番メモ:</strong> {frequentNotes}
               </div>
             )}
 
             {!selectedContactId && (
-              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', color: '#475569', cursor: 'pointer' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', color: '#4a5750', cursor: 'pointer' }}>
                 <input 
                   type="checkbox" 
                   checked={saveContact} 
@@ -232,9 +232,9 @@ export default function NewCallMemoModal({
                   type="button"
                   className={`dept-chip ${callType === 'urgent' ? 'active' : ''}`}
                   onClick={() => setCallType('urgent')}
-                  style={{ justifyContent: 'center', borderColor: callType === 'urgent' ? '#f87171' : '', background: callType === 'urgent' ? '#fee2e2' : '' }}
+                  style={{ justifyContent: 'center', borderColor: callType === 'urgent' ? '#e09a8d' : '', background: callType === 'urgent' ? '#fbe8e4' : '' }}
                 >
-                  <AlertTriangle size={14} color={callType === 'urgent' ? '#b91c1c' : ''} /> 🚨 緊急
+                  <AlertTriangle size={14} color={callType === 'urgent' ? '#a8503f' : ''} /> 🚨 緊急
                 </button>
                 <button
                   type="button"
@@ -257,8 +257,8 @@ export default function NewCallMemoModal({
                     type="button"
                     style={{
                       fontSize: '0.75rem', padding: '2px 8px', borderRadius: '4px',
-                      border: '1px solid #cbd5e1', background: subject === s ? '#dbeafe' : '#f8fafc',
-                      color: subject === s ? '#1e40af' : '#475569', cursor: 'pointer'
+                      border: '1px solid #d4ccbc', background: subject === s ? '#efe9f8' : '#f8f5ef',
+                      color: subject === s ? '#6b5590' : '#4a5750', cursor: 'pointer'
                     }}
                     onClick={() => setSubject(s)}
                   >

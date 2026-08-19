@@ -87,7 +87,7 @@ export default function AppHeader({
         )}
 
         <div className="suite-user-badge">
-          <div className="suite-user-avatar" style={{ backgroundColor: currentUser?.avatar_color || '#3b82f6' }}>
+          <div className="suite-user-avatar" style={{ backgroundColor: currentUser?.avatar_color || '#9b84c4' }}>
             {currentUser?.name?.charAt(0) || '👤'}
           </div>
           <div className="suite-user-info">

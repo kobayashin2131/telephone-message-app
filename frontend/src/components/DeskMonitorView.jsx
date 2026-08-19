@@ -69,19 +69,19 @@ export default function DeskMonitorView({
     <div className="desk-monitor-layout">
       {/* Left: Quick Call Registration Form */}
       <div className="desk-form-pane">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid #f1f5f9', paddingBottom: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid #f2ede1', paddingBottom: '12px' }}>
           <div className="app-brand-icon" style={{ width: '32px', height: '32px' }}>
             <Phone size={18} color="#fff" />
           </div>
           <div>
-            <div style={{ fontWeight: 800, fontSize: '1rem', color: '#0f172a' }}>受電メモ登録（デスク）</div>
-            <div style={{ fontSize: '0.75rem', color: '#64748b' }}>受電者: {currentUser?.name}</div>
+            <div style={{ fontWeight: 800, fontSize: '1rem', color: '#2d3830' }}>受電メモ登録（デスク）</div>
+            <div style={{ fontSize: '0.75rem', color: '#66766c' }}>受電者: {currentUser?.name}</div>
           </div>
         </div>
 
         <form onSubmit={handleQuickSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <div className="form-group">
-            <label className="form-label">相手先会社名 <span style={{ color: '#ef4444' }}>*</span></label>
+            <label className="form-label">相手先会社名 <span style={{ color: '#d97a6c' }}>*</span></label>
             <input 
               type="text" 
               className="form-input" 
@@ -154,7 +154,7 @@ export default function DeskMonitorView({
               <button 
                 type="button" 
                 className={`dept-chip ${callType === 'urgent' ? 'active' : ''}`} 
-                style={{ fontSize: '0.75rem', justifyContent: 'center', background: callType === 'urgent' ? '#fee2e2' : '' }}
+                style={{ fontSize: '0.75rem', justifyContent: 'center', background: callType === 'urgent' ? '#fbe8e4' : '' }}
                 onClick={() => setCallType('urgent')}
               >
                 🚨 緊急
@@ -215,7 +215,7 @@ export default function DeskMonitorView({
           </div>
 
           <div style={{ position: 'relative', width: '240px' }}>
-            <Search size={14} color="#94a3b8" style={{ position: 'absolute', left: '10px', top: '10px' }} />
+            <Search size={14} color="#99a599" style={{ position: 'absolute', left: '10px', top: '10px' }} />
             <input 
               type="text" 
               className="form-input" 
@@ -229,7 +229,7 @@ export default function DeskMonitorView({
 
         <div className="cards-grid">
           {filteredMemos.length === 0 ? (
-            <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '60px', color: '#94a3b8' }}>
+            <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '60px', color: '#99a599' }}>
               受電メモはありません
             </div>
           ) : (

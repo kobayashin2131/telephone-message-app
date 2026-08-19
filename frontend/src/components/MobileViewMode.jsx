@@ -15,12 +15,12 @@ export default function MobileViewMode({
   });
 
   return (
-    <div style={{ flex: 1, overflowY: 'auto', padding: '20px', background: '#f8fafc', maxWidth: '720px', margin: '0 auto', width: '100%' }}>
+    <div style={{ flex: 1, overflowY: 'auto', padding: '20px', background: '#f8f5ef', maxWidth: '720px', margin: '0 auto', width: '100%' }}>
       {/* Mobile Top Header */}
       <div style={{ background: '#ffffff', borderRadius: '18px', padding: '16px 20px', marginBottom: '16px', boxShadow: '0 2px 10px rgba(0,0,0,0.04)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <div style={{ fontWeight: 800, fontSize: '1.1rem', color: '#0f172a' }}>📱 現場・マイ受電一覧</div>
-          <div style={{ fontSize: '0.8rem', color: '#64748b' }}>ログイン: {currentUser?.name}</div>
+          <div style={{ fontWeight: 800, fontSize: '1.1rem', color: '#2d3830' }}>📱 現場・マイ受電一覧</div>
+          <div style={{ fontSize: '0.8rem', color: '#66766c' }}>ログイン: {currentUser?.name}</div>
         </div>
         <div style={{ display: 'flex', gap: '6px' }}>
           <button 
@@ -43,7 +43,7 @@ export default function MobileViewMode({
       {/* Cards Stream */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
         {myMemos.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '60px', color: '#94a3b8', background: '#ffffff', borderRadius: '18px' }}>
+          <div style={{ textAlign: 'center', padding: '60px', color: '#99a599', background: '#ffffff', borderRadius: '18px' }}>
             受電メモはありません
           </div>
         ) : (

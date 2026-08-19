@@ -35,7 +35,7 @@ export default function ContactsDirectoryModal({ onClose, contacts, onSaveContac
       <div className="modal-content" style={{ maxWidth: '680px' }}>
         <div className="modal-header">
           <div className="modal-title">
-            <BookOpen size={20} color="#2563eb" />
+            <BookOpen size={20} color="#7d68a8" />
             📇 受電先・顧客リスト（よくある発信元台帳）
           </div>
           <button className="btn-close" onClick={onClose}><X size={18} /></button>
@@ -44,11 +44,11 @@ export default function ContactsDirectoryModal({ onClose, contacts, onSaveContac
         <div className="modal-body">
           {isEditing ? (
             <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#1e293b', borderBottom: '1px solid #e2e8f0', paddingBottom: '6px' }}>
+              <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#38443c', borderBottom: '1px solid #e8e2d8', paddingBottom: '6px' }}>
                 {editForm.id ? '受電先情報の編集' : '新規受電先の登録'}
               </div>
               <div className="form-group">
-                <label className="form-label">会社名 <span style={{ color: '#ef4444' }}>*</span></label>
+                <label className="form-label">会社名 <span style={{ color: '#d97a6c' }}>*</span></label>
                 <input 
                   type="text" 
                   className="form-input" 
@@ -68,7 +68,7 @@ export default function ContactsDirectoryModal({ onClose, contacts, onSaveContac
                   />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">電話番号 <span style={{ color: '#ef4444' }}>*</span></label>
+                  <label className="form-label">電話番号 <span style={{ color: '#d97a6c' }}>*</span></label>
                   <input 
                     type="text" 
                     className="form-input" 
@@ -97,7 +97,7 @@ export default function ContactsDirectoryModal({ onClose, contacts, onSaveContac
             <>
               <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                 <div style={{ position: 'relative', flex: 1 }}>
-                  <Search size={16} color="#94a3b8" style={{ position: 'absolute', left: '10px', top: '10px' }} />
+                  <Search size={16} color="#99a599" style={{ position: 'absolute', left: '10px', top: '10px' }} />
                   <input 
                     type="text" 
                     className="form-input" 
@@ -118,7 +118,7 @@ export default function ContactsDirectoryModal({ onClose, contacts, onSaveContac
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '380px', overflowY: 'auto' }}>
                 {filtered.length === 0 ? (
-                  <div style={{ textAlign: 'center', color: '#94a3b8', padding: '30px' }}>
+                  <div style={{ textAlign: 'center', color: '#99a599', padding: '30px' }}>
                     登録されている受電先がありません
                   </div>
                 ) : (
@@ -126,28 +126,28 @@ export default function ContactsDirectoryModal({ onClose, contacts, onSaveContac
                     <div 
                       key={c.id}
                       style={{
-                        border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px 16px',
+                        border: '1px solid #e8e2d8', borderRadius: '8px', padding: '12px 16px',
                         display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#ffffff',
                         boxShadow: '0 1px 2px rgba(0,0,0,0.02)'
                       }}
                     >
                       <div>
-                        <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#2d3830', display: 'flex', alignItems: 'center', gap: '8px' }}>
                           🏢 {c.company_name}
                           {c.contact_person && (
-                            <span style={{ fontSize: '0.85rem', fontWeight: 500, color: '#475569' }}>
+                            <span style={{ fontSize: '0.85rem', fontWeight: 500, color: '#4a5750' }}>
                               ({c.contact_person})
                             </span>
                           )}
-                          <span style={{ fontSize: '0.7rem', background: '#eff6ff', color: '#2563eb', padding: '2px 6px', borderRadius: '4px' }}>
+                          <span style={{ fontSize: '0.7rem', background: '#f7f3fb', color: '#7d68a8', padding: '2px 6px', borderRadius: '4px' }}>
                             受電 {c.call_count}回
                           </span>
                         </div>
-                        <div style={{ fontSize: '0.85rem', color: '#2563eb', marginTop: '2px' }}>
+                        <div style={{ fontSize: '0.85rem', color: '#7d68a8', marginTop: '2px' }}>
                           📞 {c.phone_number}
                         </div>
                         {c.frequent_notes && (
-                          <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '4px', background: '#f8fafc', padding: '4px 8px', borderRadius: '4px' }}>
+                          <div style={{ fontSize: '0.8rem', color: '#66766c', marginTop: '4px', background: '#f8f5ef', padding: '4px 8px', borderRadius: '4px' }}>
                             📝 {c.frequent_notes}
                           </div>
                         )}
@@ -173,7 +173,7 @@ export default function ContactsDirectoryModal({ onClose, contacts, onSaveContac
                         </button>
                         <button 
                           className="btn-secondary" 
-                          style={{ padding: '6px', display: 'flex', color: '#ef4444' }}
+                          style={{ padding: '6px', display: 'flex', color: '#d97a6c' }}
                           onClick={() => {
                             if (window.confirm(`「${c.company_name}」を削除してもよろしいですか？`)) {
                               onDeleteContact(c.id);
