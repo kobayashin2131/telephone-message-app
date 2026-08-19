@@ -63,6 +63,12 @@
   --lavender-dark: #5c8f74;
   --lavender-soft: #e3f0e8;
   --lavender-softer: #f3f9f5;
+
+  /* Faint whole-page tint so the tone reads even on mostly-white
+     screens (chat), not just on accent-heavy ones (CallSync board) */
+  --bg-page: #faf7fb;
+  --surface-alt: #f6f1f9;
+  --border: #e8e0ee;
 }
 
 [data-tone="mist"] {
@@ -72,10 +78,14 @@
   --brand-soft: #e6eef1;
   --brand-softer: #f4f8f9;
 
-  --lavender: #9b84c4;
-  --lavender-dark: #7d68a8;
-  --lavender-soft: #efe9f8;
-  --lavender-softer: #f7f3fb;
+  --lavender: #c9909c;
+  --lavender-dark: #96566a;
+  --lavender-soft: #f5e7ea;
+  --lavender-softer: #faf2f3;
+
+  --bg-page: #f6f9fa;
+  --surface-alt: #eff5f6;
+  --border: #dfe8ea;
 }
 
 * {
