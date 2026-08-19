@@ -97,7 +97,7 @@ export default function ContactsDirectoryModal({ onClose, contacts, onSaveContac
             <>
               <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                 <div style={{ position: 'relative', flex: 1 }}>
-                  <Search size={16} color="#99a599" style={{ position: 'absolute', left: '10px', top: '10px' }} />
+                  <Search size={16} color="#5e6b60" style={{ position: 'absolute', left: '10px', top: '10px' }} />
                   <input 
                     type="text" 
                     className="form-input" 
@@ -118,7 +118,7 @@ export default function ContactsDirectoryModal({ onClose, contacts, onSaveContac
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '380px', overflowY: 'auto' }}>
                 {filtered.length === 0 ? (
-                  <div style={{ textAlign: 'center', color: '#99a599', padding: '30px' }}>
+                  <div style={{ textAlign: 'center', color: '#5e6b60', padding: '30px' }}>
                     登録されている受電先がありません
                   </div>
                 ) : (
@@ -132,7 +132,7 @@ export default function ContactsDirectoryModal({ onClose, contacts, onSaveContac
                       }}
                     >
                       <div>
-                        <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#2d3830', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#1e2620', display: 'flex', alignItems: 'center', gap: '8px' }}>
                           🏢 {c.company_name}
                           {c.contact_person && (
                             <span style={{ fontSize: '0.85rem', fontWeight: 500, color: '#4a5750' }}>
@@ -147,7 +147,7 @@ export default function ContactsDirectoryModal({ onClose, contacts, onSaveContac
                           📞 {c.phone_number}
                         </div>
                         {c.frequent_notes && (
-                          <div style={{ fontSize: '0.8rem', color: '#66766c', marginTop: '4px', background: '#f8f5ef', padding: '4px 8px', borderRadius: '4px' }}>
+                          <div style={{ fontSize: '0.8rem', color: '#48564c', marginTop: '4px', background: '#f8f5ef', padding: '4px 8px', borderRadius: '4px' }}>
                             📝 {c.frequent_notes}
                           </div>
                         )}

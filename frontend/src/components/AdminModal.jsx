@@ -65,7 +65,7 @@ export default function AdminModal({
             style={{
               padding: '12px 16px', border: 'none', background: 'transparent',
               fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer',
-              color: activeTab === 'users' ? '#7d68a8' : '#66766c',
+              color: activeTab === 'users' ? '#7d68a8' : '#48564c',
               borderBottom: activeTab === 'users' ? '2px solid #7d68a8' : '2px solid transparent'
             }}
             onClick={() => setActiveTab('users')}
@@ -76,7 +76,7 @@ export default function AdminModal({
             style={{
               padding: '12px 16px', border: 'none', background: 'transparent',
               fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer',
-              color: activeTab === 'departments' ? '#7d68a8' : '#66766c',
+              color: activeTab === 'departments' ? '#7d68a8' : '#48564c',
               borderBottom: activeTab === 'departments' ? '2px solid #7d68a8' : '2px solid transparent'
             }}
             onClick={() => setActiveTab('departments')}
@@ -165,7 +165,7 @@ export default function AdminModal({
               ) : (
                 <>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                    <span style={{ fontSize: '0.85rem', color: '#66766c' }}>所属部署や管理者権限を設定できます</span>
+                    <span style={{ fontSize: '0.85rem', color: '#48564c' }}>所属部署や管理者権限を設定できます</span>
                     <button 
                       className="btn-primary" 
                       style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem' }}
@@ -189,15 +189,15 @@ export default function AdminModal({
                             {u.name.charAt(0)}
                           </div>
                           <div>
-                            <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#2d3830', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#1e2620', display: 'flex', alignItems: 'center', gap: '6px' }}>
                               {u.name}
                               {u.role === 'admin' ? (
                                 <span style={{ fontSize: '0.65rem', background: '#efe9f8', color: '#7d68a8', padding: '1px 5px', borderRadius: '4px' }}>管理者</span>
                               ) : (
-                                <span style={{ fontSize: '0.65rem', background: '#f2ede1', color: '#66766c', padding: '1px 5px', borderRadius: '4px' }}>一般</span>
+                                <span style={{ fontSize: '0.65rem', background: '#f2ede1', color: '#48564c', padding: '1px 5px', borderRadius: '4px' }}>一般</span>
                               )}
                             </div>
-                            <div style={{ fontSize: '0.75rem', color: '#66766c' }}>
+                            <div style={{ fontSize: '0.75rem', color: '#48564c' }}>
                               {u.email} | 🏢 {u.department_name || '未所属'}
                             </div>
                           </div>
@@ -260,8 +260,8 @@ export default function AdminModal({
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <Building2 size={16} color="#7d68a8" />
-                      <span style={{ fontWeight: 600, fontSize: '0.9rem', color: '#2d3830' }}>{d.name}</span>
-                      <span style={{ fontSize: '0.75rem', color: '#66766c', background: '#f8f5ef', padding: '2px 6px', borderRadius: '4px' }}>
+                      <span style={{ fontWeight: 600, fontSize: '0.9rem', color: '#1e2620' }}>{d.name}</span>
+                      <span style={{ fontSize: '0.75rem', color: '#48564c', background: '#f8f5ef', padding: '2px 6px', borderRadius: '4px' }}>
                         所属: {d.user_count}名
                       </span>
                     </div>

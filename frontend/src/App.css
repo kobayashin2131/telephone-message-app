@@ -27,10 +27,12 @@
   --status-resolved: #6fa382;
   --status-resolved-soft: #e6f2ea;
 
-  /* Neutrals — warm cream bias instead of cool gray, for the "natural" feel */
-  --ink: #2d3830;
-  --ink-soft: #66766c;
-  --ink-faint: #99a599;
+  /* Neutrals — warm cream bias instead of cool gray, for the "natural" feel.
+     Darkened 2026-08-19 for legibility (owner: presbyopia) — ink/ink-soft
+     now clear WCAG AAA (7:1) on white, ink-faint clears AA (4.5:1). */
+  --ink: #1e2620;
+  --ink-soft: #48564c;
+  --ink-faint: #5e6b60;
   --bg-page: #faf8f4;
   --surface: #ffffff;
   --surface-alt: #f8f5ef;

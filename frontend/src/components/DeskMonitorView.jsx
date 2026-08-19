@@ -74,8 +74,8 @@ export default function DeskMonitorView({
             <Phone size={18} color="#fff" />
           </div>
           <div>
-            <div style={{ fontWeight: 800, fontSize: '1rem', color: '#2d3830' }}>受電メモ登録（デスク）</div>
-            <div style={{ fontSize: '0.75rem', color: '#66766c' }}>受電者: {currentUser?.name}</div>
+            <div style={{ fontWeight: 800, fontSize: '1rem', color: '#1e2620' }}>受電メモ登録（デスク）</div>
+            <div style={{ fontSize: '0.75rem', color: '#48564c' }}>受電者: {currentUser?.name}</div>
           </div>
         </div>
 
@@ -215,7 +215,7 @@ export default function DeskMonitorView({
           </div>
 
           <div style={{ position: 'relative', width: '240px' }}>
-            <Search size={14} color="#99a599" style={{ position: 'absolute', left: '10px', top: '10px' }} />
+            <Search size={14} color="#5e6b60" style={{ position: 'absolute', left: '10px', top: '10px' }} />
             <input 
               type="text" 
               className="form-input" 
@@ -229,7 +229,7 @@ export default function DeskMonitorView({
 
         <div className="cards-grid">
           {filteredMemos.length === 0 ? (
-            <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '60px', color: '#99a599' }}>
+            <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '60px', color: '#5e6b60' }}>
               受電メモはありません
             </div>
           ) : (

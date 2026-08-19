@@ -42,7 +42,7 @@ export default function ThreadDrawer({
   return (
     <div className="thread-drawer">
       <div className="thread-header">
-        <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#2d3830', display: 'flex', alignItems: 'center', gap: '6px' }}>
+        <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#1e2620', display: 'flex', alignItems: 'center', gap: '6px' }}>
           <MessageSquare size={16} color="#7d68a8" />
           スレッド
         </div>
@@ -57,7 +57,7 @@ export default function ThreadDrawer({
               {parentMessage.sender_name?.charAt(0)}
             </div>
             <span style={{ fontWeight: 700, fontSize: '0.85rem' }}>{parentMessage.sender_name}</span>
-            <span style={{ fontSize: '0.7rem', color: '#99a599' }}>
+            <span style={{ fontSize: '0.7rem', color: '#5e6b60' }}>
               {new Date(parentMessage.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </span>
           </div>
@@ -77,7 +77,7 @@ export default function ThreadDrawer({
         </div>
 
         {/* Replies List */}
-        <div style={{ fontSize: '0.75rem', color: '#66766c', fontWeight: 700, margin: '8px 0 4px' }}>
+        <div style={{ fontSize: '0.75rem', color: '#48564c', fontWeight: 700, margin: '8px 0 4px' }}>
           返信 ({replies.length}件)
         </div>
 
@@ -88,8 +88,8 @@ export default function ThreadDrawer({
             </div>
             <div style={{ flex: 1, background: '#ffffff', border: '1px solid #e8e2d8', borderRadius: '8px', padding: '8px 12px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
-                <span style={{ fontWeight: 700, fontSize: '0.8rem', color: '#2d3830' }}>{r.sender_name}</span>
-                <span style={{ fontSize: '0.7rem', color: '#99a599' }}>
+                <span style={{ fontWeight: 700, fontSize: '0.8rem', color: '#1e2620' }}>{r.sender_name}</span>
+                <span style={{ fontSize: '0.7rem', color: '#5e6b60' }}>
                   {new Date(r.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </span>
               </div>

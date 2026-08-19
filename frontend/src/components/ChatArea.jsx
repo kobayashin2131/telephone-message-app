@@ -37,7 +37,7 @@ export default function ChatArea({
 
   if (!activeChat) {
     return (
-      <div className="main-chat" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#99a599' }}>
+      <div className="main-chat" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#5e6b60' }}>
         左側のリストからチャットまたはグループを選択してください
       </div>
     );
@@ -81,7 +81,7 @@ export default function ChatArea({
       {/* Timeline */}
       <div className="chat-timeline">
         {messages.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '60px 20px', color: '#99a599' }}>
+          <div style={{ textAlign: 'center', padding: '60px 20px', color: '#5e6b60' }}>
             <div style={{ fontSize: '2.5rem', marginBottom: '8px' }}>💬</div>
             <div style={{ fontWeight: 600, fontSize: '1rem', color: '#4a5750' }}>まだメッセージはありません</div>
             <div style={{ fontSize: '0.85rem' }}>最初のメッセージや受電メモを投稿してみましょう！</div>
@@ -165,7 +165,7 @@ export default function ChatArea({
                             {m.readers?.map(r => (
                               <div key={r.user_id} style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
                                 <span>{r.name}</span>
-                                <span style={{ color: '#99a599' }}>
+                                <span style={{ color: '#5e6b60' }}>
                                   {new Date(r.read_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                 </span>
                               </div>

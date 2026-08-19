@@ -106,7 +106,7 @@ export default function NewGroupModal({ onClose, users, departments, currentUser
             <div className="form-group">
               <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span>🏢 部門ごと一括選択</span>
-                <span style={{ fontSize: '0.75rem', color: '#66766c', fontWeight: 400 }}>クリックで部門全員をON/OFF</span>
+                <span style={{ fontSize: '0.75rem', color: '#48564c', fontWeight: 400 }}>クリックで部門全員をON/OFF</span>
               </label>
               <div className="dept-chips-grid">
                 {departments.map(dept => {
@@ -151,7 +151,7 @@ export default function NewGroupModal({ onClose, users, departments, currentUser
                           {u.name.charAt(0)}
                         </div>
                         <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#38443c' }}>{u.name}</span>
-                        <span style={{ fontSize: '0.7rem', color: '#66766c', background: '#f2ede1', padding: '1px 6px', borderRadius: '4px' }}>
+                        <span style={{ fontSize: '0.7rem', color: '#48564c', background: '#f2ede1', padding: '1px 6px', borderRadius: '4px' }}>
                           {u.department_name || '未所属'}
                         </span>
                       </div>

@@ -160,8 +160,8 @@ export default function NewCallMemoModal({
                       onMouseLeave={(e) => e.currentTarget.style.background = '#ffffff'}
                     >
                       <div>
-                        <div style={{ fontWeight: 600, fontSize: '0.9rem', color: '#2d3830' }}>{s.company_name}</div>
-                        <div style={{ fontSize: '0.75rem', color: '#66766c' }}>
+                        <div style={{ fontWeight: 600, fontSize: '0.9rem', color: '#1e2620' }}>{s.company_name}</div>
+                        <div style={{ fontSize: '0.75rem', color: '#48564c' }}>
                           担当: {s.contact_person || '指定なし'} | 📞 {s.phone_number}
                         </div>
                       </div>
