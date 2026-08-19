@@ -217,10 +217,10 @@ workflows:
       - name: Increment build number
         script: |
           cd $CM_BUILD_DIR/frontend/ios/App
-          # Apple側への問い合わせ(get-latest-app-store-build-number)は反映ラグで
-          # 直前にアップロードした番号を拾えず衝突することがあるため、
-          # gitのコミット数という確実に単調増加する値を使う
-          agvtool new-version -all $(git -C $CM_BUILD_DIR rev-list --count HEAD)
+          # Apple API照会(反映ラグで衝突)・gitコミット数(Codemagicはshallow cloneなので
+          # 常に1になり衝突)のどちらもダメだったため、現在時刻(UNIX秒)を使う。
+          # 呼び出すたびに必ず増える値なので衝突しようがない。
+          agvtool new-version -all $(date +%s)
       - name: Build ipa for distribution
         script: |
           xcode-project build-ipa --project "frontend/ios/App/App.xcodeproj" --scheme "App"
