@@ -48,6 +48,21 @@
   --radius-lg: 20px;
 }
 
+html {
+  font-size: 100%;
+}
+
+/* Text size presets — scales every rem-based font-size in the app at
+   once. Owner: many users at this company are older, wanted a larger
+   default option without losing layout. */
+[data-size="large"] {
+  font-size: 115%;
+}
+
+[data-size="xl"] {
+  font-size: 130%;
+}
+
 /* ============================================================
    Color tone presets — swap which pastel family plays "brand"
    (primary) vs "lavender" (secondary accent). Accent/status/ink
@@ -347,6 +362,21 @@ button, input, select, textarea {
   border-radius: 50%;
   flex-shrink: 0;
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+
+.theme-picker-section-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  padding: 6px 10px 2px;
+}
+
+.theme-picker-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 6px 4px;
 }
 
 .suite-user-badge {
@@ -1666,6 +1696,8 @@ button, input, select, textarea {
   }
   .suite-right {
     gap: 6px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
   }
   .btn-suite-quick-call span {
     display: none;
