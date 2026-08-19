@@ -105,15 +105,30 @@ export default function App() {
           await setupNativePush(currentUserId);
         } catch (e) {
           console.error('native push setup failed', e);
+          alert('通知の設定に失敗しました。もう一度お試しください。');
+          return;
         }
       } else {
-        if ('Notification' in window && Notification.permission === 'default') {
+        if (!('Notification' in window) || !('PushManager' in window)) {
+          alert('お使いのブラウザは通知に対応していません。');
+          return;
+        }
+        if (Notification.permission === 'default') {
           await Notification.requestPermission();
+        }
+        if (Notification.permission === 'denied') {
+          alert(
+            '通知がブロックされています。ブラウザのアドレスバー左側のアイコンから'
+            + '「サイトの設定」→「通知」を「許可」に変更してから、もう一度お試しください。'
+          );
+          return;
         }
         try {
           await subscribeToPush(currentUserId); // タブを閉じていても届くPush通知
         } catch (e) {
           console.error('push subscribe failed', e);
+          alert('通知の設定に失敗しました。もう一度お試しください。');
+          return;
         }
       }
       playChime(); // unlocks audio playback with this user gesture
