@@ -2,6 +2,9 @@
   "name": "callsync-backend",
   "main": "backend/worker.js",
   "compatibility_date": "2026-08-18",
+  "vars": {
+    "GOOGLE_CLIENT_ID": "291797704774-b4vasdifrsch05n9mog6hhl1n962454i.apps.googleusercontent.com"
+  },
   "d1_databases": [
     {
       "binding": "DB",
