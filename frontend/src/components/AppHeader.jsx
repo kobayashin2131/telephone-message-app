@@ -2,6 +2,7 @@ import React from 'react';
 import {
   MessageSquare, Phone, Plus, BookOpen, Settings, Users, Sparkles, Building2, Bell, BellOff, LogOut
 } from 'lucide-react';
+import ThemePicker from './ThemePicker';
 
 export default function AppHeader({
   activeApp,
@@ -78,6 +79,8 @@ export default function AppHeader({
           {notifyEnabled ? <Bell size={16} /> : <BellOff size={16} />}
           <span className="btn-label-desktop">{notifyEnabled ? '通知ON' : '通知OFF'}</span>
         </button>
+
+        <ThemePicker />
 
         {currentUser?.role === 'admin' && (
           <button className="btn-suite-icon btn-admin-accent" onClick={onOpenAdmin} title="組織・アカウントマスター管理">
