@@ -7,10 +7,21 @@ DROP TABLE IF EXISTS group_members;
 DROP TABLE IF EXISTS chat_groups;
 DROP TABLE IF EXISTS users;
 DROP TABLE IF EXISTS departments;
+DROP TABLE IF EXISTS push_subscriptions;
+DROP TABLE IF EXISTS organizations;
+
+CREATE TABLE organizations (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+INSERT INTO organizations (id, name) VALUES (1, 'デフォルト組織');
 
 CREATE TABLE departments (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
+  organization_id INTEGER NOT NULL DEFAULT 1,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -22,6 +33,7 @@ CREATE TABLE users (
   avatar_color TEXT DEFAULT '#3b82f6',
   department_id INTEGER,
   role TEXT DEFAULT 'user',
+  organization_id INTEGER NOT NULL DEFAULT 1,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (department_id) REFERENCES departments(id)
 );
@@ -32,6 +44,7 @@ CREATE TABLE chat_groups (
   description TEXT,
   icon TEXT DEFAULT '👥',
   created_by INTEGER NOT NULL,
+  organization_id INTEGER NOT NULL DEFAULT 1,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (created_by) REFERENCES users(id)
 );
@@ -55,6 +68,7 @@ CREATE TABLE caller_contacts (
   frequent_notes TEXT,
   call_count INTEGER DEFAULT 0,
   last_called_at DATETIME,
+  organization_id INTEGER NOT NULL DEFAULT 1,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -72,6 +86,7 @@ CREATE TABLE call_memos (
   resolved_by INTEGER,
   resolved_at DATETIME,
   resolved_note TEXT,
+  organization_id INTEGER NOT NULL DEFAULT 1,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (caller_contact_id) REFERENCES caller_contacts(id),
   FOREIGN KEY (created_by) REFERENCES users(id),
@@ -146,6 +161,7 @@ CREATE TABLE push_subscriptions (
   endpoint TEXT NOT NULL UNIQUE,
   p256dh TEXT NOT NULL,
   auth TEXT NOT NULL,
+  organization_id INTEGER NOT NULL DEFAULT 1,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id)
 );

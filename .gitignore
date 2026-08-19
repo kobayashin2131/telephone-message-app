@@ -5,3 +5,5 @@ frontend/dist/
 backend/database.sqlite
 .DS_Store
 *.log
+.wrangler/
+frontend/.wrangler/
