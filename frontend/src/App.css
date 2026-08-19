@@ -505,6 +505,24 @@ button, input, select, textarea {
   transition: background 0.15s ease;
 }
 
+.btn-tool.btn-attach {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+}
+
+.btn-tool.btn-attach:hover:not(:disabled) {
+  background: var(--surface-alt);
+  color: var(--brand-dark);
+}
+
+.btn-tool.btn-attach:active:not(:disabled) {
+  background: var(--brand-soft);
+}
+
 .btn-tool:hover {
   background: var(--surface-alt);
 }

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Send, MessageSquare } from 'lucide-react';
 import CallMemoCard from './CallMemoCard';
+import { formatTime } from '../utils/datetime';
 
 export default function ThreadDrawer({ 
   parentMessage, onClose, currentUserId, onSendReply, onUpdateStatus 
@@ -58,7 +59,7 @@ export default function ThreadDrawer({
             </div>
             <span style={{ fontWeight: 700, fontSize: '0.85rem' }}>{parentMessage.sender_name}</span>
             <span style={{ fontSize: '0.7rem', color: '#5e6b60' }}>
-              {new Date(parentMessage.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              {formatTime(parentMessage.created_at)}
             </span>
           </div>
 
@@ -90,7 +91,7 @@ export default function ThreadDrawer({
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
                 <span style={{ fontWeight: 700, fontSize: '0.8rem', color: '#1e2620' }}>{r.sender_name}</span>
                 <span style={{ fontSize: '0.7rem', color: '#5e6b60' }}>
-                  {new Date(r.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  {formatTime(r.created_at)}
                 </span>
               </div>
               <div style={{ fontSize: '0.85rem', color: '#4a5750', whiteSpace: 'pre-wrap' }}>

@@ -4,8 +4,7 @@ import {
 } from 'lucide-react';
 import CallMemoCard from './CallMemoCard';
 import { uploadAttachment, ALLOWED_ATTACHMENT_TYPES } from '../utils/upload';
-
-const EMOJIS = ['👍', '🙌', '🙏', '🙇', '❤️', '🔥', '✅', '👀'];
+import { formatTime } from '../utils/datetime';
 
 function formatFileSize(bytes) {
   if (!bytes) return '';
@@ -143,7 +142,7 @@ export default function ChatArea({
                     <span className="message-sender">{m.sender_name}</span>
                     {m.sender_role === 'admin' && <span className="message-role-tag">管理者</span>}
                     <span className="message-time">
-                      {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      {formatTime(m.created_at)}
                     </span>
                   </div>
 
@@ -210,7 +209,7 @@ export default function ChatArea({
                               <div key={r.user_id} style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
                                 <span>{r.name}</span>
                                 <span style={{ color: '#5e6b60' }}>
-                                  {new Date(r.read_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                  {formatTime(r.read_at)}
                                 </span>
                               </div>
                             ))}
@@ -255,17 +254,6 @@ export default function ChatArea({
             />
             <div className="input-toolbar">
               <div className="toolbar-left">
-                {EMOJIS.slice(0, 5).map(emoji => (
-                  <button 
-                    key={emoji}
-                    type="button" 
-                    className="btn-tool"
-                    style={{ fontSize: '1rem', padding: '2px 4px' }}
-                    onClick={() => setText(prev => prev + emoji)}
-                  >
-                    {emoji}
-                  </button>
-                ))}
                 <input
                   type="file"
                   ref={fileInputRef}
@@ -275,13 +263,12 @@ export default function ChatArea({
                 />
                 <button
                   type="button"
-                  className="btn-tool"
-                  style={{ padding: '2px 4px' }}
+                  className="btn-tool btn-attach"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploading}
                   title="画像・PDFを添付"
                 >
-                  {uploading ? <Loader2 size={16} className="spin-icon" /> : <Paperclip size={16} />}
+                  {uploading ? <Loader2 size={20} className="spin-icon" /> : <Paperclip size={20} />}
                 </button>
               </div>
 
