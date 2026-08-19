@@ -142,6 +142,11 @@ Claude Codeによるコードレビュー＋大規模な不具合修正・デザ
 
 **Googleクライアント発行待ちの間、先に進められること**: 上記デプロイと、`VITE_GOOGLE_CLIENT_ID`（frontend）・`GOOGLE_CLIENT_ID`（wrangler secret/vars、backend）の設定。クライアントID到着後にこの2箇所へ設定し再デプロイすればGoogleログインも有効になる。
 
+**⚠️ ネイティブアプリ化（Android/iOS）は「いつかやる」ではなく決定事項（2026-08-19、オーナー明言）**。HOMEBASEと同様にネイティブアプリとして配布する前提で進める。
+- 現状（2026-08-19時点）はCloudflare Pagesの**Webアプリ（PWA）のみ**。Capacitor等によるネイティブラップ、パッケージ名/Bundle ID決定、署名鍵の準備は未着手
+- Google OAuthは今回「ウェブ アプリケーション」のクライアントIDのみ作成する（Web版のログイン・バックエンドでのIDトークン検証の両方に必要な土台）。Android/iOS用クライアントIDは、実際にネイティブアプリの器（署名証明書のSHA-1フィンガープリント／Bundle ID）ができてから追加作成する — 後回しではなく技術的な前提条件（値が存在しないと作成できない）
+- **次にこの作業をする人へ**: ネイティブアプリ化フェーズに入ったら、HOMEBASEの`HomebaseConnectionService`やCodemagicワークフロー（[timeline-worklog-app](../timeline-worklog-app)にも移植済み）を参考に、同じ構成をConnect Suiteにも適用できる
+
 ## 🗓️ 次回作業予定（2026-08-19時点でオーナーと合意済み・PC03等どのPCでも継続可）
 
 **合意した方針・順番**: マルチテナント化を先に実装 → その上にログイン機能を乗せる（逆順だとユーザーテーブルを作り直す手戻りが発生するため）。
