@@ -90,7 +90,13 @@ async function sendFcmToUsers(env, userIds, { title, body, data }) {
   ).bind(...userIds).all();
   if (!tokens || tokens.length === 0) return;
 
-  const accessToken = await getFcmAccessToken(env);
+  let accessToken;
+  try {
+    accessToken = await getFcmAccessToken(env);
+  } catch (e) {
+    console.error('FCM access token error', e.message);
+    return;
+  }
   const projectId = JSON.parse(env.FCM_SERVICE_ACCOUNT_JSON).project_id;
 
   await Promise.all(tokens.map(async (t) => {
@@ -110,8 +116,8 @@ async function sendFcmToUsers(env, userIds, { title, body, data }) {
       });
       if (res.status === 404 || res.status === 400) {
         // 無効・失効したトークンは片付ける
-        const errBody = await res.text();
-        if (errBody.includes('UNREGISTERED') || errBody.includes('INVALID_ARGUMENT')) {
+        const resBody = await res.text();
+        if (resBody.includes('UNREGISTERED') || resBody.includes('INVALID_ARGUMENT')) {
           await env.DB.prepare('DELETE FROM fcm_tokens WHERE id = ?').bind(t.id).run();
         }
       }
