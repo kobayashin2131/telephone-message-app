@@ -9,6 +9,7 @@ import AdminModal from './components/AdminModal';
 import LoginScreen from './components/LoginScreen';
 import { playChime } from './utils/chime';
 import { subscribeToPush, unsubscribeFromPush } from './utils/push';
+import { isNativeApp, setupNativePush } from './utils/nativePush';
 import { loadAuth, saveAuth, clearAuth } from './utils/auth';
 import './App.css';
 
@@ -72,9 +73,17 @@ export default function App() {
   const seenPendingIdsRef = useRef(null); // null = not yet initialized (skip first load)
   const hasRequestedNotifyRef = useRef(false);
 
-  // デフォルトONの場合、初回ログイン後に自動でブラウザの通知許可をリクエストする
+  // デフォルトONの場合、初回ログイン後に自動で通知許可をリクエストする
+  // ネイティブアプリ内ではFCM(ネイティブPush)、Web版ではブラウザのWeb Pushを使う
   useEffect(() => {
     if (!auth || !notifyEnabled || hasRequestedNotifyRef.current) return;
+
+    if (isNativeApp()) {
+      hasRequestedNotifyRef.current = true;
+      setupNativePush(currentUserId).catch((e) => console.error('native push setup failed', e));
+      return;
+    }
+
     if (!('Notification' in window) || Notification.permission !== 'default') return;
     hasRequestedNotifyRef.current = true;
 
@@ -91,22 +100,32 @@ export default function App() {
 
   const onToggleNotify = async () => {
     if (!notifyEnabled) {
-      if ('Notification' in window && Notification.permission === 'default') {
-        await Notification.requestPermission();
+      if (isNativeApp()) {
+        try {
+          await setupNativePush(currentUserId);
+        } catch (e) {
+          console.error('native push setup failed', e);
+        }
+      } else {
+        if ('Notification' in window && Notification.permission === 'default') {
+          await Notification.requestPermission();
+        }
+        try {
+          await subscribeToPush(currentUserId); // タブを閉じていても届くPush通知
+        } catch (e) {
+          console.error('push subscribe failed', e);
+        }
       }
       playChime(); // unlocks audio playback with this user gesture
-      try {
-        await subscribeToPush(currentUserId); // タブを閉じていても届くPush通知
-      } catch (e) {
-        console.error('push subscribe failed', e);
-      }
       setNotifyEnabled(true);
       localStorage.setItem('callsync_notify', '1');
     } else {
-      try {
-        await unsubscribeFromPush();
-      } catch (e) {
-        console.error('push unsubscribe failed', e);
+      if (!isNativeApp()) {
+        try {
+          await unsubscribeFromPush();
+        } catch (e) {
+          console.error('push unsubscribe failed', e);
+        }
       }
       setNotifyEnabled(false);
       localStorage.setItem('callsync_notify', '0');

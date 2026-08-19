@@ -9,6 +9,11 @@ const config: CapacitorConfig = {
     // Web側の更新はアプリの再ビルドなしにそのまま反映される。
     url: 'https://callsync-app.pages.dev',
     cleartext: true
+  },
+  plugins: {
+    PushNotifications: {
+      presentationOptions: ['badge', 'sound', 'alert']
+    }
   }
 };
 

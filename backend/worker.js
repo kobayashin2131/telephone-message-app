@@ -5,6 +5,122 @@ const parseOrgId = (raw) => {
   return Number.isInteger(v) && v > 0 ? v : 1;
 };
 
+// --- FCM (native Android/iOS push) helpers ---
+// Web PushはCapacitorのWebView内では信頼できないため、ネイティブアプリはこちらを使う。
+
+const base64UrlEncode = (bytes) => {
+  let str = typeof bytes === 'string' ? btoa(bytes) : btoa(String.fromCharCode(...new Uint8Array(bytes)));
+  return str.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+};
+
+function pemToArrayBuffer(pem) {
+  const b64 = pem.replace(/-----BEGIN PRIVATE KEY-----/, '').replace(/-----END PRIVATE KEY-----/, '').replace(/\s/g, '');
+  const binary = atob(b64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes.buffer;
+}
+
+let cachedFcmAccessToken = null; // { token, expiresAt } — Worker isolate内で使い回す
+
+async function getFcmAccessToken(env) {
+  if (cachedFcmAccessToken && cachedFcmAccessToken.expiresAt > Date.now() + 60000) {
+    return cachedFcmAccessToken.token;
+  }
+
+  const sa = JSON.parse(env.FCM_SERVICE_ACCOUNT_JSON);
+  const now = Math.floor(Date.now() / 1000);
+  const header = { alg: 'RS256', typ: 'JWT' };
+  const claims = {
+    iss: sa.client_email,
+    scope: 'https://www.googleapis.com/auth/firebase.messaging',
+    aud: 'https://oauth2.googleapis.com/token',
+    exp: now + 3600,
+    iat: now
+  };
+
+  const enc = new TextEncoder();
+  const unsigned = `${base64UrlEncode(enc.encode(JSON.stringify(header)))}.${base64UrlEncode(enc.encode(JSON.stringify(claims)))}`;
+
+  const key = await crypto.subtle.importKey(
+    'pkcs8',
+    pemToArrayBuffer(sa.private_key),
+    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+  const signature = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', key, enc.encode(unsigned));
+  const jwt = `${unsigned}.${base64UrlEncode(signature)}`;
+
+  const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: `grant_type=${encodeURIComponent('urn:ietf:params:oauth:grant-type:jwt-bearer')}&assertion=${encodeURIComponent(jwt)}`
+  });
+  if (!tokenRes.ok) throw new Error(`FCM token exchange failed: ${await tokenRes.text()}`);
+  const tokenData = await tokenRes.json();
+
+  cachedFcmAccessToken = { token: tokenData.access_token, expiresAt: Date.now() + (tokenData.expires_in * 1000) };
+  return tokenData.access_token;
+}
+
+async function getMessageRecipientUserIds(db, targetType, targetId, excludeUserId) {
+  if (targetType === 'dm' || targetType === 'user') {
+    return [Number(targetId)].filter(id => id !== Number(excludeUserId));
+  }
+  if (targetType === 'group') {
+    const { results } = await db.prepare('SELECT user_id FROM group_members WHERE group_id = ? AND user_id != ?')
+      .bind(targetId, excludeUserId).all();
+    return results.map(r => r.user_id);
+  }
+  if (targetType === 'department') {
+    const { results } = await db.prepare('SELECT id FROM users WHERE department_id = ? AND id != ?')
+      .bind(targetId, excludeUserId).all();
+    return results.map(r => r.id);
+  }
+  return [];
+}
+
+async function sendFcmToUsers(env, userIds, { title, body, data }) {
+  if (!env.FCM_SERVICE_ACCOUNT_JSON || !userIds || userIds.length === 0) return;
+
+  const placeholders = userIds.map(() => '?').join(',');
+  const { results: tokens } = await env.DB.prepare(
+    `SELECT id, user_id, token FROM fcm_tokens WHERE user_id IN (${placeholders})`
+  ).bind(...userIds).all();
+  if (!tokens || tokens.length === 0) return;
+
+  const accessToken = await getFcmAccessToken(env);
+  const projectId = JSON.parse(env.FCM_SERVICE_ACCOUNT_JSON).project_id;
+
+  await Promise.all(tokens.map(async (t) => {
+    try {
+      const res = await fetch(`https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: {
+            token: t.token,
+            notification: { title, body },
+            data: Object.fromEntries(Object.entries(data || {}).map(([k, v]) => [k, String(v)])),
+            android: { priority: 'high', notification: { sound: 'default' } },
+            apns: { payload: { aps: { sound: 'default' } } }
+          }
+        })
+      });
+      if (res.status === 404 || res.status === 400) {
+        // 無効・失効したトークンは片付ける
+        const errBody = await res.text();
+        if (errBody.includes('UNREGISTERED') || errBody.includes('INVALID_ARGUMENT')) {
+          await env.DB.prepare('DELETE FROM fcm_tokens WHERE id = ?').bind(t.id).run();
+        }
+      }
+    } catch (e) {
+      console.error('FCM send failed', t.id, e.message);
+    }
+  }));
+}
+
 // --- Auth helpers (PBKDF2 PIN hashing, session tokens) ---
 
 const bufToHex = (buf) => Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
@@ -346,6 +462,16 @@ export default {
           subject: body.subject
         }, orgId));
 
+        ctx.waitUntil((async () => {
+          const { results: orgUsers } = await db.prepare('SELECT id FROM users WHERE organization_id = ? AND id != ?')
+            .bind(orgId, body.created_by || 1).all();
+          await sendFcmToUsers(env, orgUsers.map(u => u.id), {
+            title: `📞 ${body.company_name} より受電`,
+            body: body.contact_person ? `${body.contact_person} 様` : (body.subject || '内容を確認してください'),
+            data: { type: 'call_memo', memoId }
+          });
+        })());
+
         return jsonResponse({ id: memoId, company_name: body.company_name, status: 'pending' });
       }
 
@@ -368,6 +494,16 @@ export default {
       if (path === '/api/push/unsubscribe' && request.method === 'POST') {
         const body = await request.json();
         await db.prepare('DELETE FROM push_subscriptions WHERE endpoint = ?').bind(body.endpoint).run();
+        return jsonResponse({ success: true });
+      }
+
+      if (path === '/api/push/register-fcm' && request.method === 'POST') {
+        const body = await request.json();
+        await db.prepare(`
+          INSERT INTO fcm_tokens (user_id, token, platform)
+          VALUES (?, ?, ?)
+          ON CONFLICT(token) DO UPDATE SET user_id = excluded.user_id, platform = excluded.platform
+        `).bind(body.user_id, body.token, body.platform || 'unknown').run();
         return jsonResponse({ success: true });
       }
 
@@ -470,6 +606,21 @@ export default {
         const msgId = info.meta.last_row_id;
         await db.prepare('INSERT OR IGNORE INTO message_reads (message_id, user_id) VALUES (?, ?)')
           .bind(msgId, body.sender_id).run();
+
+        if (body.message_type !== 'call_card' && !body.parent_id) {
+          ctx.waitUntil((async () => {
+            const recipientIds = await getMessageRecipientUserIds(db, body.target_type, body.target_id, body.sender_id);
+            if (recipientIds.length === 0) return;
+            const sender = await db.prepare('SELECT name FROM users WHERE id = ?').bind(body.sender_id).first();
+            let previewBody = body.content?.trim();
+            if (!previewBody) previewBody = body.message_type === 'image' ? '📷 画像を送信しました' : '📎 ファイルを送信しました';
+            await sendFcmToUsers(env, recipientIds, {
+              title: sender?.name || '新着メッセージ',
+              body: previewBody.slice(0, 100),
+              data: { type: 'message', targetType: body.target_type, targetId: body.target_id }
+            });
+          })());
+        }
 
         return jsonResponse({ id: msgId, ...body, created_at: new Date().toISOString() });
       }
