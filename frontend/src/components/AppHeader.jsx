@@ -39,7 +39,7 @@ export default function AppHeader({
             className={`suite-tab-btn ${activeApp === 'chat' ? 'active' : ''}`}
             onClick={() => onChangeApp('chat')}
           >
-            <MessageSquare size={16} />
+            <MessageSquare size={19} />
             <span>社内チャット</span>
             {unreadMessagesCount > 0 && (
               <span className="suite-badge-pill unread-pill">{unreadMessagesCount}</span>
@@ -50,7 +50,7 @@ export default function AppHeader({
             className={`suite-tab-btn ${activeApp === 'callsync' ? 'active' : ''}`}
             onClick={() => onChangeApp('callsync')}
           >
-            <Phone size={16} />
+            <Phone size={19} />
             <span>電話連絡（CallSync）</span>
             {unhandledCalls > 0 && (
               <span className="suite-badge-pill urgent-pill">{unhandledCalls}件 未対応</span>

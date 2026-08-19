@@ -1,0 +1,231 @@
+workflows:
+  android-debug:
+    name: Android Debug APK Build
+    max_build_duration: 30
+    instance_type: mac_mini_m1
+    environment:
+      java: 21
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: 'main'
+    scripts:
+      - name: Install Node Packages
+        script: |
+          cd frontend
+          npm install
+      - name: Build web app and sync Capacitor Android
+        script: |
+          cd frontend
+          npm run build
+          npx cap sync android
+      - name: Build Debug APK
+        script: |
+          cd frontend/android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+    artifacts:
+      - frontend/android/app/build/outputs/apk/debug/*.apk
+
+  # ビルドのみ。mainへのpushで毎回自動実行し、コンパイルエラーを早期発見する。
+  # Play Storeへは配信しない（実害なし・安全）。
+  android-release-build:
+    name: Android Release AAB Build (ビルドのみ・自動)
+    max_build_duration: 30
+    instance_type: mac_mini_m1
+    environment:
+      java: 21
+      groups:
+        # Codemagicダッシュボード側で作成する環境変数グループ。
+        # このグループに以下を「Secret」として登録すること:
+        #   CM_KEYSTORE            : キーストアファイル(.jks)をbase64エンコードした文字列
+        #   CM_KEYSTORE_PASSWORD   : キーストアのパスワード
+        #   CM_KEY_ALIAS           : キーのエイリアス
+        #   CM_KEY_PASSWORD        : キーのパスワード
+        - google_play_signing
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: 'main'
+    scripts:
+      - name: Install Node Packages
+        script: |
+          cd frontend
+          npm install
+      - name: Build web app and sync Capacitor Android
+        script: |
+          cd frontend
+          npm run build
+          npx cap sync android
+      - name: Decode keystore
+        script: |
+          echo $CM_KEYSTORE | base64 --decode > $CM_BUILD_DIR/connectsuite-release.jks
+          echo "CM_KEYSTORE_PATH=$CM_BUILD_DIR/connectsuite-release.jks" >> $CM_ENV
+      - name: Compute version code from git history
+        script: |
+          echo "CM_VERSION_CODE=$(git rev-list --count HEAD)" >> $CM_ENV
+      - name: Build Release AAB
+        script: |
+          cd frontend/android
+          chmod +x gradlew
+          ./gradlew bundleRelease
+    artifacts:
+      - frontend/android/app/build/outputs/bundle/release/*.aab
+
+  # Play Storeへの実配信。「vX.Y.Z」形式のgitタグをpushした時だけ発火する
+  # （例: git tag v1.0.2 && git push origin v1.0.2）。
+  android-release-publish:
+    name: Android Release Publish (Google Play内部テストへ自動アップロード・タグpush時のみ)
+    max_build_duration: 30
+    instance_type: mac_mini_m1
+    environment:
+      java: 21
+      groups:
+        - google_play_signing
+        # 別グループ。以下を「Secret」として登録すること:
+        #   GCLOUD_SERVICE_ACCOUNT_CREDENTIALS : Google CloudサービスアカウントのJSONキー(中身をそのまま貼り付け)
+        - google_play_publishing
+    triggering:
+      events:
+        - tag
+      tag_patterns:
+        - pattern: 'v*'
+    scripts:
+      - name: Install Node Packages
+        script: |
+          cd frontend
+          npm install
+      - name: Build web app and sync Capacitor Android
+        script: |
+          cd frontend
+          npm run build
+          npx cap sync android
+      - name: Decode keystore
+        script: |
+          echo $CM_KEYSTORE | base64 --decode > $CM_BUILD_DIR/connectsuite-release.jks
+          echo "CM_KEYSTORE_PATH=$CM_BUILD_DIR/connectsuite-release.jks" >> $CM_ENV
+      - name: Compute version code from git history
+        script: |
+          echo "CM_VERSION_CODE=$(git rev-list --count HEAD)" >> $CM_ENV
+      - name: Build Release AAB
+        script: |
+          cd frontend/android
+          chmod +x gradlew
+          ./gradlew bundleRelease
+    artifacts:
+      - frontend/android/app/build/outputs/bundle/release/*.aab
+    publishing:
+      google_play:
+        credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+        track: internal
+        submit_as_draft: false
+
+  # ビルドのみ。mainへのpushで毎回自動実行し、署名まわりの設定ミスやコンパイルエラーを早期発見する。
+  # TestFlightへは配信しない（実害なし・安全）。
+  ios-release-build:
+    name: iOS Release Build (ビルドのみ・自動)
+    max_build_duration: 60
+    instance_type: mac_mini_m1
+    integrations:
+      app_store_connect: Connect Suite Codemagic Admin
+    environment:
+      groups:
+        # CERTIFICATE_PRIVATE_KEY: iOS配布証明書用に一度だけ生成し使い回すRSA秘密鍵(Secret)
+        - ios_signing
+      xcode: latest
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: 'main'
+    scripts:
+      - name: Install Node Packages
+        script: |
+          cd frontend
+          npm install
+      - name: Build web app and sync Capacitor iOS
+        script: |
+          cd frontend
+          npm run build
+          npx cap sync ios
+      - name: Use system default keychain
+        script: |
+          keychain initialize
+      - name: Fetch signing files
+        script: |
+          app-store-connect fetch-signing-files "com.easystance.connectsuite" \
+            --type IOS_APP_STORE \
+            --certificate-key=@env:CERTIFICATE_PRIVATE_KEY \
+            --create
+      - name: Add certificates to keychain
+        script: |
+          keychain add-certificates
+      - name: Set up code signing settings on Xcode project
+        script: |
+          xcode-project use-profiles
+      - name: Build ipa for distribution
+        script: |
+          xcode-project build-ipa --project "frontend/ios/App/App.xcodeproj" --scheme "App"
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+
+  # TestFlightへの実配信。「vX.Y.Z」形式のgitタグをpushした時だけ発火する
+  # （例: git tag v1.0.2 && git push origin v1.0.2）。
+  ios-release-publish:
+    name: iOS Release Publish (TestFlightへ自動アップロード・タグpush時のみ)
+    max_build_duration: 60
+    instance_type: mac_mini_m1
+    integrations:
+      app_store_connect: Connect Suite Codemagic Admin
+    environment:
+      groups:
+        - ios_signing
+      xcode: latest
+    triggering:
+      events:
+        - tag
+      tag_patterns:
+        - pattern: 'v*'
+    scripts:
+      - name: Install Node Packages
+        script: |
+          cd frontend
+          npm install
+      - name: Build web app and sync Capacitor iOS
+        script: |
+          cd frontend
+          npm run build
+          npx cap sync ios
+      - name: Use system default keychain
+        script: |
+          keychain initialize
+      - name: Fetch signing files
+        script: |
+          app-store-connect fetch-signing-files "com.easystance.connectsuite" \
+            --type IOS_APP_STORE \
+            --certificate-key=@env:CERTIFICATE_PRIVATE_KEY \
+            --create
+      - name: Add certificates to keychain
+        script: |
+          keychain add-certificates
+      - name: Set up code signing settings on Xcode project
+        script: |
+          xcode-project use-profiles
+      - name: Increment build number
+        script: |
+          cd $CM_BUILD_DIR/frontend/ios/App
+          LATEST_BUILD_NUMBER=$(app-store-connect get-latest-app-store-build-number "com.easystance.connectsuite")
+          agvtool new-version -all $(($LATEST_BUILD_NUMBER + 1))
+      - name: Build ipa for distribution
+        script: |
+          xcode-project build-ipa --project "frontend/ios/App/App.xcodeproj" --scheme "App"
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
