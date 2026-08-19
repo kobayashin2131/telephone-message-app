@@ -9,6 +9,8 @@ export default function LoginScreen({ onLogin }) {
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [googleReady, setGoogleReady] = useState(false);
+  const [googleUnavailable, setGoogleUnavailable] = useState(false);
   const googleButtonRef = useRef(null);
 
   const handleGoogleCredential = async (response) => {
@@ -31,19 +33,49 @@ export default function LoginScreen({ onLogin }) {
   };
 
   useEffect(() => {
-    if (!GOOGLE_CLIENT_ID || !window.google?.accounts?.id || !googleButtonRef.current) return;
-    window.google.accounts.id.initialize({
-      client_id: GOOGLE_CLIENT_ID,
-      callback: handleGoogleCredential
-    });
-    window.google.accounts.id.renderButton(googleButtonRef.current, {
-      theme: 'outline',
-      size: 'large',
-      width: 320,
-      text: 'signin_with',
-      locale: 'ja'
-    });
+    if (!GOOGLE_CLIENT_ID) return;
+
+    let cancelled = false;
+
+    const renderGoogleButton = () => {
+      if (cancelled || !window.google?.accounts?.id || !googleButtonRef.current) return false;
+      window.google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: handleGoogleCredential
+      });
+      window.google.accounts.id.renderButton(googleButtonRef.current, {
+        theme: 'outline',
+        size: 'large',
+        width: 320,
+        text: 'signin_with',
+        locale: 'ja'
+      });
+      setGoogleReady(true);
+      return true;
+    };
+
+    // Googleの外部スクリプトは非同期読み込みのため、まだ準備できていない場合がある。
+    // 読み込み完了まで短い間隔でリトライする（WebView環境では特に遅れやすい）。
+    if (!renderGoogleButton()) {
+      let attempts = 0;
+      const intervalId = setInterval(() => {
+        attempts += 1;
+        if (renderGoogleButton()) {
+          clearInterval(intervalId);
+        } else if (attempts >= 20) {
+          // 約6秒待っても読み込めない場合はGoogleログインを諦め、ID+PINのみ表示する
+          clearInterval(intervalId);
+          setGoogleUnavailable(true);
+        }
+      }, 300);
+      return () => {
+        cancelled = true;
+        clearInterval(intervalId);
+      };
+    }
   }, []);
+
+  const showGoogleSection = GOOGLE_CLIENT_ID && !googleUnavailable;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -81,9 +113,11 @@ export default function LoginScreen({ onLogin }) {
           </div>
         </div>
 
-        {GOOGLE_CLIENT_ID && (
+        {showGoogleSection && (
           <>
-            <div className="login-google-btn" ref={googleButtonRef} />
+            <div className="login-google-btn" ref={googleButtonRef}>
+              {!googleReady && <span className="login-google-loading">読み込み中…</span>}
+            </div>
             <div className="login-divider"><span>または</span></div>
           </>
         )}

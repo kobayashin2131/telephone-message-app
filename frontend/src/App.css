@@ -1907,6 +1907,13 @@ button, input, select, textarea {
 .login-google-btn {
   display: flex;
   justify-content: center;
+  align-items: center;
+  min-height: 40px;
+}
+
+.login-google-loading {
+  font-size: 0.82rem;
+  color: var(--ink-faint);
 }
 
 .login-divider {
