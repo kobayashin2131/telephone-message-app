@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Palette, Check } from 'lucide-react';
+import { Settings, Check } from 'lucide-react';
 
 export const TONES = [
   { id: 'sage', label: 'セージ', swatch: '#7aab8f' },
@@ -48,7 +48,7 @@ export default function ThemePicker() {
   return (
     <div className="theme-picker" ref={ref}>
       <button className="btn-suite-icon" onClick={() => setOpen(o => !o)} title="表示設定（配色・文字サイズ）">
-        <Palette size={16} />
+        <Settings size={16} />
       </button>
       {open && (
         <div className="theme-picker-popover">

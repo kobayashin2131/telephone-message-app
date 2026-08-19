@@ -84,7 +84,7 @@ export default function AppHeader({
 
         {currentUser?.role === 'admin' && (
           <button className="btn-suite-icon btn-admin-accent" onClick={onOpenAdmin} title="組織・アカウントマスター管理">
-            <Settings size={16} />
+            <Building2 size={16} />
             <span className="btn-label-desktop">組織管理</span>
           </button>
         )}
