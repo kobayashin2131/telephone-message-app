@@ -82,15 +82,15 @@ button, input, select, textarea {
 .suite-header {
   height: 60px;
   min-height: 60px;
-  background: var(--brand-darker);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 20px;
-  color: #fff;
+  color: var(--ink);
   z-index: 50;
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-sm);
 }
 
 .suite-left {
@@ -113,7 +113,7 @@ button, input, select, textarea {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 8px rgba(18, 140, 110, 0.45);
+  box-shadow: 0 2px 8px rgba(122, 171, 143, 0.4);
 }
 
 .suite-brand-text {
@@ -126,12 +126,12 @@ button, input, select, textarea {
   font-size: 1.1rem;
   font-weight: 800;
   letter-spacing: -0.2px;
-  color: #fff;
+  color: var(--ink);
 }
 
 .suite-subtitle {
   font-size: 0.62rem;
-  color: #7fd4b8;
+  color: var(--brand-darker);
   font-weight: 700;
   letter-spacing: 0.5px;
   text-transform: uppercase;
@@ -141,10 +141,10 @@ button, input, select, textarea {
   display: flex;
   align-items: center;
   gap: 4px;
-  background: rgba(255, 255, 255, 0.07);
+  background: var(--surface-alt);
   padding: 4px;
   border-radius: 11px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border);
 }
 
 .suite-tab-btn {
@@ -155,7 +155,7 @@ button, input, select, textarea {
   border-radius: 8px;
   border: none;
   background: transparent;
-  color: #b7c4be;
+  color: var(--ink-soft);
   font-size: 0.88rem;
   font-weight: 700;
   cursor: pointer;
@@ -163,13 +163,14 @@ button, input, select, textarea {
 }
 
 .suite-tab-btn:hover {
-  color: #fff;
-  background: rgba(255, 255, 255, 0.08);
+  color: var(--ink);
+  background: var(--border);
 }
 
 .suite-tab-btn.active {
-  background: #fff;
+  background: var(--surface);
   color: var(--brand-darker);
+  box-shadow: var(--shadow-sm);
 }
 
 .suite-badge-pill {
@@ -224,9 +225,9 @@ button, input, select, textarea {
   display: flex;
   align-items: center;
   gap: 6px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: #cdd9d3;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  color: var(--ink-soft);
   border-radius: 9px;
   padding: 8px 12px;
   font-size: 0.82rem;
@@ -236,33 +237,33 @@ button, input, select, textarea {
 }
 
 .btn-suite-icon:hover {
-  background: rgba(255, 255, 255, 0.15);
-  color: #fff;
+  background: var(--border);
+  color: var(--ink);
 }
 
 .btn-suite-icon.btn-admin-accent {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(127, 212, 184, 0.35);
-  color: #9fe2c9;
+  background: var(--lavender-softer);
+  border-color: var(--lavender);
+  color: var(--lavender-dark);
 }
 
 .btn-suite-icon.btn-admin-accent:hover {
-  background: rgba(127, 212, 184, 0.18);
-  color: #fff;
+  background: var(--lavender-soft);
+  color: var(--lavender-dark);
 }
 
 .btn-suite-icon.btn-notify-on {
-  background: rgba(127, 212, 184, 0.18);
-  border-color: rgba(127, 212, 184, 0.4);
-  color: #9fe2c9;
+  background: var(--brand-soft);
+  border-color: var(--brand);
+  color: var(--brand-dark);
 }
 
 .suite-user-badge {
   display: flex;
   align-items: center;
   gap: 10px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
   padding: 5px 12px;
   border-radius: 20px;
   position: relative;
@@ -287,13 +288,13 @@ button, input, select, textarea {
 
 .suite-user-label {
   font-size: 0.63rem;
-  color: #9fb0a8;
+  color: var(--ink-faint);
   font-weight: 600;
   line-height: 1;
 }
 
 .suite-user-name {
-  color: #fff;
+  color: var(--ink);
   font-weight: 700;
   font-size: 0.85rem;
 }
@@ -400,17 +401,17 @@ button, input, select, textarea {
 .chat-sidebar {
   width: 292px;
   min-width: 292px;
-  background: var(--brand-darker);
-  color: #f4f8f6;
+  background: var(--surface);
+  color: var(--ink);
   display: flex;
   flex-direction: column;
   height: 100%;
-  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  border-right: 1px solid var(--border);
 }
 
 .chat-sidebar-header {
   padding: 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -425,16 +426,16 @@ button, input, select, textarea {
 .chat-sidebar-title {
   font-size: 0.9rem;
   font-weight: 700;
-  color: #f0f5f3;
+  color: var(--ink);
 }
 
 .btn-icon-circle-add {
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  color: #fff;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  color: var(--ink-soft);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -445,27 +446,28 @@ button, input, select, textarea {
 .btn-icon-circle-add:hover {
   background: var(--brand);
   border-color: var(--brand);
+  color: #fff;
 }
 
 .chat-search-bar {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: rgba(255, 255, 255, 0.07);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 6px 10px;
 }
 
 .chat-search-bar .search-icon {
-  color: #9fb0a8;
+  color: var(--ink-faint);
 }
 
 .chat-search-bar input {
   background: transparent;
   border: none;
   outline: none;
-  color: #fff;
+  color: var(--ink);
   font-size: 0.82rem;
   width: 100%;
 }
@@ -489,7 +491,7 @@ button, input, select, textarea {
   font-size: 0.7rem;
   font-weight: 700;
   text-transform: uppercase;
-  color: #8ba39a;
+  color: var(--ink-faint);
   letter-spacing: 0.4px;
   padding: 0 8px 4px;
 }
@@ -508,7 +510,7 @@ button, input, select, textarea {
   border-radius: 10px;
   border: none;
   background: transparent;
-  color: #cfdad5;
+  color: var(--ink-soft);
   text-align: left;
   cursor: pointer;
   width: 100%;
@@ -516,13 +518,13 @@ button, input, select, textarea {
 }
 
 .chat-list-item:hover {
-  background: rgba(255, 255, 255, 0.06);
-  color: #fff;
+  background: var(--surface-alt);
+  color: var(--ink);
 }
 
 .chat-list-item.active {
-  background: rgba(255, 255, 255, 0.14);
-  color: #fff;
+  background: var(--brand-soft);
+  color: var(--brand-dark);
   font-weight: 700;
   border-left: 3px solid var(--brand);
 }
@@ -559,7 +561,7 @@ button, input, select, textarea {
 
 .chat-item-sub {
   font-size: 0.72rem;
-  color: #8ba39a;
+  color: var(--ink-faint);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1786,13 +1788,13 @@ button, input, select, textarea {
   justify-content: center;
   border: none;
   background: transparent;
-  color: rgba(255, 255, 255, 0.75);
+  color: var(--ink-faint);
   cursor: pointer;
   padding: 4px;
   border-radius: var(--radius-sm);
 }
 
 .suite-user-logout-btn:hover {
-  color: #fff;
-  background: rgba(255, 255, 255, 0.14);
+  color: var(--status-pending);
+  background: var(--status-pending-soft);
 }
