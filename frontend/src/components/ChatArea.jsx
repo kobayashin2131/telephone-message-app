@@ -3,7 +3,7 @@ import {
   Send, Phone, Users, Building2, MessageSquare, Check, Eye, Smile, Paperclip, Search, PlusCircle, ArrowLeft, FileText, X, Loader2
 } from 'lucide-react';
 import CallMemoCard from './CallMemoCard';
-import { uploadAttachment, ALLOWED_ATTACHMENT_TYPES } from '../utils/upload';
+import { uploadAttachment, ALLOWED_ATTACHMENT_TYPES, MAX_ATTACHMENT_SIZE } from '../utils/upload';
 import { formatTime } from '../utils/datetime';
 
 function formatFileSize(bytes) {
@@ -17,7 +17,9 @@ export default function ChatArea({
 }) {
   const [text, setText] = useState('');
   const [activeReadersPopover, setActiveReadersPopover] = useState(null);
-  const [uploading, setUploading] = useState(false);
+  const [pendingFile, setPendingFile] = useState(null);
+  const [pendingPreviewUrl, setPendingPreviewUrl] = useState(null);
+  const [sending, setSending] = useState(false);
   const [uploadError, setUploadError] = useState('');
   const fileInputRef = useRef(null);
   const timelineEndRef = useRef(null);
@@ -30,9 +32,39 @@ export default function ChatArea({
     scrollToBottom();
   }, [messages]);
 
-  const handleSend = (e) => {
+  useEffect(() => {
+    // プレビュー用のBlob URLはコンポーネントが破棄・差し替えられる際に解放する
+    return () => {
+      if (pendingPreviewUrl) URL.revokeObjectURL(pendingPreviewUrl);
+    };
+  }, [pendingPreviewUrl]);
+
+  const clearPendingFile = () => {
+    if (pendingPreviewUrl) URL.revokeObjectURL(pendingPreviewUrl);
+    setPendingFile(null);
+    setPendingPreviewUrl(null);
+  };
+
+  const handleSend = async (e) => {
     e.preventDefault();
-    if (!text.trim()) return;
+    if (!text.trim() && !pendingFile) return;
+
+    if (pendingFile) {
+      setUploadError('');
+      setSending(true);
+      try {
+        const uploaded = await uploadAttachment(pendingFile, organizationId);
+        onSendMessage(text.trim(), uploaded);
+        setText('');
+        clearPendingFile();
+      } catch (err) {
+        setUploadError(err.message);
+      } finally {
+        setSending(false);
+      }
+      return;
+    }
+
     onSendMessage(text.trim());
     setText('');
   };
@@ -44,21 +76,24 @@ export default function ChatArea({
     }
   };
 
-  const handleFileSelected = async (e) => {
+  const handleFileSelected = (e) => {
     const file = e.target.files?.[0];
     e.target.value = ''; // 同じファイルを連続で選んでもonChangeが発火するように
     if (!file) return;
 
     setUploadError('');
-    setUploading(true);
-    try {
-      const uploaded = await uploadAttachment(file, organizationId);
-      onSendMessage('', uploaded);
-    } catch (err) {
-      setUploadError(err.message);
-    } finally {
-      setUploading(false);
+    if (!ALLOWED_ATTACHMENT_TYPES.includes(file.type)) {
+      setUploadError('画像またはPDFのみ添付できます');
+      return;
     }
+    if (file.size > MAX_ATTACHMENT_SIZE) {
+      setUploadError('ファイルサイズは15MBまでです');
+      return;
+    }
+
+    if (pendingPreviewUrl) URL.revokeObjectURL(pendingPreviewUrl);
+    setPendingFile(file);
+    setPendingPreviewUrl(file.type.startsWith('image/') ? URL.createObjectURL(file) : null);
   };
 
   if (!activeChat) {
@@ -244,9 +279,22 @@ export default function ChatArea({
         )}
         <form onSubmit={handleSend}>
           <div className="input-box-wrapper">
-            <textarea 
+            {pendingFile && (
+              <div className="pending-attachment-chip">
+                {pendingPreviewUrl ? (
+                  <img src={pendingPreviewUrl} alt={pendingFile.name} className="pending-attachment-thumb" />
+                ) : (
+                  <FileText size={18} />
+                )}
+                <span className="pending-attachment-name">{pendingFile.name}</span>
+                <button type="button" onClick={clearPendingFile} disabled={sending} title="添付を取り消す">
+                  <X size={14} />
+                </button>
+              </div>
+            )}
+            <textarea
               className="chat-textarea"
-              placeholder={`${activeChat.name} へメッセージを送信... (Enterで送信, Shift+Enterで改行)`}
+              placeholder={pendingFile ? '添付にひとことメッセージを添える(空欄でも送信できます)' : `${activeChat.name} へメッセージを送信... (Enterで送信, Shift+Enterで改行)`}
               value={text}
               onChange={(e) => setText(e.target.value)}
               onKeyDown={handleKeyDown}
@@ -265,24 +313,25 @@ export default function ChatArea({
                   type="button"
                   className="btn-tool btn-attach"
                   onClick={() => fileInputRef.current?.click()}
-                  disabled={uploading}
+                  disabled={sending}
                   title="画像・PDFを添付"
                 >
-                  {uploading ? <Loader2 size={20} className="spin-icon" /> : <Paperclip size={20} />}
+                  <Paperclip size={20} />
                 </button>
               </div>
 
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   className="btn-secondary"
                   style={{ fontSize: '0.75rem', padding: '4px 8px', display: 'flex', alignItems: 'center', gap: '4px' }}
                   onClick={() => onOpenNewCallMemo(activeChat)}
                 >
                   <Phone size={12} color="#7d68a8" /> 受電メモ
                 </button>
-                <button type="submit" className="btn-send" disabled={!text.trim()}>
-                  <Send size={14} /> 送信
+                <button type="submit" className="btn-send" disabled={sending || (!text.trim() && !pendingFile)}>
+                  {sending ? <Loader2 size={14} className="spin-icon" /> : <Send size={14} />}
+                  {sending ? '送信中…' : '送信'}
                 </button>
               </div>
             </div>

@@ -67,8 +67,27 @@ export default function App() {
   };
 
   // Chime + browser notification on new incoming calls
-  const [notifyEnabled, setNotifyEnabled] = useState(() => localStorage.getItem('callsync_notify') === '1');
+  // スマホでは通知が無いと実用にならないため、明示的にOFFにされていない限りデフォルトON
+  const [notifyEnabled, setNotifyEnabled] = useState(() => localStorage.getItem('callsync_notify') !== '0');
   const seenPendingIdsRef = useRef(null); // null = not yet initialized (skip first load)
+  const hasRequestedNotifyRef = useRef(false);
+
+  // デフォルトONの場合、初回ログイン後に自動でブラウザの通知許可をリクエストする
+  useEffect(() => {
+    if (!auth || !notifyEnabled || hasRequestedNotifyRef.current) return;
+    if (!('Notification' in window) || Notification.permission !== 'default') return;
+    hasRequestedNotifyRef.current = true;
+
+    (async () => {
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') return;
+      try {
+        await subscribeToPush(currentUserId);
+      } catch (e) {
+        console.error('push subscribe failed', e);
+      }
+    })();
+  }, [auth, currentUserId, notifyEnabled]);
 
   const onToggleNotify = async () => {
     if (!notifyEnabled) {

@@ -921,6 +921,55 @@ button, input, select, textarea {
   display: flex;
 }
 
+.pending-attachment-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  margin-bottom: 6px;
+  color: var(--ink-soft);
+}
+
+.pending-attachment-thumb {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.pending-attachment-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pending-attachment-chip button {
+  border: none;
+  background: var(--surface-alt);
+  color: var(--ink-soft);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.pending-attachment-chip button:hover:not(:disabled) {
+  background: var(--status-pending-soft);
+  color: var(--status-pending);
+}
+
 .spin-icon {
   animation: spin-anim 0.8s linear infinite;
 }
