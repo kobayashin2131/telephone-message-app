@@ -151,23 +151,10 @@ export default function App() {
     return () => clearInterval(timer);
   }, [auth, notifyEnabled]);
 
-  const hasAutoSelectedChatRef = useRef(false);
-
   useEffect(() => {
     if (users.length > 0) {
       const found = users.find(u => u.id === currentUserId) || users[0];
       setCurrentUser(found);
-      if (!hasAutoSelectedChatRef.current && !activeChat && groups.length > 0) {
-        hasAutoSelectedChatRef.current = true;
-        setActiveChat({
-          type: 'group',
-          id: groups[0].id,
-          name: groups[0].name,
-          icon: groups[0].icon,
-          memberCount: groups[0].member_count,
-          description: groups[0].description
-        });
-      }
     }
   }, [users, currentUserId]);
 
