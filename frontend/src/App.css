@@ -592,6 +592,8 @@ button, input, select, textarea {
   display: flex;
   align-items: center;
   gap: 10px;
+  min-width: 0;
+  flex: 1;
 }
 
 .chat-header-title {
@@ -601,6 +603,14 @@ button, input, select, textarea {
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
+}
+
+.chat-header-title-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 
 .chat-header-desc {
@@ -1564,12 +1574,22 @@ button, input, select, textarea {
   .suite-user-label {
     display: none;
   }
-  .suite-user-select {
+  .suite-user-name {
     max-width: 84px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     font-size: 0.72rem;
   }
   .suite-user-badge {
     padding: 4px 8px;
+  }
+
+  .chat-header-desc {
+    display: none;
+  }
+  .chat-header-title-text {
+    font-size: 0.95rem;
   }
 
   /* Chat: sidebar and conversation each take the full pane; only

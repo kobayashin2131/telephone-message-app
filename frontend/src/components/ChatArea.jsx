@@ -51,12 +51,12 @@ export default function ChatArea({
           <button className="btn-back-mobile" onClick={onBack} aria-label="チャット一覧に戻る">
             <ArrowLeft size={18} />
           </button>
-          <span style={{ fontSize: '1.4rem' }}>{activeChat.icon || '💬'}</span>
-          <div>
+          <span style={{ fontSize: '1.4rem', flexShrink: 0 }}>{activeChat.icon || '💬'}</span>
+          <div style={{ minWidth: 0 }}>
             <div className="chat-header-title">
-              {activeChat.name}
+              <span className="chat-header-title-text">{activeChat.name}</span>
               {activeChat.memberCount !== undefined && (
-                <span style={{ fontSize: '0.75rem', background: '#eff6ff', color: '#2563eb', padding: '2px 8px', borderRadius: '12px', fontWeight: 600 }}>
+                <span style={{ flexShrink: 0, fontSize: '0.75rem', background: '#eff6ff', color: '#2563eb', padding: '2px 8px', borderRadius: '12px', fontWeight: 600 }}>
                   {activeChat.memberCount}名参加
                 </span>
               )}
@@ -68,12 +68,12 @@ export default function ChatArea({
         </div>
 
         <div className="chat-header-actions">
-          <button 
-            className="btn-secondary" 
+          <button
+            className="btn-secondary"
             style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', borderColor: '#bfdbfe', color: '#1e40af', background: '#eff6ff' }}
             onClick={() => onOpenNewCallMemo(activeChat)}
           >
-            <Phone size={14} /> このチャットに受電メモ投稿
+            <Phone size={14} /> <span className="btn-label-desktop">このチャットに受電メモ投稿</span>
           </button>
         </div>
       </div>
