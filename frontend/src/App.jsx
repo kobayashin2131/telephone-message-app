@@ -6,13 +6,17 @@ import NewGroupModal from './components/NewGroupModal';
 import NewCallMemoModal from './components/NewCallMemoModal';
 import ContactsDirectoryModal from './components/ContactsDirectoryModal';
 import AdminModal from './components/AdminModal';
+import LoginScreen from './components/LoginScreen';
 import { playChime } from './utils/chime';
 import { subscribeToPush, unsubscribeFromPush } from './utils/push';
+import { loadAuth, saveAuth, clearAuth } from './utils/auth';
 import './App.css';
 
 const API_BASE = 'https://callsync-backend.nonba30.workers.dev/api';
 
 export default function App() {
+  const [auth, setAuth] = useState(() => loadAuth());
+
   const [users, setUsers] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [groups, setGroups] = useState([]);
@@ -22,8 +26,27 @@ export default function App() {
   // Active top-level suite app: 'chat' | 'callsync'
   const [activeApp, setActiveApp] = useState('chat');
 
-  const [currentUserId, setCurrentUserId] = useState(1);
+  const currentUserId = auth?.user?.id;
   const [currentUser, setCurrentUser] = useState(null);
+
+  const handleLogin = (data) => {
+    saveAuth(data);
+    setAuth(data);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await fetch(`${API_BASE}/auth/logout`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${auth?.token}` }
+      });
+    } catch (e) {
+      console.error('logout failed', e);
+    }
+    clearAuth();
+    setAuth(null);
+    setCurrentUser(null);
+  };
 
   const [activeChat, setActiveChat] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -97,13 +120,15 @@ export default function App() {
   };
 
   const fetchAllData = async () => {
+    if (!auth) return;
+    const orgId = auth.user.organization_id;
     try {
       const [uRes, dRes, gRes, cRes, mRes] = await Promise.all([
-        fetch(`${API_BASE}/users`),
-        fetch(`${API_BASE}/departments`),
-        fetch(`${API_BASE}/groups`),
-        fetch(`${API_BASE}/contacts`),
-        fetch(`${API_BASE}/call-memos`)
+        fetch(`${API_BASE}/users?organization_id=${orgId}`),
+        fetch(`${API_BASE}/departments?organization_id=${orgId}`),
+        fetch(`${API_BASE}/groups?organization_id=${orgId}`),
+        fetch(`${API_BASE}/contacts?organization_id=${orgId}`),
+        fetch(`${API_BASE}/call-memos?organization_id=${orgId}`)
       ]);
       if (uRes.ok) setUsers(await uRes.json());
       if (dRes.ok) setDepartments(await dRes.json());
@@ -120,10 +145,11 @@ export default function App() {
   };
 
   useEffect(() => {
+    if (!auth) return;
     fetchAllData();
     const timer = setInterval(fetchAllData, 3000);
     return () => clearInterval(timer);
-  }, [currentUserId, notifyEnabled]);
+  }, [auth, notifyEnabled]);
 
   const hasAutoSelectedChatRef = useRef(false);
 
@@ -216,7 +242,7 @@ export default function App() {
       const res = await fetch(`${API_BASE}/groups`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(groupData)
+        body: JSON.stringify({ ...groupData, organization_id: auth.user.organization_id })
       });
       if (res.ok) {
         const newG = await res.json();
@@ -241,7 +267,7 @@ export default function App() {
       const res = await fetch(`${API_BASE}/call-memos`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(memoData)
+        body: JSON.stringify({ ...memoData, organization_id: auth.user.organization_id })
       });
       if (res.ok) {
         fetchAllData();
@@ -260,7 +286,8 @@ export default function App() {
         body: JSON.stringify({
           status,
           resolved_by: currentUserId,
-          resolved_note: resolvedNote
+          resolved_note: resolvedNote,
+          organization_id: auth.user.organization_id
         })
       });
       if (res.ok) {
@@ -273,18 +300,19 @@ export default function App() {
   };
 
   const handleSaveContact = async (contact) => {
+    const orgId = auth.user.organization_id;
     try {
       if (contact.id) {
         await fetch(`${API_BASE}/contacts/${contact.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(contact)
+          body: JSON.stringify({ ...contact, organization_id: orgId })
         });
       } else {
         await fetch(`${API_BASE}/contacts`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(contact)
+          body: JSON.stringify({ ...contact, organization_id: orgId })
         });
       }
       fetchAllData();
@@ -295,7 +323,7 @@ export default function App() {
 
   const handleDeleteContact = async (id) => {
     try {
-      await fetch(`${API_BASE}/contacts/${id}`, { method: 'DELETE' });
+      await fetch(`${API_BASE}/contacts/${id}?organization_id=${auth.user.organization_id}`, { method: 'DELETE' });
       fetchAllData();
     } catch (e) {
       console.error(e);
@@ -303,18 +331,19 @@ export default function App() {
   };
 
   const handleSaveUser = async (u) => {
+    const orgId = auth.user.organization_id;
     try {
       if (u.id) {
         await fetch(`${API_BASE}/users/${u.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(u)
+          body: JSON.stringify({ ...u, organization_id: orgId })
         });
       } else {
         await fetch(`${API_BASE}/users`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(u)
+          body: JSON.stringify({ ...u, organization_id: orgId })
         });
       }
       fetchAllData();
@@ -325,7 +354,7 @@ export default function App() {
 
   const handleDeleteUser = async (id) => {
     try {
-      await fetch(`${API_BASE}/users/${id}`, { method: 'DELETE' });
+      await fetch(`${API_BASE}/users/${id}?organization_id=${auth.user.organization_id}`, { method: 'DELETE' });
       fetchAllData();
     } catch (e) {
       console.error(e);
@@ -333,18 +362,19 @@ export default function App() {
   };
 
   const handleSaveDept = async (d) => {
+    const orgId = auth.user.organization_id;
     try {
       if (d.id) {
         await fetch(`${API_BASE}/departments/${d.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(d)
+          body: JSON.stringify({ ...d, organization_id: orgId })
         });
       } else {
         await fetch(`${API_BASE}/departments`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(d)
+          body: JSON.stringify({ ...d, organization_id: orgId })
         });
       }
       fetchAllData();
@@ -355,7 +385,7 @@ export default function App() {
 
   const handleDeleteDept = async (id) => {
     try {
-      await fetch(`${API_BASE}/departments/${id}`, { method: 'DELETE' });
+      await fetch(`${API_BASE}/departments/${id}?organization_id=${auth.user.organization_id}`, { method: 'DELETE' });
       fetchAllData();
     } catch (e) {
       console.error(e);
@@ -364,15 +394,19 @@ export default function App() {
 
   const unhandledCallsCount = callMemos.filter(m => m.status === 'pending').length;
 
+  if (!auth) {
+    return <LoginScreen onLogin={handleLogin} />;
+  }
+
   return (
     <div className="suite-root">
       {/* 1. Global Suite Header (App Switcher & Account) */}
-      <AppHeader 
+      <AppHeader
         activeApp={activeApp}
         onChangeApp={setActiveApp}
         currentUser={currentUser}
         users={users}
-        onSwitchUser={setCurrentUserId}
+        onLogout={handleLogout}
         onOpenNewCallMemo={() => openNewCallMemo()}
         onOpenContacts={() => setShowContactsModal(true)}
         onOpenAdmin={() => setShowAdminModal(true)}

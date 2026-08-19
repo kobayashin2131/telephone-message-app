@@ -5,6 +5,52 @@ const parseOrgId = (raw) => {
   return Number.isInteger(v) && v > 0 ? v : 1;
 };
 
+// --- Auth helpers (PBKDF2 PIN hashing, session tokens) ---
+
+const bufToHex = (buf) => Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+const hexToBuf = (hex) => new Uint8Array(hex.match(/.{2}/g).map(b => parseInt(b, 16)));
+
+async function hashPin(pin) {
+  const enc = new TextEncoder();
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const keyMaterial = await crypto.subtle.importKey('raw', enc.encode(pin), 'PBKDF2', false, ['deriveBits']);
+  const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', salt, iterations: 100000, hash: 'SHA-256' }, keyMaterial, 256);
+  return `${bufToHex(salt)}:${bufToHex(bits)}`;
+}
+
+async function verifyPin(pin, stored) {
+  if (!stored || !stored.includes(':')) return false;
+  const [saltHex, hashHex] = stored.split(':');
+  const enc = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey('raw', enc.encode(pin), 'PBKDF2', false, ['deriveBits']);
+  const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', salt: hexToBuf(saltHex), iterations: 100000, hash: 'SHA-256' }, keyMaterial, 256);
+  return bufToHex(bits) === hashHex;
+}
+
+const generateToken = () => bufToHex(crypto.getRandomValues(new Uint8Array(32)));
+
+const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+
+async function resolveSession(db, request) {
+  const auth = request.headers.get('Authorization') || '';
+  const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
+  if (!token) return null;
+
+  const row = await db.prepare(`
+    SELECT s.token, s.expires_at, u.id as user_id, u.name, u.email, u.role, u.organization_id
+    FROM sessions s
+    JOIN users u ON s.user_id = u.id
+    WHERE s.token = ?
+  `).bind(token).first();
+
+  if (!row) return null;
+  if (new Date(row.expires_at).getTime() < Date.now()) {
+    await db.prepare('DELETE FROM sessions WHERE token = ?').bind(token).run();
+    return null;
+  }
+  return row;
+}
+
 async function sendPushToSubscribers(env, excludeUserId, memo, orgId) {
   const { results: subs } = await env.DB.prepare('SELECT * FROM push_subscriptions WHERE user_id != ? AND organization_id = ?')
     .bind(excludeUserId || -1, orgId).all();
@@ -447,6 +493,90 @@ export default {
           ORDER BY m.created_at ASC
         `).bind(parentId).all();
         return jsonResponse(results);
+      }
+
+      // 7. Auth
+      if (path === '/api/auth/login' && request.method === 'POST') {
+        const body = await request.json();
+        const user = await db.prepare('SELECT * FROM users WHERE email = ?').bind(body.email || '').first();
+        if (!user || !(await verifyPin(body.pin || '', user.password_hash))) {
+          return jsonResponse({ error: 'メールアドレスまたはPINが正しくありません' }, 401);
+        }
+        const token = generateToken();
+        const expiresAt = new Date(Date.now() + SESSION_TTL_MS).toISOString();
+        await db.prepare('INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)').bind(token, user.id, expiresAt).run();
+        return jsonResponse({
+          token,
+          user: { id: user.id, name: user.name, email: user.email, role: user.role, organization_id: user.organization_id }
+        });
+      }
+
+      if (path === '/api/auth/google' && request.method === 'POST') {
+        if (!env.GOOGLE_CLIENT_ID) return jsonResponse({ error: 'Googleログインは未設定です' }, 500);
+        const body = await request.json();
+        if (!body.credential) return jsonResponse({ error: 'credential is required' }, 400);
+
+        const verifyRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(body.credential)}`);
+        if (!verifyRes.ok) return jsonResponse({ error: 'Googleトークンの検証に失敗しました' }, 401);
+        const payload = await verifyRes.json();
+
+        if (payload.aud !== env.GOOGLE_CLIENT_ID || payload.email_verified !== 'true') {
+          return jsonResponse({ error: 'Googleトークンが無効です' }, 401);
+        }
+
+        const user = await db.prepare('SELECT * FROM users WHERE email = ?').bind(payload.email).first();
+        if (!user) {
+          return jsonResponse({ error: 'このメールアドレスは登録されていません。管理者に連絡してください。' }, 403);
+        }
+
+        const token = generateToken();
+        const expiresAt = new Date(Date.now() + SESSION_TTL_MS).toISOString();
+        await db.prepare('INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)').bind(token, user.id, expiresAt).run();
+        return jsonResponse({
+          token,
+          user: { id: user.id, name: user.name, email: user.email, role: user.role, organization_id: user.organization_id }
+        });
+      }
+
+      if (path === '/api/auth/logout' && request.method === 'POST') {
+        const auth = request.headers.get('Authorization') || '';
+        const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
+        if (token) await db.prepare('DELETE FROM sessions WHERE token = ?').bind(token).run();
+        return jsonResponse({ success: true });
+      }
+
+      if (path === '/api/auth/change-pin' && request.method === 'POST') {
+        const session = await resolveSession(db, request);
+        if (!session) return jsonResponse({ error: '認証が必要です' }, 401);
+
+        const body = await request.json();
+        const user = await db.prepare('SELECT password_hash FROM users WHERE id = ?').bind(session.user_id).first();
+        if (!(await verifyPin(body.current_pin || '', user.password_hash))) {
+          return jsonResponse({ error: '現在のPINが正しくありません' }, 401);
+        }
+        if (!/^\d{4,8}$/.test(body.new_pin || '')) {
+          return jsonResponse({ error: 'PINは4〜8桁の数字で入力してください' }, 400);
+        }
+        const newHash = await hashPin(body.new_pin);
+        await db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').bind(newHash, session.user_id).run();
+        return jsonResponse({ success: true });
+      }
+
+      if (path === '/api/auth/reset-pin' && request.method === 'POST') {
+        const session = await resolveSession(db, request);
+        if (!session || session.role !== 'admin') return jsonResponse({ error: '管理者権限が必要です' }, 403);
+
+        const body = await request.json();
+        if (!/^\d{4,8}$/.test(body.new_pin || '')) {
+          return jsonResponse({ error: 'PINは4〜8桁の数字で入力してください' }, 400);
+        }
+        const target = await db.prepare('SELECT id FROM users WHERE id = ? AND organization_id = ?')
+          .bind(body.user_id, session.organization_id).first();
+        if (!target) return jsonResponse({ error: '対象ユーザーが見つかりません' }, 404);
+
+        const newHash = await hashPin(body.new_pin);
+        await db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').bind(newHash, body.user_id).run();
+        return jsonResponse({ success: true });
       }
 
       return jsonResponse({ error: 'Endpoint Not Found' }, 404);

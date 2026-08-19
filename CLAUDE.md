@@ -122,6 +122,26 @@ Claude Codeによるコードレビュー＋大規模な不具合修正・デザ
 
 **次にこの作業をする人へ**: Phase 2（ログイン機能）に進む前提が整いました。ログイン実装時に、認証後のセッションから`organization_id`を解決してAPIに渡す形に置き換えてください（今はクライアント自己申告＝誰でも偽装できる状態のままなのは意図的な暫定措置）。
 
+## ✅ Phase 2: ログイン機能（実装済み・本番反映は一部保留）
+
+**バックエンド（実装・ローカル検証・コミット済み）**:
+- `migrations/0002_auth.sql`: `sessions`テーブル新設、`users.password_hash`列追加（PBKDF2-SHA256, 100000 iterations, `salt:hash`形式）。既存6シードユーザーに初期PINをbootstrap済み（平文PINはオーナーにチャットで一度だけ報告済み、ファイルには残していない）
+- `worker.js`に`/api/auth/login`（email+PIN）・`/api/auth/google`（Google ID tokenをtokeninfoエンドポイントで検証）・`/api/auth/logout`・`/api/auth/change-pin`（本人用）・`/api/auth/reset-pin`（管理者専用、同一組織内のみ）を追加
+- **既存の業務系エンドポイント（users/departments/groups/contacts/call-memos/messages）はまだセッション必須にしていない**（意図的：フロントのログイン画面が無い状態でセッション必須にすると即座に全ユーザーが使えなくなるため、段階的に移行）
+- Google側は`env.GOOGLE_CLIENT_ID`が未設定なら`/api/auth/google`は500を返すガード付き。クライアントID発行はオーナー作業中（Google Cloud Consoleで「Connect Suite」プロジェクト作成済み、OAuth同意画面設定中）
+
+**フロントエンド（実装・ローカルで実際にログイン→ログアウト→リロード後の永続化まで動作確認済み）**:
+- `LoginScreen.jsx`新設：ID（＝emailカラム、実メールである必要はない設計）＋PIN、Google Sign-Inボタン（`VITE_GOOGLE_CLIENT_ID`未設定時は非表示）
+- `App.jsx`：`auth`が無ければ`LoginScreen`を表示するゲートを追加。`currentUserId`はログインユーザーのidに置き換え。主要な一覧取得・作成系リクエストに`organization_id`を付与（Phase 1のマルチテナント分離がフロントからも機能するように）
+- `AppHeader.jsx`：なりすまし可能だったアカウント切替ドロップダウンを、現在ユーザー名の表示＋ログアウトボタンに置き換え済み
+
+**⚠️ 本番デプロイ未実施（次にやること）**:
+1. `npx wrangler d1 execute callsync-db --remote --file=migrations/0002_auth.sql`（このPCではPowerShellの実行ポリシーで`npx`が直接動かないため`cmd /c "..."`でラップする必要があった）
+2. `npx wrangler deploy`（backend）
+3. `cd frontend && npm run build && npx wrangler pages deploy dist --project-name callsync-app`（frontendのデプロイコマンドは把握しているが、このセッションではまだ実行していない——Phase 1の時と違い、ログイン画面が有効になるとオーナー自身がPINを知らないと入れなくなるため、デプロイ前にPIN一覧を確実に把握してもらってから進めること）
+
+**Googleクライアント発行待ちの間、先に進められること**: 上記デプロイと、`VITE_GOOGLE_CLIENT_ID`（frontend）・`GOOGLE_CLIENT_ID`（wrangler secret/vars、backend）の設定。クライアントID到着後にこの2箇所へ設定し再デプロイすればGoogleログインも有効になる。
+
 ## 🗓️ 次回作業予定（2026-08-19時点でオーナーと合意済み・PC03等どのPCでも継続可）
 
 **合意した方針・順番**: マルチテナント化を先に実装 → その上にログイン機能を乗せる（逆順だとユーザーテーブルを作り直す手戻りが発生するため）。

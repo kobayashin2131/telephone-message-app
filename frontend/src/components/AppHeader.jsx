@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  MessageSquare, Phone, Plus, BookOpen, Settings, Users, Sparkles, Building2, ChevronDown, Bell, BellOff
+  MessageSquare, Phone, Plus, BookOpen, Settings, Users, Sparkles, Building2, Bell, BellOff, LogOut
 } from 'lucide-react';
 
 export default function AppHeader({
@@ -8,7 +8,7 @@ export default function AppHeader({
   onChangeApp,
   currentUser,
   users,
-  onSwitchUser,
+  onLogout,
   onOpenNewCallMemo,
   onOpenContacts,
   onOpenAdmin,
@@ -91,20 +91,12 @@ export default function AppHeader({
             {currentUser?.name?.charAt(0) || '👤'}
           </div>
           <div className="suite-user-info">
-            <div className="suite-user-label">アカウント</div>
-            <select 
-              className="suite-user-select"
-              value={currentUser?.id || 1}
-              onChange={(e) => onSwitchUser(Number(e.target.value))}
-            >
-              {users.map(u => (
-                <option key={u.id} value={u.id}>
-                  {u.name} ({u.role === 'admin' ? '管理者' : u.department_name || '一般'})
-                </option>
-              ))}
-            </select>
+            <div className="suite-user-label">{currentUser?.role === 'admin' ? '管理者' : currentUser?.department_name || '一般'}</div>
+            <div className="suite-user-name">{currentUser?.name}</div>
           </div>
-          <ChevronDown size={14} className="user-select-arrow" />
+          <button className="suite-user-logout-btn" onClick={onLogout} title="ログアウト">
+            <LogOut size={16} />
+          </button>
         </div>
       </div>
     </header>
