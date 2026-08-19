@@ -129,7 +129,7 @@ workflows:
     max_build_duration: 60
     instance_type: mac_mini_m1
     integrations:
-      app_store_connect: Connect Suite Codemagic Admin
+      app_store_connect: HOMEBASE Codemagic Admin
     environment:
       groups:
         # CERTIFICATE_PRIVATE_KEY: iOS配布証明書用に一度だけ生成し使い回すRSA秘密鍵(Secret)
@@ -179,7 +179,7 @@ workflows:
     max_build_duration: 60
     instance_type: mac_mini_m1
     integrations:
-      app_store_connect: Connect Suite Codemagic Admin
+      app_store_connect: HOMEBASE Codemagic Admin
     environment:
       groups:
         - ios_signing
