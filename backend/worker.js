@@ -739,6 +739,8 @@ export default {
                    u.name as sender_name, u.avatar_color as sender_avatar, u.role as sender_role,
                    cm.id as memo_id, cm.company_name as memo_company, cm.contact_person as memo_contact, cm.phone_number as memo_phone,
                    cm.subject as memo_subject, cm.body as memo_body, cm.call_type as memo_type, cm.status as memo_status,
+                   cm.created_at as memo_created_at,
+                   cu.name as memo_creator_name,
                    cm.resolved_note as memo_resolved_note, cm.resolved_at as memo_resolved_at,
                    ru.name as memo_resolver_name,
                    m.target_type as memo_target_type,
@@ -747,6 +749,7 @@ export default {
             FROM messages m
             JOIN users u ON m.sender_id = u.id
             LEFT JOIN call_memos cm ON m.call_memo_id = cm.id
+            LEFT JOIN users cu ON cm.created_by = cu.id
             LEFT JOIN users ru ON cm.resolved_by = ru.id
             WHERE m.target_type = 'dm'
               AND m.parent_id IS NULL
@@ -759,6 +762,8 @@ export default {
                    u.name as sender_name, u.avatar_color as sender_avatar, u.role as sender_role,
                    cm.id as memo_id, cm.company_name as memo_company, cm.contact_person as memo_contact, cm.phone_number as memo_phone,
                    cm.subject as memo_subject, cm.body as memo_body, cm.call_type as memo_type, cm.status as memo_status,
+                   cm.created_at as memo_created_at,
+                   cu.name as memo_creator_name,
                    cm.resolved_note as memo_resolved_note, cm.resolved_at as memo_resolved_at,
                    ru.name as memo_resolver_name,
                    m.target_type as memo_target_type,
@@ -771,6 +776,7 @@ export default {
             FROM messages m
             JOIN users u ON m.sender_id = u.id
             LEFT JOIN call_memos cm ON m.call_memo_id = cm.id
+            LEFT JOIN users cu ON cm.created_by = cu.id
             LEFT JOIN users ru ON cm.resolved_by = ru.id
             WHERE m.target_type = ? AND m.target_id = ? AND m.parent_id IS NULL
             ORDER BY m.created_at ASC

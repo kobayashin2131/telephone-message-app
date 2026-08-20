@@ -1,5 +1,28 @@
 import React, { useState } from 'react';
-import { Phone, CheckCircle, Clock, AlertTriangle, MessageSquare, User, Building2, Edit3, Send, X } from 'lucide-react';
+import { Phone, CheckCircle, Clock, AlertTriangle, MessageSquare, User, Building2, Edit3, Send, X, Calendar } from 'lucide-react';
+
+function formatCallDateTime(dateStr) {
+  if (!dateStr) return '';
+  // Support both 'YYYY-MM-DD HH:MM:SS' and ISO string
+  const cleanStr = dateStr.includes('T') ? dateStr : dateStr.replace(' ', 'T') + (dateStr.endsWith('Z') ? '' : 'Z');
+  const d = new Date(cleanStr);
+  if (isNaN(d.getTime())) return dateStr;
+
+  const now = new Date();
+  const isToday = d.getFullYear() === now.getFullYear() &&
+                  d.getMonth() === now.getMonth() &&
+                  d.getDate() === now.getDate();
+
+  const month = d.getMonth() + 1;
+  const date = d.getDate();
+  const hours = String(d.getHours()).padStart(2, '0');
+  const minutes = String(d.getMinutes()).padStart(2, '0');
+
+  if (isToday) {
+    return `本日 ${hours}:${minutes}`;
+  }
+  return `${month}/${date} ${hours}:${minutes}`;
+}
 
 export default function CallMemoCard({ memo, onUpdateStatus, onOpenThread, currentUserId }) {
   const [showNoteInput, setShowNoteInput] = useState(false);
@@ -14,6 +37,7 @@ export default function CallMemoCard({ memo, onUpdateStatus, onOpenThread, curre
 
   const targetName = memo.memo_target_name || memo.target_name;
   const targetType = memo.memo_target_type || memo.target_type;
+  const callTimeStr = formatCallDateTime(memo.memo_created_at || memo.created_at);
 
   const handleSaveNoteAndResolve = () => {
     onUpdateStatus(memo.memo_id, 'resolved', noteText.trim());
@@ -40,15 +64,32 @@ export default function CallMemoCard({ memo, onUpdateStatus, onOpenThread, curre
           <span className={`status-pill ${memo.memo_status || 'pending'}`}>
             {isResolved ? '✓ 完了' : isInProgress ? '⏳ 対応中' : '⚠️ 未対応'}
           </span>
-          {targetName && (
-            <span className="call-target-pill">
-              {targetType === 'department' ? '🏢' : targetType === 'group' ? '💬' : '👤'} 宛先: {targetName}
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+          {callTimeStr && (
+            <span className="call-time-badge" title={memo.memo_created_at || memo.created_at}>
+              🕒 {callTimeStr}
+            </span>
+          )}
+          {memo.memo_resolved_at && (
+            <span style={{ fontSize: '0.72rem', color: '#6fa382', fontWeight: 700 }}>
+              ✓ 完了: {memo.memo_resolver_name || '担当者'}
             </span>
           )}
         </div>
-        {memo.memo_resolved_at && (
-          <span style={{ fontSize: '0.75rem', color: '#6fa382', fontWeight: 700 }}>
-            完了: {memo.memo_resolver_name || '担当者'}
+      </div>
+
+      {/* Target & Receiver Row */}
+      <div className="call-meta-bar" style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '8px', fontSize: '0.75rem' }}>
+        {targetName && (
+          <span className="call-target-pill">
+            {targetType === 'department' ? '🏢' : targetType === 'group' ? '💬' : '👤'} 宛先: <strong>{targetName}</strong>
+          </span>
+        )}
+        {(memo.memo_creator_name || memo.creator_name || memo.sender_name) && (
+          <span className="call-receiver-pill">
+            📞 受電者: <strong>{memo.memo_creator_name || memo.creator_name || memo.sender_name}</strong>
           </span>
         )}
       </div>

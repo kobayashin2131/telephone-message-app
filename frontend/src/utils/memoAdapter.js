@@ -9,6 +9,8 @@ export function adaptCallMemo(m) {
     memo_body: m.body,
     memo_type: m.call_type,
     memo_status: m.status,
+    memo_created_at: m.created_at,
+    memo_creator_name: m.creator_name,
     memo_resolved_note: m.resolved_note,
     memo_resolved_at: m.resolved_at,
     memo_resolver_name: m.resolver_name,
