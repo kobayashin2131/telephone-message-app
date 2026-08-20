@@ -67,4 +67,29 @@ export async function setupNativePush(userId) {
       }
     }, 10000);
   });
+}export function setupNativePushListeners(onNavigate) {
+  if (!isNativeApp()) return;
+
+  // Handle push notification click when app is in background/foreground
+  PushNotifications.addListener('pushNotificationActionPerformed', (notification) => {
+    try {
+      const data = notification.notification?.data || {};
+      let targetType = data.targetType || data.target_type;
+      let targetId = data.targetId || data.target_id;
+
+      if (data.type === 'call_memo' || data.memoId) {
+        onNavigate({ app: 'callsync', memoId: data.memoId });
+      } else if (targetType && targetId) {
+        onNavigate({ app: 'chat', targetType, targetId });
+      } else if (data.url) {
+        const parsed = new URL(data.url, 'http://localhost');
+        const app = parsed.searchParams.get('app');
+        const tt = parsed.searchParams.get('target_type');
+        const ti = parsed.searchParams.get('target_id');
+        onNavigate({ app: app || 'chat', targetType: tt, targetId: ti });
+      }
+    } catch (err) {
+      console.error('Error handling push notification action', err);
+    }
+  });
 }

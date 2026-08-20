@@ -17,6 +17,7 @@ export default function DeskMonitorView({
   const [phoneNumber, setPhoneNumber] = useState('');
   const [targetCategory, setTargetCategory] = useState('user'); // 'user', 'dept', 'group'
   const [targetId, setTargetId] = useState(users[0]?.id || 1);
+  const [mentionTarget, setMentionTarget] = useState('');
   const [callType, setCallType] = useState('callback');
   const [subject, setSubject] = useState('折り返しのお願い');
   const [body, setBody] = useState('');
@@ -52,6 +53,12 @@ export default function DeskMonitorView({
     const mappedTargetType = targetCategory === 'user' ? 'dm' : targetCategory === 'dept' ? 'department' : 'group';
     const finalTargetId = Number(targetId) || (targetCategory === 'user' ? users[0]?.id : departments[0]?.id || 1);
 
+    let finalBody = body.trim();
+    if (targetCategory !== 'user' && mentionTarget) {
+      const mentionTag = mentionTarget === 'all' ? '@全員' : `@${mentionTarget}`;
+      finalBody = `${mentionTag} ${finalBody}`.trim();
+    }
+
     onSubmitCallMemo({
       company_name: companyName.trim(),
       contact_person: contactPerson.trim(),
@@ -60,7 +67,7 @@ export default function DeskMonitorView({
       target_id: finalTargetId,
       call_type: callType,
       subject,
-      body: body.trim(),
+      body: finalBody,
       save_contact: saveContact,
       created_by: currentUser?.id || 1
     });
@@ -69,6 +76,7 @@ export default function DeskMonitorView({
     setContactPerson('');
     setPhoneNumber('');
     setBody('');
+    setMentionTarget('');
   };
 
   return (
@@ -220,6 +228,29 @@ export default function DeskMonitorView({
                   ※ 所属しているグループがありません。「担当者」から選択してください。
                 </div>
               )
+            )}
+
+            {/* Mention inside Department or Group */}
+            {targetCategory !== 'user' && (
+              <div style={{ marginTop: '8px', paddingTop: '6px', borderTop: '1px dashed #ded6c5' }}>
+                <label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#6b5590', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
+                  <span>📢 担当者を指名・メンション（任意）</span>
+                </label>
+                <select
+                  className="form-select"
+                  value={mentionTarget}
+                  onChange={(e) => setMentionTarget(e.target.value)}
+                  style={{ width: '100%', fontSize: '0.8rem', background: '#ffffff' }}
+                >
+                  <option value="">指定なし（全体宛て）</option>
+                  <option value="all">📢 @全員 に通知</option>
+                  {users.map(u => (
+                    <option key={u.id} value={u.name}>
+                      👤 @{u.name} {u.department_name ? `(${u.department_name})` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
             )}
           </div>
 

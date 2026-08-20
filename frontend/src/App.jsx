@@ -12,7 +12,7 @@ import LoginScreen from './components/LoginScreen';
 import SignupScreen from './components/SignupScreen';
 import { playChime } from './utils/chime';
 import { subscribeToPush, unsubscribeFromPush } from './utils/push';
-import { isNativeApp, setupNativePush } from './utils/nativePush';
+import { isNativeApp, setupNativePush, setupNativePushListeners } from './utils/nativePush';
 import { loadAuth, saveAuth, clearAuth } from './utils/auth';
 import './App.css';
 
@@ -296,6 +296,18 @@ export default function App() {
       navigator.serviceWorker.addEventListener('message', onSwMessage);
       return () => navigator.serviceWorker.removeEventListener('message', onSwMessage);
     }
+  }, [users, groups]);
+
+  // Native Push Notification Click Listener (Capacitor for Android / iOS)
+  useEffect(() => {
+    if (!isNativeApp()) return;
+    setupNativePushListeners((dest) => {
+      if (dest.app === 'callsync') {
+        setActiveApp('callsync');
+      } else if (dest.app === 'chat' && dest.targetType && dest.targetId) {
+        handleNavigateTarget(dest.targetType, dest.targetId);
+      }
+    });
   }, [users, groups]);
 
   // Deep link check from initial URL

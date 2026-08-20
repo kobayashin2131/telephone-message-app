@@ -51,9 +51,9 @@ export default function CallMemoCard({ memo, onUpdateStatus, onOpenThread, curre
 
   return (
     <div className={`call-pop-card ${isUrgent ? 'urgent' : isCallback ? 'callback' : ''} ${isResolved ? 'resolved' : ''}`}>
-      {/* Header */}
-      <div className="call-pop-header">
-        <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
+      {/* Header Row 1: Badges (Left) & Call Datetime (Right) */}
+      <div className="call-pop-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+        <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
           {isUrgent ? (
             <span className="call-badge-tag tag-urgent"><AlertTriangle size={13} /> 緊急受電</span>
           ) : isCallback ? (
@@ -66,30 +66,31 @@ export default function CallMemoCard({ memo, onUpdateStatus, onOpenThread, curre
           </span>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-          {callTimeStr && (
-            <span className="call-time-badge" title={memo.memo_created_at || memo.created_at}>
-              🕒 {callTimeStr}
+        {callTimeStr && (
+          <span className="call-time-badge" style={{ marginLeft: 'auto' }} title={memo.memo_created_at || memo.created_at}>
+            🕒 {callTimeStr}
+          </span>
+        )}
+      </div>
+
+      {/* Header Row 2: Target & Receiver (Left) & Resolver (Right) */}
+      <div className="call-meta-bar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px', fontSize: '0.75rem', gap: '6px' }}>
+        <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
+          {targetName && (
+            <span className="call-target-pill">
+              {targetType === 'department' ? '🏢' : targetType === 'group' ? '💬' : '👤'} 宛先: <strong>{targetName}</strong>
             </span>
           )}
-          {memo.memo_resolved_at && (
-            <span style={{ fontSize: '0.72rem', color: '#6fa382', fontWeight: 700 }}>
-              ✓ 完了: {memo.memo_resolver_name || '担当者'}
+          {(memo.memo_creator_name || memo.creator_name || memo.sender_name) && (
+            <span className="call-receiver-pill">
+              📞 受電者: <strong>{memo.memo_creator_name || memo.creator_name || memo.sender_name}</strong>
             </span>
           )}
         </div>
-      </div>
 
-      {/* Target & Receiver Row */}
-      <div className="call-meta-bar" style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '8px', fontSize: '0.75rem' }}>
-        {targetName && (
-          <span className="call-target-pill">
-            {targetType === 'department' ? '🏢' : targetType === 'group' ? '💬' : '👤'} 宛先: <strong>{targetName}</strong>
-          </span>
-        )}
-        {(memo.memo_creator_name || memo.creator_name || memo.sender_name) && (
-          <span className="call-receiver-pill">
-            📞 受電者: <strong>{memo.memo_creator_name || memo.creator_name || memo.sender_name}</strong>
+        {memo.memo_resolved_at && (
+          <span className="call-resolver-tag" style={{ marginLeft: 'auto', fontSize: '0.72rem', color: '#408058', fontWeight: 700, whiteSpace: 'nowrap' }}>
+            ✓ 完了: {memo.memo_resolver_name || '担当者'}
           </span>
         )}
       </div>

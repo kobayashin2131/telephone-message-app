@@ -20,6 +20,7 @@ export default function NewCallMemoModal({
   // Target Destination
   const [targetType, setTargetType] = useState(defaultTarget?.type || 'dm');
   const [targetId, setTargetId] = useState(defaultTarget?.id || (users[0]?.id || 1));
+  const [mentionTarget, setMentionTarget] = useState('');
 
   // Call Details
   const [callType, setCallType] = useState('callback');
@@ -56,6 +57,12 @@ export default function NewCallMemoModal({
     e.preventDefault();
     if (!companyName.trim()) return alert('会社名を入力してください');
 
+    let finalBody = body.trim();
+    if (targetType !== 'dm' && mentionTarget) {
+      const mentionTag = mentionTarget === 'all' ? '@全員' : `@${mentionTarget}`;
+      finalBody = `${mentionTag} ${finalBody}`.trim();
+    }
+
     onSubmitCallMemo({
       caller_contact_id: selectedContactId,
       company_name: companyName.trim(),
@@ -67,7 +74,7 @@ export default function NewCallMemoModal({
       target_id: Number(targetId),
       call_type: callType,
       subject,
-      body: body.trim(),
+      body: finalBody,
       created_by: currentUserId
     });
     onClose();
@@ -131,6 +138,29 @@ export default function NewCallMemoModal({
                   ))}
                 </select>
               </div>
+
+              {/* Mention inside Department or Group */}
+              {targetType !== 'dm' && (
+                <div style={{ marginTop: '8px', paddingTop: '6px', borderTop: '1px dashed #d1c2e4' }}>
+                  <label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#6b5590', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
+                    <span>📢 担当者を指名・メンション（任意）</span>
+                  </label>
+                  <select
+                    className="form-select"
+                    value={mentionTarget}
+                    onChange={(e) => setMentionTarget(e.target.value)}
+                    style={{ width: '100%', fontSize: '0.8rem', background: '#ffffff' }}
+                  >
+                    <option value="">指定なし（全体宛て）</option>
+                    <option value="all">📢 @全員 に通知</option>
+                    {users.map(u => (
+                      <option key={u.id} value={u.name}>
+                        👤 @{u.name} {u.department_name ? `(${u.department_name})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
 
             {/* 2. Caller Contact Info with Autocomplete */}
