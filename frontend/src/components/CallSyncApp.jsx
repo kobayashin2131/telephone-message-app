@@ -20,7 +20,23 @@ export default function CallSyncApp({
   onOpenNewCallMemo,
   onOpenContacts
 }) {
-  const [subView, setSubView] = useState('board'); // 'board', 'desk', 'mobile'
+  const [subView, setSubView] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('callsync_default_subview');
+      if (saved) return saved;
+      // If mobile screen (width < 768px), default to 'mobile' (現場ビュー), otherwise 'desk' (事務員デスクモニター)
+      return window.innerWidth < 768 ? 'mobile' : 'desk';
+    }
+    return 'desk';
+  });
+
+  const handleSwitchSubView = (view) => {
+    setSubView(view);
+    try {
+      localStorage.setItem('callsync_default_subview', view);
+    } catch (e) {}
+  };
+
   const [filterScope, setFilterScope] = useState('all'); // 'all', 'me', 'unhandled', 'resolved'
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -71,39 +87,43 @@ export default function CallSyncApp({
       <div className="callsync-header-bar">
         <div className="callsync-subnav-tabs">
           <button 
-            className={`subnav-tab ${subView === 'board' ? 'active' : ''}`}
-            onClick={() => setSubView('board')}
+            className={`subnav-tab ${subView === 'mobile' ? 'active' : ''}`}
+            onClick={() => handleSwitchSubView('mobile')}
           >
-            <LayoutDashboard size={16} />
-            <span>電話メモ一覧・ボード</span>
+            <Smartphone size={15} />
+            <span className="subnav-label-long">現場モバイルビュー</span>
+            <span className="subnav-label-short">現場</span>
           </button>
           <button
             className={`subnav-tab ${subView === 'desk' ? 'active' : ''}`}
-            onClick={() => setSubView('desk')}
+            onClick={() => handleSwitchSubView('desk')}
           >
-            <Clock size={16} />
-            <span>事務員デスクモニター</span>
+            <Clock size={15} />
+            <span className="subnav-label-long">事務員デスクモニター</span>
+            <span className="subnav-label-short">デスク</span>
           </button>
-          <button
-            className={`subnav-tab ${subView === 'mobile' ? 'active' : ''}`}
-            onClick={() => setSubView('mobile')}
+          <button 
+            className={`subnav-tab ${subView === 'board' ? 'active' : ''}`}
+            onClick={() => handleSwitchSubView('board')}
           >
-            <Smartphone size={16} />
-            <span>現場モバイルビュー</span>
+            <LayoutDashboard size={15} />
+            <span className="subnav-label-long">電話メモ一覧・ボード</span>
+            <span className="subnav-label-short">ボード</span>
           </button>
           <button
             className="subnav-tab"
             onClick={onOpenContacts}
           >
-            <BookOpen size={16} />
-            <span>受電先台帳（{contacts.length}）</span>
+            <BookOpen size={15} />
+            <span className="subnav-label-long">受電先台帳（{contacts.length}）</span>
+            <span className="subnav-label-short">台帳({contacts.length})</span>
           </button>
         </div>
 
         <div className="callsync-actions-right">
           <button className="btn-pop-call" onClick={onOpenNewCallMemo}>
-            <Phone size={16} />
-            <span>受電メモを新規登録</span>
+            <Phone size={15} />
+            <span>受電メモ登録</span>
           </button>
         </div>
       </div>

@@ -1818,35 +1818,50 @@ button, input, select, textarea {
    desktop shell by default; below this width it becomes a single
    pane that swaps between the list and the active view.
    ============================================================ */
+.subnav-label-short {
+  display: none;
+}
+.subnav-label-long {
+  display: inline;
+}
+
 @media (max-width: 640px) {
+  .subnav-label-short {
+    display: inline;
+  }
+  .subnav-label-long {
+    display: none;
+  }
+
   .suite-header {
     flex-wrap: wrap;
     height: auto;
-    min-height: 54px;
-    padding: 8px 10px;
+    min-height: 52px;
+    padding: 6px 10px;
     row-gap: 6px;
   }
   .suite-left {
-    gap: 10px;
+    gap: 8px;
+    flex: 1;
   }
   .suite-brand-text .suite-subtitle {
     display: none;
   }
   .suite-brand-text .suite-title {
-    font-size: 0.95rem;
+    font-size: 0.92rem;
   }
   .suite-nav-tabs {
     gap: 2px;
-    padding: 3px;
+    padding: 2px;
   }
   .suite-tab-btn {
-    padding: 7px 9px;
+    padding: 6px 8px;
   }
   .suite-tab-btn span:not(.suite-badge-pill) {
     display: none;
   }
   .suite-right {
-    gap: 6px;
+    gap: 5px;
     flex-wrap: wrap;
     justify-content: flex-end;
   }
@@ -1854,31 +1869,31 @@ button, input, select, textarea {
     display: none;
   }
   .btn-suite-quick-call {
-    padding: 8px;
+    padding: 7px;
   }
   .suite-user-label {
     display: none;
   }
   .suite-user-name {
-    max-width: 84px;
+    max-width: 70px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     font-size: 0.72rem;
   }
   .suite-user-badge {
-    padding: 4px 8px;
+    padding: 3px 6px;
+    gap: 5px;
   }
 
   .chat-header-desc {
     display: none;
   }
   .chat-header-title-text {
-    font-size: 0.95rem;
+    font-size: 0.92rem;
   }
 
-  /* Chat: sidebar and conversation each take the full pane; only
-     one is visible at a time, based on whether a chat is open. */
+  /* Chat: sidebar and conversation each take the full pane */
   .chat-sidebar,
   .chat-main-area {
     width: 100%;
@@ -1897,40 +1912,61 @@ button, input, select, textarea {
     display: flex;
   }
 
-  /* CallSync: let the subnav and toolbar wrap instead of overflowing */
+  /* CallSync Header Bar */
   .callsync-header-bar {
-    flex-wrap: wrap;
+    flex-direction: column;
+    align-items: stretch;
     height: auto;
-    min-height: 52px;
-    padding: 8px 12px;
-    row-gap: 8px;
+    min-height: 48px;
+    padding: 6px 10px;
+    gap: 6px;
   }
   .callsync-subnav-tabs {
-    flex-wrap: wrap;
+    display: flex;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    gap: 4px;
+    padding: 2px 0;
+  }
+  .callsync-actions-right {
+    display: none; /* Quick call is in top header */
   }
   .callsync-board-view {
-    padding: 12px;
+    padding: 10px;
   }
   .board-toolbar {
     flex-direction: column;
     align-items: stretch;
+    gap: 6px;
   }
   .board-search-box {
     min-width: 0;
     width: 100%;
   }
-  .cards-grid {
-    grid-template-columns: 1fr;
-  }
 
+  /* Mobile Modals (Bottom Sheet style) */
   .modal-overlay {
     padding: 0;
     align-items: flex-end;
   }
   .modal-content {
-    max-width: 100%;
-    max-height: 92vh;
-    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    width: 100% !important;
+    max-width: 100% !important;
+    border-radius: 20px 20px 0 0 !important;
+    max-height: 92vh !important;
+    padding-bottom: env(safe-area-inset-bottom, 12px);
+  }
+  .modal-header {
+    padding: 12px 16px;
+  }
+  .modal-body {
+    padding: 12px 16px;
+  }
+  .modal-footer {
+    padding: 10px 16px;
+  }
+  .cards-grid {
+    grid-template-columns: 1fr;
   }
 
   .thread-drawer {
