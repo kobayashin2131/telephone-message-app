@@ -386,32 +386,38 @@ export default function App() {
 
   const handleSaveUser = async (u) => {
     const orgId = auth.user.organization_id;
+    const authHeaders = { 'Content-Type': 'application/json', Authorization: `Bearer ${auth.token}` };
     try {
-      if (u.id) {
-        await fetch(`${API_BASE}/users/${u.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...u, organization_id: orgId })
-        });
-      } else {
-        await fetch(`${API_BASE}/users`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...u, organization_id: orgId })
-        });
+      const res = u.id
+        ? await fetch(`${API_BASE}/users/${u.id}`, { method: 'PUT', headers: authHeaders, body: JSON.stringify({ ...u, organization_id: orgId }) })
+        : await fetch(`${API_BASE}/users`, { method: 'POST', headers: authHeaders, body: JSON.stringify({ ...u, organization_id: orgId }) });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || '保存に失敗しました');
+        return;
       }
       fetchAllData();
     } catch (e) {
       console.error(e);
+      alert('保存に失敗しました');
     }
   };
 
   const handleDeleteUser = async (id) => {
     try {
-      await fetch(`${API_BASE}/users/${id}?organization_id=${auth.user.organization_id}`, { method: 'DELETE' });
+      const res = await fetch(`${API_BASE}/users/${id}?organization_id=${auth.user.organization_id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${auth.token}` }
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || '削除に失敗しました');
+        return;
+      }
       fetchAllData();
     } catch (e) {
       console.error(e);
+      alert('削除に失敗しました');
     }
   };
 
@@ -436,32 +442,38 @@ export default function App() {
 
   const handleSaveDept = async (d) => {
     const orgId = auth.user.organization_id;
+    const authHeaders = { 'Content-Type': 'application/json', Authorization: `Bearer ${auth.token}` };
     try {
-      if (d.id) {
-        await fetch(`${API_BASE}/departments/${d.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...d, organization_id: orgId })
-        });
-      } else {
-        await fetch(`${API_BASE}/departments`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...d, organization_id: orgId })
-        });
+      const res = d.id
+        ? await fetch(`${API_BASE}/departments/${d.id}`, { method: 'PUT', headers: authHeaders, body: JSON.stringify({ ...d, organization_id: orgId }) })
+        : await fetch(`${API_BASE}/departments`, { method: 'POST', headers: authHeaders, body: JSON.stringify({ ...d, organization_id: orgId }) });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || '保存に失敗しました');
+        return;
       }
       fetchAllData();
     } catch (e) {
       console.error(e);
+      alert('保存に失敗しました');
     }
   };
 
   const handleDeleteDept = async (id) => {
     try {
-      await fetch(`${API_BASE}/departments/${id}?organization_id=${auth.user.organization_id}`, { method: 'DELETE' });
+      const res = await fetch(`${API_BASE}/departments/${id}?organization_id=${auth.user.organization_id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${auth.token}` }
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || '削除に失敗しました');
+        return;
+      }
       fetchAllData();
     } catch (e) {
       console.error(e);
+      alert('削除に失敗しました');
     }
   };
 

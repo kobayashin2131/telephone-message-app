@@ -152,6 +152,7 @@ async function verifyPin(pin, stored) {
 const generateToken = () => bufToHex(crypto.getRandomValues(new Uint8Array(32)));
 
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+const STAFF_ROLES = ['owner', 'admin']; // roles allowed to manage users/departments
 
 async function resolveSession(db, request) {
   const auth = request.headers.get('Authorization') || '';
@@ -247,6 +248,14 @@ export default {
       if (path === '/api/users' && request.method === 'POST') {
         const body = await request.json();
         const orgId = parseOrgId(body.organization_id);
+        const session = await resolveSession(db, request);
+        if (!session || session.organization_id !== orgId || !STAFF_ROLES.includes(session.role)) {
+          return jsonResponse({ error: '管理者権限が必要です' }, 403);
+        }
+        const role = body.role || 'user';
+        if (role === 'owner' && session.role !== 'owner') {
+          return jsonResponse({ error: 'オーナー権限の付与はオーナーのみ行えます' }, 403);
+        }
         let passwordHash = null;
         if (body.pin) {
           if (!/^\d{4,8}$/.test(body.pin)) return jsonResponse({ error: 'PINは4〜8桁の数字で入力してください' }, 400);
@@ -255,7 +264,7 @@ export default {
         const info = await db.prepare(`
           INSERT INTO users (name, email, password_hash, department_id, role, avatar_color, organization_id)
           VALUES (?, ?, ?, ?, ?, ?, ?)
-        `).bind(body.name, body.email, passwordHash, body.department_id || null, body.role || 'user', body.avatar_color || '#3b82f6', orgId).run();
+        `).bind(body.name, body.email, passwordHash, body.department_id || null, role, body.avatar_color || '#3b82f6', orgId).run();
         return jsonResponse({ id: info.meta.last_row_id, ...body });
       }
 
@@ -263,15 +272,36 @@ export default {
         const id = path.split('/')[3];
         const body = await request.json();
         const orgId = parseOrgId(body.organization_id);
+        const session = await resolveSession(db, request);
+        if (!session || session.organization_id !== orgId || !STAFF_ROLES.includes(session.role)) {
+          return jsonResponse({ error: '管理者権限が必要です' }, 403);
+        }
+        const role = body.role || 'user';
+        if (role === 'owner' && session.role !== 'owner') {
+          return jsonResponse({ error: 'オーナー権限の付与はオーナーのみ行えます' }, 403);
+        }
+        if (role !== 'owner') {
+          const target = await db.prepare('SELECT role FROM users WHERE id = ? AND organization_id = ?').bind(id, orgId).first();
+          if (target?.role === 'owner') {
+            const { results: owners } = await db.prepare('SELECT id FROM users WHERE organization_id = ? AND role = ?').bind(orgId, 'owner').all();
+            if (owners.length <= 1) return jsonResponse({ error: '組織に最低1人はオーナーが必要です' }, 400);
+          }
+        }
         await db.prepare(`
           UPDATE users SET name = ?, email = ?, department_id = ?, role = ?, avatar_color = ? WHERE id = ? AND organization_id = ?
-        `).bind(body.name, body.email, body.department_id || null, body.role || 'user', body.avatar_color || '#3b82f6', id, orgId).run();
+        `).bind(body.name, body.email, body.department_id || null, role, body.avatar_color || '#3b82f6', id, orgId).run();
         return jsonResponse({ success: true });
       }
 
       if (path.startsWith('/api/users/') && request.method === 'DELETE') {
         const id = path.split('/')[3];
         const orgId = orgIdFromQuery();
+        const session = await resolveSession(db, request);
+        if (!session || session.organization_id !== orgId || !STAFF_ROLES.includes(session.role)) {
+          return jsonResponse({ error: '管理者権限が必要です' }, 403);
+        }
+        const target = await db.prepare('SELECT role FROM users WHERE id = ? AND organization_id = ?').bind(id, orgId).first();
+        if (target?.role === 'owner') return jsonResponse({ error: 'オーナーのアカウントは削除できません' }, 400);
         await db.prepare('DELETE FROM users WHERE id = ? AND organization_id = ?').bind(id, orgId).run();
         return jsonResponse({ success: true });
       }
@@ -293,6 +323,10 @@ export default {
       if (path === '/api/departments' && request.method === 'POST') {
         const body = await request.json();
         const orgId = parseOrgId(body.organization_id);
+        const session = await resolveSession(db, request);
+        if (!session || session.organization_id !== orgId || !STAFF_ROLES.includes(session.role)) {
+          return jsonResponse({ error: '管理者権限が必要です' }, 403);
+        }
         const info = await db.prepare('INSERT INTO departments (name, organization_id) VALUES (?, ?)').bind(body.name, orgId).run();
         return jsonResponse({ id: info.meta.last_row_id, name: body.name, user_count: 0 });
       }
@@ -301,6 +335,10 @@ export default {
         const id = path.split('/')[3];
         const body = await request.json();
         const orgId = parseOrgId(body.organization_id);
+        const session = await resolveSession(db, request);
+        if (!session || session.organization_id !== orgId || !STAFF_ROLES.includes(session.role)) {
+          return jsonResponse({ error: '管理者権限が必要です' }, 403);
+        }
         await db.prepare('UPDATE departments SET name = ? WHERE id = ? AND organization_id = ?').bind(body.name, id, orgId).run();
         return jsonResponse({ success: true });
       }
@@ -308,6 +346,10 @@ export default {
       if (path.startsWith('/api/departments/') && request.method === 'DELETE') {
         const id = path.split('/')[3];
         const orgId = orgIdFromQuery();
+        const session = await resolveSession(db, request);
+        if (!session || session.organization_id !== orgId || !STAFF_ROLES.includes(session.role)) {
+          return jsonResponse({ error: '管理者権限が必要です' }, 403);
+        }
         await db.prepare('DELETE FROM departments WHERE id = ? AND organization_id = ?').bind(id, orgId).run();
         return jsonResponse({ success: true });
       }
@@ -765,7 +807,7 @@ export default {
 
       if (path === '/api/auth/reset-pin' && request.method === 'POST') {
         const session = await resolveSession(db, request);
-        if (!session || session.role !== 'admin') return jsonResponse({ error: '管理者権限が必要です' }, 403);
+        if (!session || !STAFF_ROLES.includes(session.role)) return jsonResponse({ error: '管理者権限が必要です' }, 403);
 
         const body = await request.json();
         if (!/^\d{4,8}$/.test(body.new_pin || '')) {

@@ -4,8 +4,9 @@ import { X, Settings, Users, Building2, Plus, Edit, Trash2, ShieldCheck, UserChe
 const COLORS = ['#7d68a8', '#6fa382', '#c9a04a', '#7d68a8', '#c97a94', '#6b8fa3', '#c2604f', '#4a5750'];
 
 export default function AdminModal({
-  onClose, users, departments, onSaveUser, onDeleteUser, onSaveDept, onDeleteDept, onResetPin, onOpenCsvImport
+  onClose, users, departments, currentUser, onSaveUser, onDeleteUser, onSaveDept, onDeleteDept, onResetPin, onOpenCsvImport
 }) {
+  const isOwner = currentUser?.role === 'owner';
   const [activeTab, setActiveTab] = useState('users'); // 'users' or 'departments'
 
   // User form
@@ -164,7 +165,13 @@ export default function AdminModal({
                       >
                         <option value="user">一般社員</option>
                         <option value="admin">管理者 (Admin)</option>
+                        {isOwner && <option value="owner">オーナー</option>}
                       </select>
+                      {userEdit.role === 'owner' && (
+                        <div style={{ fontSize: '0.72rem', color: '#c2604f', marginTop: '3px' }}>
+                          オーナーは削除できず、組織に最低1人必要です
+                        </div>
+                      )}
                     </div>
                     <div className="form-group">
                       <label className="form-label">アバターカラー</label>
@@ -226,7 +233,9 @@ export default function AdminModal({
                           <div>
                             <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#1e2620', display: 'flex', alignItems: 'center', gap: '6px' }}>
                               {u.name}
-                              {u.role === 'admin' ? (
+                              {u.role === 'owner' ? (
+                                <span style={{ fontSize: '0.65rem', background: '#fbe8e4', color: '#c2604f', padding: '1px 5px', borderRadius: '4px' }}>オーナー</span>
+                              ) : u.role === 'admin' ? (
                                 <span style={{ fontSize: '0.65rem', background: '#efe9f8', color: '#7d68a8', padding: '1px 5px', borderRadius: '4px' }}>管理者</span>
                               ) : (
                                 <span style={{ fontSize: '0.65rem', background: '#f2ede1', color: '#48564c', padding: '1px 5px', borderRadius: '4px' }}>一般</span>
@@ -245,7 +254,7 @@ export default function AdminModal({
                           <button className="btn-secondary" style={{ padding: '6px' }} onClick={() => startEditUser(u)}>
                             <Edit size={14} />
                           </button>
-                          {users.length > 1 && (
+                          {users.length > 1 && u.role !== 'owner' && (
                             <button 
                               className="btn-secondary" 
                               style={{ padding: '6px', color: '#d97a6c' }}

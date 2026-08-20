@@ -83,7 +83,7 @@ export default function AppHeader({
 
         <ThemePicker />
 
-        {currentUser?.role === 'admin' && (
+        {(currentUser?.role === 'admin' || currentUser?.role === 'owner') && (
           <button className="btn-suite-icon btn-admin-accent" onClick={onOpenAdmin} title="組織・アカウントマスター管理">
             <Building2 size={16} />
             <span className="btn-label-desktop">組織管理</span>
@@ -95,7 +95,9 @@ export default function AppHeader({
             {currentUser?.name?.charAt(0) || '👤'}
           </div>
           <div className="suite-user-info">
-            <div className="suite-user-label">{currentUser?.role === 'admin' ? '管理者' : currentUser?.department_name || '一般'}</div>
+            <div className="suite-user-label">
+              {currentUser?.role === 'owner' ? 'オーナー' : currentUser?.role === 'admin' ? '管理者' : currentUser?.department_name || '一般'}
+            </div>
             <div className="suite-user-name">{currentUser?.name}</div>
           </div>
           <button className="suite-user-logout-btn" onClick={onOpenChangePin} title="PINを変更">
