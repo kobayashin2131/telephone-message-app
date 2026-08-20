@@ -1,6 +1,9 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App.jsx'
+import PlatformAdminApp from './components/PlatformAdminApp.jsx'
+
+const RootComponent = window.location.pathname.startsWith('/platform-admin') ? PlatformAdminApp : App;
 
 // Applied before the first paint so switching tone/size doesn't flash the default.
 const savedTone = localStorage.getItem('callsync_tone');
@@ -14,6 +17,6 @@ if (savedSize && savedSize !== 'normal') {
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <App />
+    <RootComponent />
   </StrictMode>,
 )

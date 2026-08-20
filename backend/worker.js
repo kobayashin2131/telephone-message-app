@@ -160,15 +160,37 @@ async function resolveSession(db, request) {
   if (!token) return null;
 
   const row = await db.prepare(`
-    SELECT s.token, s.expires_at, u.id as user_id, u.name, u.email, u.role, u.organization_id
+    SELECT s.token, s.expires_at, u.id as user_id, u.name, u.email, u.role, u.organization_id, o.status as org_status
     FROM sessions s
     JOIN users u ON s.user_id = u.id
+    LEFT JOIN organizations o ON u.organization_id = o.id
     WHERE s.token = ?
   `).bind(token).first();
 
   if (!row) return null;
   if (new Date(row.expires_at).getTime() < Date.now()) {
     await db.prepare('DELETE FROM sessions WHERE token = ?').bind(token).run();
+    return null;
+  }
+  if (row.org_status === 'cancelled') return null;
+  return row;
+}
+
+async function resolvePlatformSession(db, request) {
+  const auth = request.headers.get('Authorization') || '';
+  const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
+  if (!token) return null;
+
+  const row = await db.prepare(`
+    SELECT s.token, s.expires_at, a.id as admin_id, a.email
+    FROM platform_sessions s
+    JOIN platform_admins a ON s.platform_admin_id = a.id
+    WHERE s.token = ?
+  `).bind(token).first();
+
+  if (!row) return null;
+  if (new Date(row.expires_at).getTime() < Date.now()) {
+    await db.prepare('DELETE FROM platform_sessions WHERE token = ?').bind(token).run();
     return null;
   }
   return row;
@@ -787,6 +809,10 @@ export default {
         if (!user || !(await verifyPin(body.pin || '', user.password_hash))) {
           return jsonResponse({ error: 'メールアドレスまたはPINが正しくありません' }, 401);
         }
+        const org = await db.prepare('SELECT status FROM organizations WHERE id = ?').bind(user.organization_id).first();
+        if (org?.status === 'cancelled') {
+          return jsonResponse({ error: 'この組織は現在利用できません。管理者にお問い合わせください。' }, 403);
+        }
         const token = generateToken();
         const expiresAt = new Date(Date.now() + SESSION_TTL_MS).toISOString();
         await db.prepare('INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)').bind(token, user.id, expiresAt).run();
@@ -861,6 +887,95 @@ export default {
 
         const newHash = await hashPin(body.new_pin);
         await db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').bind(newHash, body.user_id).run();
+        return jsonResponse({ success: true });
+      }
+
+      // 8. Platform admin (spans all organizations — separate credential/session system)
+      if (path === '/api/platform/login' && request.method === 'POST') {
+        const body = await request.json();
+        const admin = await db.prepare('SELECT * FROM platform_admins WHERE email = ?').bind(body.email || '').first();
+        if (!admin || !(await verifyPin(body.password || '', admin.password_hash))) {
+          return jsonResponse({ error: 'メールアドレスまたはパスワードが正しくありません' }, 401);
+        }
+        const token = generateToken();
+        const expiresAt = new Date(Date.now() + SESSION_TTL_MS).toISOString();
+        await db.prepare('INSERT INTO platform_sessions (token, platform_admin_id, expires_at) VALUES (?, ?, ?)').bind(token, admin.id, expiresAt).run();
+        return jsonResponse({ token, admin: { id: admin.id, email: admin.email } });
+      }
+
+      if (path === '/api/platform/logout' && request.method === 'POST') {
+        const auth = request.headers.get('Authorization') || '';
+        const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
+        if (token) await db.prepare('DELETE FROM platform_sessions WHERE token = ?').bind(token).run();
+        return jsonResponse({ success: true });
+      }
+
+      if (path === '/api/platform/organizations' && request.method === 'GET') {
+        const platformSession = await resolvePlatformSession(db, request);
+        if (!platformSession) return jsonResponse({ error: '認証が必要です' }, 401);
+
+        const { results } = await db.prepare(`
+          SELECT
+            o.id, o.name, o.status, o.created_at, o.cancelled_at,
+            (SELECT COUNT(*) FROM users WHERE organization_id = o.id) as user_count,
+            (SELECT COUNT(*) FROM departments WHERE organization_id = o.id) as department_count,
+            (SELECT COUNT(*) FROM chat_groups WHERE organization_id = o.id) as group_count,
+            (SELECT COUNT(*) FROM call_memos WHERE organization_id = o.id) as call_memo_count,
+            (SELECT COUNT(*) FROM call_memos WHERE organization_id = o.id AND status = 'pending') as pending_call_memo_count,
+            (SELECT MAX(created_at) FROM call_memos WHERE organization_id = o.id) as last_call_memo_at,
+            (SELECT MAX(m.created_at) FROM messages m JOIN chat_groups g ON m.target_id = g.id AND m.target_type = 'group' WHERE g.organization_id = o.id) as last_message_at
+          FROM organizations o
+          ORDER BY o.id ASC
+        `).all();
+        return jsonResponse(results);
+      }
+
+      if (path.match(/^\/api\/platform\/organizations\/\d+\/cancel$/) && request.method === 'POST') {
+        const platformSession = await resolvePlatformSession(db, request);
+        if (!platformSession) return jsonResponse({ error: '認証が必要です' }, 401);
+        const id = path.split('/')[4];
+        await db.prepare("UPDATE organizations SET status = 'cancelled', cancelled_at = ? WHERE id = ?")
+          .bind(new Date().toISOString(), id).run();
+        await db.prepare('DELETE FROM sessions WHERE user_id IN (SELECT id FROM users WHERE organization_id = ?)').bind(id).run();
+        return jsonResponse({ success: true });
+      }
+
+      if (path.match(/^\/api\/platform\/organizations\/\d+\/reactivate$/) && request.method === 'POST') {
+        const platformSession = await resolvePlatformSession(db, request);
+        if (!platformSession) return jsonResponse({ error: '認証が必要です' }, 401);
+        const id = path.split('/')[4];
+        await db.prepare("UPDATE organizations SET status = 'active', cancelled_at = NULL WHERE id = ?").bind(id).run();
+        return jsonResponse({ success: true });
+      }
+
+      if (path.match(/^\/api\/platform\/organizations\/\d+$/) && request.method === 'DELETE') {
+        const platformSession = await resolvePlatformSession(db, request);
+        if (!platformSession) return jsonResponse({ error: '認証が必要です' }, 401);
+        const id = path.split('/')[4];
+
+        const org = await db.prepare('SELECT status FROM organizations WHERE id = ?').bind(id).first();
+        if (!org) return jsonResponse({ error: '組織が見つかりません' }, 404);
+        if (org.status !== 'cancelled') {
+          return jsonResponse({ error: '完全削除の前に、まず解約済みにしてください' }, 400);
+        }
+
+        const { results: userIds } = await db.prepare('SELECT id FROM users WHERE organization_id = ?').bind(id).all();
+        const ids = userIds.map(u => u.id);
+        if (ids.length > 0) {
+          const placeholders = ids.map(() => '?').join(',');
+          await db.prepare(`DELETE FROM sessions WHERE user_id IN (${placeholders})`).bind(...ids).run();
+          await db.prepare(`DELETE FROM push_subscriptions WHERE user_id IN (${placeholders})`).bind(...ids).run();
+          await db.prepare(`DELETE FROM fcm_tokens WHERE user_id IN (${placeholders})`).bind(...ids).run();
+        }
+        await db.prepare('DELETE FROM message_reads WHERE user_id IN (SELECT id FROM users WHERE organization_id = ?)').bind(id).run();
+        await db.prepare(`DELETE FROM messages WHERE target_type = 'group' AND target_id IN (SELECT id FROM chat_groups WHERE organization_id = ?)`).bind(id).run();
+        await db.prepare('DELETE FROM group_members WHERE group_id IN (SELECT id FROM chat_groups WHERE organization_id = ?)').bind(id).run();
+        await db.prepare('DELETE FROM chat_groups WHERE organization_id = ?').bind(id).run();
+        await db.prepare('DELETE FROM call_memos WHERE organization_id = ?').bind(id).run();
+        await db.prepare('DELETE FROM caller_contacts WHERE organization_id = ?').bind(id).run();
+        await db.prepare('DELETE FROM users WHERE organization_id = ?').bind(id).run();
+        await db.prepare('DELETE FROM departments WHERE organization_id = ?').bind(id).run();
+        await db.prepare('DELETE FROM organizations WHERE id = ?').bind(id).run();
         return jsonResponse({ success: true });
       }
 
