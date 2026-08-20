@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles, LogOut, Ban, RotateCcw, Trash2, Building2 } from 'lucide-react';
+import { Sparkles, LogOut, Ban, RotateCcw, Trash2, Building2, HardDrive } from 'lucide-react';
 
 const API_BASE = 'https://callsync-backend.nonba30.workers.dev/api';
 const STORAGE_KEY = 'callsync_platform_auth';
@@ -16,6 +16,13 @@ function loadAuth() {
 function fmtDate(v) {
   if (!v) return '—';
   return new Date(v.replace(' ', 'T') + 'Z').toLocaleString('ja-JP', { dateStyle: 'short', timeStyle: 'short' });
+}
+
+function fmtBytes(bytes) {
+  if (!bytes) return '0 MB';
+  const mb = bytes / (1024 * 1024);
+  if (mb < 1024) return `${mb.toFixed(1)} MB`;
+  return `${(mb / 1024).toFixed(2)} GB`;
 }
 
 function PlatformLoginScreen({ onLogin }) {
@@ -79,8 +86,10 @@ function PlatformLoginScreen({ onLogin }) {
   );
 }
 
-function OrgRow({ org, onCancel, onReactivate, onDelete }) {
+function OrgRow({ org, onCancel, onReactivate, onDelete, onEditStorage }) {
   const isCancelled = org.status === 'cancelled';
+  const pct = Math.min(100, Math.round((org.storage_used_bytes / org.storage_limit_bytes) * 100));
+  const isNearLimit = pct >= 80;
   return (
     <tr>
       <td>
@@ -98,6 +107,18 @@ function OrgRow({ org, onCancel, onReactivate, onDelete }) {
       <td>
         {org.call_memo_count}
         {org.pending_call_memo_count > 0 && <span className="platform-pending-badge">未対応{org.pending_call_memo_count}</span>}
+      </td>
+      <td style={{ minWidth: '140px', cursor: 'pointer' }} onClick={() => onEditStorage(org)} title="クリックで上限を変更">
+        <div style={{ fontSize: '0.78rem', display: 'flex', justifyContent: 'space-between' }}>
+          <span>{fmtBytes(org.storage_used_bytes)}</span>
+          <span style={{ color: 'var(--ink-faint)' }}>/ {fmtBytes(org.storage_limit_bytes)}</span>
+        </div>
+        <div className="platform-storage-bar">
+          <div
+            className="platform-storage-bar-fill"
+            style={{ width: `${pct}%`, background: isNearLimit ? 'var(--status-pending)' : 'var(--status-resolved)' }}
+          />
+        </div>
       </td>
       <td style={{ fontSize: '0.78rem' }}>
         {fmtDate(
@@ -186,6 +207,28 @@ function Dashboard({ auth, onLogout }) {
     fetchOrgs();
   };
 
+  const handleEditStorage = async (org) => {
+    const currentGB = (org.storage_limit_bytes / (1024 * 1024 * 1024)).toFixed(1);
+    const typed = window.prompt(`「${org.name}」のストレージ上限（GB）を入力してください`, currentGB);
+    if (typed === null) return;
+    const gb = Number(typed);
+    if (!Number.isFinite(gb) || gb <= 0) {
+      alert('数値（GB）を入力してください');
+      return;
+    }
+    const res = await fetch(`${API_BASE}/platform/organizations/${org.id}/storage-limit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${auth.token}` },
+      body: JSON.stringify({ storage_limit_bytes: Math.round(gb * 1024 * 1024 * 1024) })
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      alert(data.error || '更新に失敗しました');
+      return;
+    }
+    fetchOrgs();
+  };
+
   return (
     <div className="suite-root">
       <header className="suite-header">
@@ -226,13 +269,21 @@ function Dashboard({ auth, onLogout }) {
                   <th>部門</th>
                   <th>グループ</th>
                   <th>受電メモ</th>
+                  <th>ストレージ</th>
                   <th>最終アクティビティ</th>
                   <th></th>
                 </tr>
               </thead>
               <tbody>
                 {orgs.map(org => (
-                  <OrgRow key={org.id} org={org} onCancel={handleCancel} onReactivate={handleReactivate} onDelete={handleDelete} />
+                  <OrgRow
+                    key={org.id}
+                    org={org}
+                    onCancel={handleCancel}
+                    onReactivate={handleReactivate}
+                    onDelete={handleDelete}
+                    onEditStorage={handleEditStorage}
+                  />
                 ))}
               </tbody>
             </table>

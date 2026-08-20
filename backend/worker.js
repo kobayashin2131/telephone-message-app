@@ -916,18 +916,30 @@ export default {
 
         const { results } = await db.prepare(`
           SELECT
-            o.id, o.name, o.status, o.created_at, o.cancelled_at,
+            o.id, o.name, o.status, o.created_at, o.cancelled_at, o.plan_tier, o.storage_limit_bytes,
             (SELECT COUNT(*) FROM users WHERE organization_id = o.id) as user_count,
             (SELECT COUNT(*) FROM departments WHERE organization_id = o.id) as department_count,
             (SELECT COUNT(*) FROM chat_groups WHERE organization_id = o.id) as group_count,
             (SELECT COUNT(*) FROM call_memos WHERE organization_id = o.id) as call_memo_count,
             (SELECT COUNT(*) FROM call_memos WHERE organization_id = o.id AND status = 'pending') as pending_call_memo_count,
             (SELECT MAX(created_at) FROM call_memos WHERE organization_id = o.id) as last_call_memo_at,
-            (SELECT MAX(m.created_at) FROM messages m JOIN chat_groups g ON m.target_id = g.id AND m.target_type = 'group' WHERE g.organization_id = o.id) as last_message_at
+            (SELECT MAX(m.created_at) FROM messages m JOIN chat_groups g ON m.target_id = g.id AND m.target_type = 'group' WHERE g.organization_id = o.id) as last_message_at,
+            (SELECT COALESCE(SUM(m.attachment_size), 0) FROM messages m JOIN chat_groups g ON m.target_id = g.id AND m.target_type = 'group' WHERE g.organization_id = o.id) as storage_used_bytes
           FROM organizations o
           ORDER BY o.id ASC
         `).all();
         return jsonResponse(results);
+      }
+
+      if (path.match(/^\/api\/platform\/organizations\/\d+\/storage-limit$/) && request.method === 'POST') {
+        const platformSession = await resolvePlatformSession(db, request);
+        if (!platformSession) return jsonResponse({ error: '認証が必要です' }, 401);
+        const id = path.split('/')[4];
+        const body = await request.json();
+        const bytes = Number(body.storage_limit_bytes);
+        if (!Number.isFinite(bytes) || bytes <= 0) return jsonResponse({ error: '容量の値が不正です' }, 400);
+        await db.prepare('UPDATE organizations SET storage_limit_bytes = ? WHERE id = ?').bind(bytes, id).run();
+        return jsonResponse({ success: true });
       }
 
       if (path.match(/^\/api\/platform\/organizations\/\d+\/cancel$/) && request.method === 'POST') {
