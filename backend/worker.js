@@ -154,6 +154,34 @@ const generateToken = () => bufToHex(crypto.getRandomValues(new Uint8Array(32)))
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 const STAFF_ROLES = ['owner', 'admin']; // roles allowed to manage users/departments
 
+// Per-org subdomain login: {slug}.SUBDOMAIN_BASE. Free-tier Cloudflare SSL only
+// covers a first-level wildcard, so this stays a single label off the base
+// domain (not a second-level wildcard) — see CLAUDE.md for the cost tradeoff.
+const SUBDOMAIN_BASE = 'easystance.app';
+const SLUG_PATTERN = /^[a-z0-9][a-z0-9-]{2,31}$/;
+// easystance.app already hosts other, unrelated apps on their own subdomains
+// (e.g. worklog.easystance.app) — block orgs from picking labels that could
+// collide with those or with likely-future infra labels.
+const RESERVED_SLUGS = new Set(['www', 'api', 'app', 'admin', 'mail', 'ftp', 'worklog', 'platform-admin', 'callsync', 'connect-suite', 'homebase', 'staging', 'dev', 'test']);
+
+// Maps an old slug host to a new one after a future domain move, so existing
+// bookmarks keep working via redirect instead of breaking. Empty until needed.
+const LEGACY_HOST_REDIRECTS = {};
+
+function resolveSlugFromHost(request) {
+  const host = (request.headers.get('Host') || '').toLowerCase();
+  if (!host.endsWith(`.${SUBDOMAIN_BASE}`)) return null;
+  const label = host.slice(0, -(`.${SUBDOMAIN_BASE}`.length));
+  if (!label || label.includes('.') || !SLUG_PATTERN.test(label)) return null;
+  return label;
+}
+
+async function resolveOrgFromHost(db, request) {
+  const slug = resolveSlugFromHost(request);
+  if (!slug) return null;
+  return db.prepare('SELECT id, name, slug FROM organizations WHERE slug = ?').bind(slug).first();
+}
+
 async function resolveSession(db, request) {
   const auth = request.headers.get('Authorization') || '';
   const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
@@ -242,7 +270,19 @@ export default {
       return new Response(null, { headers: corsHeaders });
     }
 
+    const incomingHost = url.hostname.toLowerCase();
+    if (LEGACY_HOST_REDIRECTS[incomingHost]) {
+      const target = new URL(url.toString());
+      target.hostname = LEGACY_HOST_REDIRECTS[incomingHost];
+      return Response.redirect(target.toString(), 301);
+    }
+
     const path = url.pathname;
+
+    if (!path.startsWith('/api/') && env.ASSETS) {
+      return env.ASSETS.fetch(request);
+    }
+
     const db = env.DB;
     const orgIdFromQuery = () => parseOrgId(url.searchParams.get('organization_id'));
 
@@ -331,13 +371,43 @@ export default {
 
         const org = await db.prepare(`
           SELECT
-            o.id, o.name, o.plan_tier, o.storage_limit_bytes, o.created_at,
+            o.id, o.name, o.plan_tier, o.storage_limit_bytes, o.slug, o.created_at,
             (SELECT COALESCE(SUM(m.attachment_size), 0) FROM messages m JOIN chat_groups g ON m.target_id = g.id AND m.target_type = 'group' WHERE g.organization_id = o.id) as storage_used_bytes,
             (SELECT COUNT(*) FROM users WHERE organization_id = o.id) as user_count
           FROM organizations o WHERE o.id = ?
         `).bind(session.organization_id).first();
         if (!org) return jsonResponse({ error: '組織が見つかりません' }, 404);
-        return jsonResponse(org);
+        return jsonResponse({ ...org, login_url: org.slug ? `https://${org.slug}.${SUBDOMAIN_BASE}` : null });
+      }
+
+      // 1c. Org subdomain slug: availability check + owner-only assignment
+      if (path === '/api/auth/check-slug' && request.method === 'GET') {
+        const slug = (url.searchParams.get('slug') || '').toLowerCase();
+        if (!SLUG_PATTERN.test(slug)) {
+          return jsonResponse({ available: false, reason: '半角英数字とハイフンで3〜32文字（先頭は英数字）にしてください' });
+        }
+        if (RESERVED_SLUGS.has(slug)) {
+          return jsonResponse({ available: false, reason: 'このURLは予約済みのため使用できません' });
+        }
+        const existing = await db.prepare('SELECT id FROM organizations WHERE slug = ?').bind(slug).first();
+        return jsonResponse({ available: !existing });
+      }
+
+      if (path === '/api/organization/slug' && request.method === 'POST') {
+        const session = await resolveSession(db, request);
+        if (!session || session.role !== 'owner') return jsonResponse({ error: 'オーナー権限が必要です' }, 403);
+
+        const body = await request.json();
+        const slug = (body.slug || '').toLowerCase();
+        if (!SLUG_PATTERN.test(slug) || RESERVED_SLUGS.has(slug)) {
+          return jsonResponse({ error: '半角英数字とハイフンで3〜32文字（先頭は英数字）にしてください' }, 400);
+        }
+        const existing = await db.prepare('SELECT id FROM organizations WHERE slug = ?').bind(slug).first();
+        if (existing && existing.id !== session.organization_id) {
+          return jsonResponse({ error: 'このURLは既に使われています' }, 409);
+        }
+        await db.prepare('UPDATE organizations SET slug = ? WHERE id = ?').bind(slug, session.organization_id).run();
+        return jsonResponse({ success: true, login_url: `https://${slug}.${SUBDOMAIN_BASE}` });
       }
 
       // 2. Departments
@@ -779,6 +849,7 @@ export default {
         const ownerName = (body.owner_name || '').trim();
         const email = (body.email || '').trim();
         const pin = body.pin || '';
+        const slug = (body.slug || '').toLowerCase().trim();
 
         if (!orgName || !ownerName || !email) {
           return jsonResponse({ error: '組織名・氏名・IDは必須です' }, 400);
@@ -789,11 +860,19 @@ export default {
         if (!/^\d{4,8}$/.test(pin)) {
           return jsonResponse({ error: 'PINは4〜8桁の数字で入力してください' }, 400);
         }
+        if (slug && (!SLUG_PATTERN.test(slug) || RESERVED_SLUGS.has(slug))) {
+          return jsonResponse({ error: '専用URLは半角英数字とハイフンで3〜32文字（先頭は英数字）にしてください' }, 400);
+        }
 
         const existing = await db.prepare('SELECT id FROM users WHERE email = ?').bind(email).first();
         if (existing) return jsonResponse({ error: 'このIDはすでに使われています' }, 409);
 
-        const orgInfo = await db.prepare('INSERT INTO organizations (name) VALUES (?)').bind(orgName).run();
+        if (slug) {
+          const slugTaken = await db.prepare('SELECT id FROM organizations WHERE slug = ?').bind(slug).first();
+          if (slugTaken) return jsonResponse({ error: 'この専用URLは既に使われています' }, 409);
+        }
+
+        const orgInfo = await db.prepare('INSERT INTO organizations (name, slug) VALUES (?, ?)').bind(orgName, slug || null).run();
         const orgId = orgInfo.meta.last_row_id;
         const passwordHash = await hashPin(pin);
 
@@ -814,13 +893,17 @@ export default {
 
         return jsonResponse({
           token,
-          user: { id: userInfo.meta.last_row_id, name: ownerName, email, role: 'owner', organization_id: orgId, must_change_pin: false }
+          user: { id: userInfo.meta.last_row_id, name: ownerName, email, role: 'owner', organization_id: orgId, must_change_pin: false },
+          login_url: slug ? `https://${slug}.${SUBDOMAIN_BASE}` : null
         });
       }
 
       if (path === '/api/auth/login' && request.method === 'POST') {
         const body = await request.json();
-        const user = await db.prepare('SELECT * FROM users WHERE email = ?').bind(body.email || '').first();
+        const hostOrg = await resolveOrgFromHost(db, request);
+        const user = hostOrg
+          ? await db.prepare('SELECT * FROM users WHERE email = ? AND organization_id = ?').bind(body.email || '', hostOrg.id).first()
+          : await db.prepare('SELECT * FROM users WHERE email = ?').bind(body.email || '').first();
         if (!user || !(await verifyPin(body.pin || '', user.password_hash))) {
           return jsonResponse({ error: 'メールアドレスまたはPINが正しくありません' }, 401);
         }
