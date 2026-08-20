@@ -328,6 +328,22 @@ export default {
         return jsonResponse({ success: true });
       }
 
+      // 1b. Organization info (plan/storage — read-only for org staff; changes are platform-admin-only for now)
+      if (path === '/api/organization' && request.method === 'GET') {
+        const session = await resolveSession(db, request);
+        if (!session || !STAFF_ROLES.includes(session.role)) return jsonResponse({ error: '管理者権限が必要です' }, 403);
+
+        const org = await db.prepare(`
+          SELECT
+            o.id, o.name, o.plan_tier, o.storage_limit_bytes, o.created_at,
+            (SELECT COALESCE(SUM(m.attachment_size), 0) FROM messages m JOIN chat_groups g ON m.target_id = g.id AND m.target_type = 'group' WHERE g.organization_id = o.id) as storage_used_bytes,
+            (SELECT COUNT(*) FROM users WHERE organization_id = o.id) as user_count
+          FROM organizations o WHERE o.id = ?
+        `).bind(session.organization_id).first();
+        if (!org) return jsonResponse({ error: '組織が見つかりません' }, 404);
+        return jsonResponse(org);
+      }
+
       // 2. Departments
       if (path === '/api/departments' && request.method === 'GET') {
         const orgId = orgIdFromQuery();

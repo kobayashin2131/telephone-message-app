@@ -586,10 +586,11 @@ export default function App() {
       )}
 
       {showAdminModal && (
-        <AdminModal 
+        <AdminModal
           users={users}
           departments={departments}
           groups={groups}
+          auth={auth}
           currentUser={currentUser}
           onClose={() => setShowAdminModal(false)}
           onSaveUser={handleSaveUser}

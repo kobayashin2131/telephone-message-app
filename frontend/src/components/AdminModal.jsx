@@ -1,10 +1,64 @@
-import React, { useState } from 'react';
-import { X, Settings, Users, Building2, Plus, Edit, Trash2, ShieldCheck, UserCheck, KeyRound, FileSpreadsheet } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Settings, Users, Building2, Plus, Edit, Trash2, ShieldCheck, UserCheck, KeyRound, FileSpreadsheet, CreditCard } from 'lucide-react';
 
 const COLORS = ['#7d68a8', '#6fa382', '#c9a04a', '#7d68a8', '#c97a94', '#6b8fa3', '#c2604f', '#4a5750'];
+const API_BASE = 'https://callsync-backend.nonba30.workers.dev/api';
+
+function fmtBytes(bytes) {
+  if (!bytes) return '0 MB';
+  const mb = bytes / (1024 * 1024);
+  if (mb < 1024) return `${mb.toFixed(1)} MB`;
+  return `${(mb / 1024).toFixed(2)} GB`;
+}
+
+const PLAN_LABELS = { trial: 'トライアル' };
+
+function PlanTab({ auth }) {
+  const [org, setOrg] = useState(null);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    fetch(`${API_BASE}/organization`, { headers: { Authorization: `Bearer ${auth.token}` } })
+      .then(res => res.ok ? res.json() : Promise.reject())
+      .then(setOrg)
+      .catch(() => setError('プラン情報の取得に失敗しました'));
+  }, []);
+
+  if (error) return <p style={{ color: '#c2604f' }}>{error}</p>;
+  if (!org) return <p>読み込み中…</p>;
+
+  const pct = Math.min(100, Math.round((org.storage_used_bytes / org.storage_limit_bytes) * 100));
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+      <div style={{ border: '1px solid #e8e2d8', borderRadius: '10px', padding: '16px' }}>
+        <div style={{ fontSize: '0.72rem', color: '#66766c', fontWeight: 700, marginBottom: '4px' }}>現在のプラン</div>
+        <div style={{ fontSize: '1.1rem', fontWeight: 800 }}>{PLAN_LABELS[org.plan_tier] || org.plan_tier}</div>
+        <div style={{ fontSize: '0.78rem', color: '#66766c', marginTop: '6px' }}>
+          正式な料金プランは現在準備中です。プランのアップグレードが可能になり次第、こちらからご案内します。
+        </div>
+      </div>
+
+      <div style={{ border: '1px solid #e8e2d8', borderRadius: '10px', padding: '16px' }}>
+        <div style={{ fontSize: '0.72rem', color: '#66766c', fontWeight: 700, marginBottom: '4px' }}>ストレージ使用量（添付ファイル）</div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', fontWeight: 700, marginTop: '4px' }}>
+          <span>{fmtBytes(org.storage_used_bytes)}</span>
+          <span style={{ color: '#66766c', fontWeight: 400 }}>/ {fmtBytes(org.storage_limit_bytes)}</span>
+        </div>
+        <div style={{ width: '100%', height: '6px', background: '#f2ede1', borderRadius: '3px', overflow: 'hidden', marginTop: '6px' }}>
+          <div style={{ width: `${pct}%`, height: '100%', background: pct >= 80 ? '#c2604f' : '#6fa382', borderRadius: '3px' }} />
+        </div>
+      </div>
+
+      <div style={{ fontSize: '0.78rem', color: '#66766c' }}>
+        ユーザー数: {org.user_count}名
+      </div>
+    </div>
+  );
+}
 
 export default function AdminModal({
-  onClose, users, departments, currentUser, onSaveUser, onDeleteUser, onSaveDept, onDeleteDept, onResetPin, onOpenCsvImport
+  onClose, users, departments, currentUser, auth, onSaveUser, onDeleteUser, onSaveDept, onDeleteDept, onResetPin, onOpenCsvImport
 }) {
   const isOwner = currentUser?.role === 'owner';
   const [activeTab, setActiveTab] = useState('users'); // 'users' or 'departments'
@@ -92,6 +146,17 @@ export default function AdminModal({
           >
             🏢 部門マスタ管理 ({departments.length}部門)
           </button>
+          <button
+            style={{
+              padding: '12px 16px', border: 'none', background: 'transparent',
+              fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer',
+              color: activeTab === 'plan' ? '#7d68a8' : '#48564c',
+              borderBottom: activeTab === 'plan' ? '2px solid #7d68a8' : '2px solid transparent'
+            }}
+            onClick={() => setActiveTab('plan')}
+          >
+            💳 プラン・容量
+          </button>
         </div>
 
         <div className="modal-body">
@@ -120,11 +185,11 @@ export default function AdminModal({
                         className="form-input"
                         value={userEdit.email}
                         onChange={(e) => setUserEdit({ ...userEdit, email: e.target.value })}
-                        placeholder="ID+PINのみなら実在しなくてもOK"
+                        placeholder="例: yamada@example.com"
                         required
                       />
                       <div style={{ fontSize: '0.72rem', color: '#66766c', marginTop: '3px' }}>
-                        「Googleでログイン」も使わせたい場合は、本人の実際のGoogleアカウントのメールアドレスを入力してください
+                        ID+PINでのみ使う場合は実在しなくてもOKです。「Googleでログイン」も使わせたい場合は、本人の実際のGoogleアカウントのメールアドレスを入力してください
                       </div>
                     </div>
                     <div className="form-group">
@@ -339,6 +404,8 @@ export default function AdminModal({
               </div>
             </div>
           )}
+
+          {activeTab === 'plan' && <PlanTab auth={auth} />}
         </div>
 
         <div className="modal-footer">
