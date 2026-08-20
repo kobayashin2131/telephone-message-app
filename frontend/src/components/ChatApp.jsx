@@ -28,7 +28,16 @@ export default function ChatApp({
   // Filter direct messages (exclude self)
   const dmUsers = users.filter(u => u.id !== currentUser?.id);
 
-  const filteredGroups = groups.filter(g => 
+  // Filter groups: only show groups the current user belongs to (or created)
+  const myGroups = groups.filter(g => {
+    if (!currentUser) return true;
+    if (g.member_ids && Array.isArray(g.member_ids)) {
+      return g.member_ids.includes(currentUser.id) || g.created_by === currentUser.id;
+    }
+    return true;
+  });
+
+  const filteredGroups = myGroups.filter(g => 
     g.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 

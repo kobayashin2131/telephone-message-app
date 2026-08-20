@@ -14,12 +14,13 @@ function formatFileSize(bytes) {
 
 function hasMentionToMe(content, currentUserName) {
   if (!content || !currentUserName) return false;
-  return content.includes('@全員') || content.includes('@all') || content.includes(`@${currentUserName}`);
+  const normalized = content.replace(/＠/g, '@');
+  return normalized.includes('@全員') || normalized.includes('@all') || normalized.includes(`@${currentUserName}`);
 }
 
 function renderContentWithMentions(content, currentUserName) {
   if (!content) return null;
-  const regex = /(@[^\s@　]+)/g;
+  const regex = /([@＠][^\s@＠　]+)/g;
   const parts = [];
   let lastIndex = 0;
   let match;
@@ -28,12 +29,12 @@ function renderContentWithMentions(content, currentUserName) {
     if (match.index > lastIndex) {
       parts.push(content.substring(lastIndex, match.index));
     }
-    const mentionText = match[1];
-    const name = mentionText.slice(1);
+    const rawMention = match[1];
+    const name = rawMention.slice(1);
     const isMe = name === '全員' || name === 'all' || name === currentUserName;
     parts.push(
       <span key={match.index} className={`mention-pill ${isMe ? 'is-me' : ''}`}>
-        {mentionText}
+        @{name}
       </span>
     );
     lastIndex = regex.lastIndex;
@@ -99,25 +100,22 @@ export default function ChatArea({
     setMentionCursorPos(pos);
 
     const textBeforeCursor = val.slice(0, pos);
-    const lastAtIndex = textBeforeCursor.lastIndexOf('@');
+    const atMatch = textBeforeCursor.match(/[@＠]([^\s@＠　]*)$/);
 
-    if (lastAtIndex !== -1 && (lastAtIndex === 0 || /\s/.test(textBeforeCursor[lastAtIndex - 1]))) {
-      const query = textBeforeCursor.slice(lastAtIndex + 1);
-      if (!/\s/.test(query)) {
-        setMentionFilter(query);
-        setShowMentionSuggest(true);
-        return;
-      }
+    if (atMatch) {
+      setMentionFilter(atMatch[1]);
+      setShowMentionSuggest(true);
+      return;
     }
     setShowMentionSuggest(false);
   };
 
   const insertMention = (user) => {
     const textBeforeCursor = text.slice(0, mentionCursorPos);
-    const lastAtIndex = textBeforeCursor.lastIndexOf('@');
+    const atMatch = textBeforeCursor.match(/[@＠][^\s@＠　]*$/);
     const textAfterCursor = text.slice(mentionCursorPos);
 
-    const prefix = lastAtIndex !== -1 ? text.slice(0, lastAtIndex) : textBeforeCursor;
+    const prefix = atMatch ? textBeforeCursor.slice(0, atMatch.index) : textBeforeCursor;
     const mentionString = `@${user.name} `;
     const newText = prefix + mentionString + textAfterCursor;
 
@@ -134,24 +132,15 @@ export default function ChatArea({
   };
 
   const handleOpenMentionPicker = () => {
+    if (showMentionSuggest) {
+      setShowMentionSuggest(false);
+      return;
+    }
     const pos = textareaRef.current?.selectionStart ?? text.length;
-    const textBefore = text.slice(0, pos);
-    const textAfter = text.slice(pos);
-    const needsSpace = textBefore.length > 0 && !/\s$/.test(textBefore);
-    const inserted = (needsSpace ? ' @' : '@');
-    const newText = textBefore + inserted + textAfter;
-    setText(newText);
-    setMentionCursorPos(pos + inserted.length);
+    setMentionCursorPos(pos);
     setMentionFilter('');
     setShowMentionSuggest(true);
-
-    setTimeout(() => {
-      if (textareaRef.current) {
-        textareaRef.current.focus();
-        const nextPos = pos + inserted.length;
-        textareaRef.current.setSelectionRange(nextPos, nextPos);
-      }
-    }, 0);
+    if (textareaRef.current) textareaRef.current.focus();
   };
 
   const handleSend = async (e) => {
