@@ -608,10 +608,18 @@ export default {
         const { results } = await db.prepare(`
           SELECT cm.*,
                  cu.name as creator_name, cu.avatar_color as creator_avatar,
-                 ru.name as resolver_name
+                 ru.name as resolver_name,
+                 m.target_type, m.target_id,
+                 CASE 
+                   WHEN m.target_type = 'dm' THEN (SELECT name FROM users WHERE id = m.target_id)
+                   WHEN m.target_type = 'group' THEN (SELECT name FROM chat_groups WHERE id = m.target_id)
+                   WHEN m.target_type = 'department' THEN (SELECT name FROM departments WHERE id = m.target_id)
+                   ELSE NULL
+                 END as target_name
           FROM call_memos cm
           LEFT JOIN users cu ON cm.created_by = cu.id
           LEFT JOIN users ru ON cm.resolved_by = ru.id
+          LEFT JOIN messages m ON m.call_memo_id = cm.id AND m.message_type = 'call_card'
           WHERE cm.organization_id = ?
           ORDER BY cm.created_at DESC
         `).bind(orgId).all();
@@ -733,6 +741,8 @@ export default {
                    cm.subject as memo_subject, cm.body as memo_body, cm.call_type as memo_type, cm.status as memo_status,
                    cm.resolved_note as memo_resolved_note, cm.resolved_at as memo_resolved_at,
                    ru.name as memo_resolver_name,
+                   m.target_type as memo_target_type,
+                   (SELECT name FROM users WHERE id = m.target_id) as memo_target_name,
                    (SELECT COUNT(*) FROM messages WHERE parent_id = m.id) as thread_count
             FROM messages m
             JOIN users u ON m.sender_id = u.id
@@ -751,6 +761,12 @@ export default {
                    cm.subject as memo_subject, cm.body as memo_body, cm.call_type as memo_type, cm.status as memo_status,
                    cm.resolved_note as memo_resolved_note, cm.resolved_at as memo_resolved_at,
                    ru.name as memo_resolver_name,
+                   m.target_type as memo_target_type,
+                   CASE 
+                     WHEN m.target_type = 'group' THEN (SELECT name FROM chat_groups WHERE id = m.target_id)
+                     WHEN m.target_type = 'department' THEN (SELECT name FROM departments WHERE id = m.target_id)
+                     ELSE NULL
+                   END as memo_target_name,
                    (SELECT COUNT(*) FROM messages WHERE parent_id = m.id) as thread_count
             FROM messages m
             JOIN users u ON m.sender_id = u.id

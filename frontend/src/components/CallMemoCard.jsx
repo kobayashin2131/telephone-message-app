@@ -1,7 +1,10 @@
-import React from 'react';
-import { Phone, CheckCircle, Clock, AlertTriangle, MessageSquare, User, Sparkles } from 'lucide-react';
+import React, { useState } from 'react';
+import { Phone, CheckCircle, Clock, AlertTriangle, MessageSquare, User, Building2, Edit3, Send, X } from 'lucide-react';
 
 export default function CallMemoCard({ memo, onUpdateStatus, onOpenThread, currentUserId }) {
+  const [showNoteInput, setShowNoteInput] = useState(false);
+  const [noteText, setNoteText] = useState(memo?.memo_resolved_note || '');
+
   if (!memo) return null;
 
   const isResolved = memo.memo_status === 'resolved';
@@ -9,10 +12,24 @@ export default function CallMemoCard({ memo, onUpdateStatus, onOpenThread, curre
   const isUrgent = memo.memo_type === 'urgent';
   const isCallback = memo.memo_type === 'callback';
 
+  const targetName = memo.memo_target_name || memo.target_name;
+  const targetType = memo.memo_target_type || memo.target_type;
+
+  const handleSaveNoteAndResolve = () => {
+    onUpdateStatus(memo.memo_id, 'resolved', noteText.trim());
+    setShowNoteInput(false);
+  };
+
+  const handleSaveNoteOnly = () => {
+    onUpdateStatus(memo.memo_id, isInProgress ? 'in_progress' : 'pending', noteText.trim());
+    setShowNoteInput(false);
+  };
+
   return (
     <div className={`call-pop-card ${isUrgent ? 'urgent' : isCallback ? 'callback' : ''} ${isResolved ? 'resolved' : ''}`}>
+      {/* Header */}
       <div className="call-pop-header">
-        <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
           {isUrgent ? (
             <span className="call-badge-tag tag-urgent"><AlertTriangle size={13} /> 緊急受電</span>
           ) : isCallback ? (
@@ -23,6 +40,11 @@ export default function CallMemoCard({ memo, onUpdateStatus, onOpenThread, curre
           <span className={`status-pill ${memo.memo_status || 'pending'}`}>
             {isResolved ? '✓ 完了' : isInProgress ? '⏳ 対応中' : '⚠️ 未対応'}
           </span>
+          {targetName && (
+            <span className="call-target-pill">
+              {targetType === 'department' ? '🏢' : targetType === 'group' ? '💬' : '👤'} 宛先: {targetName}
+            </span>
+          )}
         </div>
         {memo.memo_resolved_at && (
           <span style={{ fontSize: '0.75rem', color: '#6fa382', fontWeight: 700 }}>
@@ -31,9 +53,10 @@ export default function CallMemoCard({ memo, onUpdateStatus, onOpenThread, curre
         )}
       </div>
 
+      {/* Caller Info */}
       <div className="caller-title">
         🏢 {memo.memo_company} 
-        <span style={{ fontSize: '0.92rem', fontWeight: 600, color: '#4a5750' }}>
+        <span style={{ fontSize: '0.92rem', fontWeight: 600, color: '#4a5750', marginLeft: '6px' }}>
           {memo.memo_contact}
         </span>
       </div>
@@ -58,14 +81,79 @@ export default function CallMemoCard({ memo, onUpdateStatus, onOpenThread, curre
         </div>
       )}
 
-      {memo.memo_resolved_note && (
-        <div style={{ fontSize: '0.8rem', background: '#e6f2ea', border: '1px solid #c3ddc9', padding: '8px 12px', borderRadius: '8px', color: '#4f7a60', marginBottom: '10px' }}>
-          <strong>📝 対応結果メモ:</strong> {memo.memo_resolved_note}
+      {/* Resolution / Progress Note Display */}
+      {memo.memo_resolved_note && !showNoteInput && (
+        <div className="memo-note-display-card">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+            <span style={{ fontWeight: 700, fontSize: '0.75rem', color: '#3b6e4c' }}>📝 対応コメント・結果:</span>
+            {!isResolved && (
+              <button 
+                type="button" 
+                className="btn-edit-note"
+                onClick={() => {
+                  setNoteText(memo.memo_resolved_note || '');
+                  setShowNoteInput(true);
+                }}
+              >
+                <Edit3 size={12} /> 編集
+              </button>
+            )}
+          </div>
+          <div style={{ fontSize: '0.85rem', color: '#2d4d38', lineHeight: 1.4 }}>
+            {memo.memo_resolved_note}
+          </div>
         </div>
       )}
 
+      {/* Inline Note Input Form */}
+      {showNoteInput && (
+        <div className="memo-inline-note-form">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#4b5563' }}>対応内容・メモを入力:</span>
+            <button type="button" className="btn-close-note" onClick={() => setShowNoteInput(false)}><X size={13} /></button>
+          </div>
+          <textarea
+            className="memo-note-textarea"
+            placeholder="例: 14:30に折り返し発信。不在のため再度連絡予定 / 見積書をメール送付済み"
+            value={noteText}
+            onChange={(e) => setNoteText(e.target.value)}
+            rows="2"
+            autoFocus
+          />
+          <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end', marginTop: '6px' }}>
+            <button 
+              type="button" 
+              className="pop-btn-secondary" 
+              style={{ fontSize: '0.72rem', padding: '3px 8px' }}
+              onClick={() => setShowNoteInput(false)}
+            >
+              キャンセル
+            </button>
+            {!isResolved && (
+              <button 
+                type="button" 
+                className="pop-btn-secondary"
+                style={{ fontSize: '0.72rem', padding: '3px 8px' }}
+                onClick={handleSaveNoteOnly}
+              >
+                メモのみ保存
+              </button>
+            )}
+            <button 
+              type="button" 
+              className="btn-status-act resolve" 
+              style={{ fontSize: '0.72rem', padding: '3px 10px' }}
+              onClick={handleSaveNoteAndResolve}
+            >
+              <CheckCircle size={12} /> 完了にする
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Card Actions Footer */}
       <div className="call-card-footer">
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
           {!isResolved && (
             <>
               {!isInProgress && (
@@ -76,15 +164,17 @@ export default function CallMemoCard({ memo, onUpdateStatus, onOpenThread, curre
                   ⏳ 対応中にする
                 </button>
               )}
-              <button 
-                className="btn-status-act resolve"
-                onClick={() => {
-                  const note = window.prompt('対応メモ（折り返し結果など）を入力してください（空欄でもOK）:');
-                  if (note !== null) onUpdateStatus(memo.memo_id, 'resolved', note);
-                }}
-              >
-                <CheckCircle size={14} /> 完了にする
-              </button>
+              {!showNoteInput && (
+                <button 
+                  className="btn-status-act resolve"
+                  onClick={() => {
+                    setNoteText(memo.memo_resolved_note || '');
+                    setShowNoteInput(true);
+                  }}
+                >
+                  <CheckCircle size={14} /> 完了にする / メモ
+                </button>
+              )}
             </>
           )}
           {isResolved && (

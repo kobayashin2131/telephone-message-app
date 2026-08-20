@@ -2477,4 +2477,86 @@ button, input, select, textarea {
   box-shadow: 0 0 0 2px rgba(125, 104, 168, 0.3);
 }
 
+/* ============================================================
+   Call Memo Destination Badge & Resolution Comments
+   ============================================================ */
+.call-target-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #3b5042;
+  background: #edf5f0;
+  border: 1px solid #c9e2d2;
+  padding: 1px 7px;
+  border-radius: 6px;
+  letter-spacing: 0.01em;
+}
+
+.memo-note-display-card {
+  font-size: 0.8rem;
+  background: #f0f7f2;
+  border: 1px solid #cce5d4;
+  padding: 8px 12px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.btn-edit-note {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #4a7c59;
+  font-size: 0.7rem;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+
+.btn-edit-note:hover {
+  background: rgba(74, 124, 89, 0.1);
+}
+
+.memo-inline-note-form {
+  background: #fdfbf7;
+  border: 1px solid #e5dcce;
+  padding: 8px 10px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+.memo-note-textarea {
+  width: 100%;
+  border: 1px solid #d4c9b8;
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 0.82rem;
+  color: var(--ink, #1e293b);
+  background: #ffffff;
+  resize: vertical;
+  outline: none;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.memo-note-textarea:focus {
+  border-color: #7d68a8;
+  box-shadow: 0 0 0 2px rgba(125, 104, 168, 0.15);
+}
+
+.btn-close-note {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  padding: 2px;
+}
+
+
 

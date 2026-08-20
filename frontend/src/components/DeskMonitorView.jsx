@@ -15,8 +15,8 @@ export default function DeskMonitorView({
   const [companyName, setCompanyName] = useState('');
   const [contactPerson, setContactPerson] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [selectedDeptIds, setSelectedDeptIds] = useState([]);
-  const [selectedUserIds, setSelectedUserIds] = useState([]);
+  const [targetCategory, setTargetCategory] = useState('user'); // 'user', 'dept', 'group'
+  const [targetId, setTargetId] = useState(users[0]?.id || 1);
   const [callType, setCallType] = useState('callback');
   const [subject, setSubject] = useState('折り返しのお願い');
   const [body, setBody] = useState('');
@@ -40,16 +40,15 @@ export default function DeskMonitorView({
     e.preventDefault();
     if (!companyName.trim()) return alert('会社名を入力してください');
 
-    // Default target is first dept or user
-    const targetType = selectedUserIds.length > 0 ? 'dm' : selectedDeptIds.length > 0 ? 'department' : 'department';
-    const targetId = selectedUserIds[0] || selectedDeptIds[0] || (departments[0]?.id || 1);
+    const mappedTargetType = targetCategory === 'user' ? 'dm' : targetCategory === 'dept' ? 'department' : 'group';
+    const finalTargetId = Number(targetId) || (targetCategory === 'user' ? users[0]?.id : departments[0]?.id || 1);
 
     onSubmitCallMemo({
       company_name: companyName.trim(),
       contact_person: contactPerson.trim(),
       phone_number: phoneNumber.trim(),
-      target_type: targetType,
-      target_id: Number(targetId),
+      target_type: mappedTargetType,
+      target_id: finalTargetId,
       call_type: callType,
       subject,
       body: body.trim(),
@@ -61,8 +60,6 @@ export default function DeskMonitorView({
     setContactPerson('');
     setPhoneNumber('');
     setBody('');
-    setSelectedDeptIds([]);
-    setSelectedUserIds([]);
   };
 
   return (
@@ -115,28 +112,106 @@ export default function DeskMonitorView({
             </div>
           </div>
 
-          {/* Department / User Target Picker */}
-          <div className="form-group">
-            <label className="form-label">宛先部署（複数選択可）</label>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-              {departments.map(d => {
-                const active = selectedDeptIds.includes(d.id);
-                return (
-                  <button 
-                    key={d.id} 
-                    type="button" 
-                    className={`dept-chip ${active ? 'active' : ''}`}
-                    style={{ fontSize: '0.75rem', padding: '4px 8px' }}
-                    onClick={() => {
-                      if (active) setSelectedDeptIds(selectedDeptIds.filter(id => id !== d.id));
-                      else setSelectedDeptIds([...selectedDeptIds, d.id]);
-                    }}
-                  >
-                    🏢 {d.name}
-                  </button>
-                );
-              })}
+          {/* Destination Target Picker */}
+          <div className="form-group" style={{ background: '#f7f4ec', padding: '10px', borderRadius: '8px', border: '1px solid #e5dfd3' }}>
+            <label className="form-label" style={{ marginBottom: '6px', color: '#38443c', display: 'flex', justifyContent: 'space-between' }}>
+              <span>📢 宛先（通知先） <span style={{ color: '#d97a6c' }}>*</span></span>
+            </label>
+            
+            {/* Target Category Tabs */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '4px', marginBottom: '8px' }}>
+              <button
+                type="button"
+                className={`dept-chip ${targetCategory === 'user' ? 'active' : ''}`}
+                style={{ fontSize: '0.75rem', justifyContent: 'center', padding: '4px 6px' }}
+                onClick={() => {
+                  setTargetCategory('user');
+                  setTargetId(users[0]?.id || 1);
+                }}
+              >
+                👤 担当者
+              </button>
+              <button
+                type="button"
+                className={`dept-chip ${targetCategory === 'dept' ? 'active' : ''}`}
+                style={{ fontSize: '0.75rem', justifyContent: 'center', padding: '4px 6px' }}
+                onClick={() => {
+                  setTargetCategory('dept');
+                  setTargetId(departments[0]?.id || 1);
+                }}
+              >
+                🏢 部署
+              </button>
+              <button
+                type="button"
+                className={`dept-chip ${targetCategory === 'group' ? 'active' : ''}`}
+                style={{ fontSize: '0.75rem', justifyContent: 'center', padding: '4px 6px' }}
+                onClick={() => {
+                  setTargetCategory('group');
+                  setTargetId(groups[0]?.id || 1);
+                }}
+              >
+                💬 グループ
+              </button>
             </div>
+
+            {/* Target Item Selector */}
+            {targetCategory === 'user' && (
+              <select
+                className="form-select"
+                value={targetId}
+                onChange={(e) => setTargetId(e.target.value)}
+                style={{ width: '100%', fontSize: '0.85rem' }}
+              >
+                {users.map(u => (
+                  <option key={u.id} value={u.id}>
+                    👤 {u.name} {u.department_name ? `(${u.department_name})` : ''}
+                  </option>
+                ))}
+              </select>
+            )}
+
+            {targetCategory === 'dept' && (
+              departments.length > 0 ? (
+                <select
+                  className="form-select"
+                  value={targetId}
+                  onChange={(e) => setTargetId(e.target.value)}
+                  style={{ width: '100%', fontSize: '0.85rem' }}
+                >
+                  {departments.map(d => (
+                    <option key={d.id} value={d.id}>
+                      🏢 {d.name}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <div style={{ fontSize: '0.75rem', color: '#8c7650', padding: '4px 0' }}>
+                  ※ 部署がまだ登録されていません。「担当者」から選択してください。
+                </div>
+              )
+            )}
+
+            {targetCategory === 'group' && (
+              groups.length > 0 ? (
+                <select
+                  className="form-select"
+                  value={targetId}
+                  onChange={(e) => setTargetId(e.target.value)}
+                  style={{ width: '100%', fontSize: '0.85rem' }}
+                >
+                  {groups.map(g => (
+                    <option key={g.id} value={g.id}>
+                      {g.icon || '💬'} {g.name} ({g.member_count || 0}名)
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <div style={{ fontSize: '0.75rem', color: '#8c7650', padding: '4px 0' }}>
+                  ※ グループがありません。「担当者」から選択してください。
+                </div>
+              )
+            )}
           </div>
 
           {/* Call Type */}

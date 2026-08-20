@@ -1,6 +1,3 @@
-// Adapts a raw call_memos row (from GET /api/call-memos) into the
-// memo_* shaped prop that <CallMemoCard> expects — the same shape
-// GET /api/messages already returns for call_card messages via SQL aliases.
 export function adaptCallMemo(m) {
   return {
     id: m.id,
@@ -15,6 +12,8 @@ export function adaptCallMemo(m) {
     memo_resolved_note: m.resolved_note,
     memo_resolved_at: m.resolved_at,
     memo_resolver_name: m.resolver_name,
+    memo_target_type: m.target_type,
+    memo_target_name: m.target_name,
     thread_count: 0
   };
 }
