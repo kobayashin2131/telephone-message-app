@@ -204,22 +204,28 @@ export default function App() {
     if ('Notification' in window && Notification.permission === 'granted') {
       newOnes.forEach(m => {
         const title = m.target_type === 'dm' ? `💬 ${m.sender_name} さんより` : `💬 新着メッセージ (${m.sender_name})`;
+        const deepTargetId = m.target_type === 'dm' ? m.sender_id : m.target_id;
         new Notification(title, {
           body: m.content || (m.message_type === 'image' ? '📷 画像を送信しました' : '📎 ファイルを送信しました'),
-          tag: `chat-${m.target_type}-${m.target_id}`,
+          tag: `chat-${m.target_type}-${deepTargetId}`,
           data: {
             type: 'message',
             targetType: m.target_type,
-            targetId: m.target_id
+            targetId: deepTargetId,
+            url: `/?app=chat&target_type=${m.target_type}&target_id=${deepTargetId}`
           }
         });
       });
     }
   };
 
+  const pendingNavRef = useRef(null);
+
   const handleNavigateTarget = (targetType, targetId) => {
     setActiveApp('chat');
     const tid = Number(targetId);
+    if (!tid) return;
+
     if (targetType === 'group') {
       const g = groups.find(x => x.id === tid);
       if (g) {
@@ -231,6 +237,9 @@ export default function App() {
           memberCount: g.member_count,
           description: g.description
         });
+        pendingNavRef.current = null;
+      } else {
+        pendingNavRef.current = { type: 'group', id: tid };
       }
     } else if (targetType === 'dm' || targetType === 'user') {
       const u = users.find(x => x.id === tid);
@@ -243,17 +252,39 @@ export default function App() {
           avatarColor: u.avatar_color,
           department: u.department_name
         });
+        pendingNavRef.current = null;
+      } else {
+        pendingNavRef.current = { type: 'dm', id: tid };
       }
     }
   };
+
+  // Resolve pending navigation once users or groups are loaded
+  useEffect(() => {
+    if (pendingNavRef.current) {
+      handleNavigateTarget(pendingNavRef.current.type, pendingNavRef.current.id);
+    }
+  }, [users, groups]);
 
   // Deep link listener from Service Worker
   useEffect(() => {
     const onSwMessage = (e) => {
       if (e.data?.type === 'NAVIGATE_TARGET') {
         const d = e.data.data || {};
-        if (d.targetType && d.targetId) {
-          handleNavigateTarget(d.targetType, d.targetId);
+        let targetType = d.targetType;
+        let targetId = d.targetId;
+
+        // Parse from URL if not in data object
+        if ((!targetType || !targetId) && e.data.url) {
+          try {
+            const parsedUrl = new URL(e.data.url, window.location.origin);
+            targetType = parsedUrl.searchParams.get('target_type');
+            targetId = parsedUrl.searchParams.get('target_id');
+          } catch (err) {}
+        }
+
+        if (targetType && targetId) {
+          handleNavigateTarget(targetType, targetId);
         } else if (e.data.url?.includes('app=callsync')) {
           setActiveApp('callsync');
         } else {

@@ -156,13 +156,31 @@ export default function CallMemoCard({ memo, onUpdateStatus, onOpenThread, curre
         <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
           {!isResolved && (
             <>
-              {!isInProgress && (
+              {!isInProgress ? (
                 <button 
                   className="btn-status-act progress"
-                  onClick={() => onUpdateStatus(memo.memo_id, 'in_progress')}
+                  onClick={() => {
+                    onUpdateStatus(memo.memo_id, 'in_progress');
+                    setNoteText(memo.memo_resolved_note || '');
+                    setShowNoteInput(true);
+                  }}
+                  title="ステータスを対応中に変更してメモを入力"
                 >
-                  ⏳ 対応中にする
+                  ⏳ 対応中にしてメモ
                 </button>
+              ) : (
+                !showNoteInput && (
+                  <button 
+                    className="pop-btn-secondary"
+                    style={{ fontSize: '0.75rem', padding: '4px 8px' }}
+                    onClick={() => {
+                      setNoteText(memo.memo_resolved_note || '');
+                      setShowNoteInput(true);
+                    }}
+                  >
+                    📝 対応メモを追加
+                  </button>
+                )
               )}
               {!showNoteInput && (
                 <button 

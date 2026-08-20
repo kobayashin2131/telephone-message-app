@@ -838,12 +838,13 @@ export default {
             let previewBody = body.content?.trim();
             if (!previewBody) previewBody = body.message_type === 'image' ? '📷 画像を送信しました' : '📎 ファイルを送信しました';
 
+            const deepLinkTargetId = body.target_type === 'dm' ? body.sender_id : body.target_id;
             const pushData = {
               type: 'message',
               targetType: body.target_type,
-              targetId: body.target_id,
+              targetId: deepLinkTargetId,
               senderId: body.sender_id,
-              url: `/?app=chat&target_type=${body.target_type}&target_id=${body.target_id}`
+              url: `/?app=chat&target_type=${body.target_type}&target_id=${deepLinkTargetId}`
             };
 
             // @Mention detection for priority notifications

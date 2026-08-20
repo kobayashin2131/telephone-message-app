@@ -73,6 +73,15 @@ export default function NewCallMemoModal({
     onClose();
   };
 
+  // Filter groups: only show groups the current user belongs to (or created)
+  const myGroups = groups.filter(g => {
+    if (!currentUserId) return true;
+    if (g.member_ids && Array.isArray(g.member_ids)) {
+      return g.member_ids.includes(currentUserId) || g.created_by === currentUserId;
+    }
+    return true;
+  });
+
   return (
     <div className="modal-overlay">
       <div className="modal-content" style={{ maxWidth: '640px' }}>
@@ -97,7 +106,7 @@ export default function NewCallMemoModal({
                   onChange={(e) => {
                     setTargetType(e.target.value);
                     if (e.target.value === 'dm') setTargetId(users[0]?.id || 1);
-                    else if (e.target.value === 'group') setTargetId(groups[0]?.id || 1);
+                    else if (e.target.value === 'group') setTargetId(myGroups[0]?.id || 1);
                     else if (e.target.value === 'department') setTargetId(departments[0]?.id || 1);
                   }}
                 >
@@ -114,7 +123,7 @@ export default function NewCallMemoModal({
                   {targetType === 'dm' && users.map(u => (
                     <option key={u.id} value={u.id}>{u.name} ({u.department_name || '未所属'})</option>
                   ))}
-                  {targetType === 'group' && groups.map(g => (
+                  {targetType === 'group' && myGroups.map(g => (
                     <option key={g.id} value={g.id}>{g.icon} {g.name} ({g.member_count}名)</option>
                   ))}
                   {targetType === 'department' && departments.map(d => (

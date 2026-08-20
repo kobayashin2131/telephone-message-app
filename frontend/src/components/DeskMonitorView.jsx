@@ -22,6 +22,15 @@ export default function DeskMonitorView({
   const [body, setBody] = useState('');
   const [saveContact, setSaveContact] = useState(true);
 
+  // Filter groups: only show groups the current user belongs to (or created)
+  const myGroups = groups.filter(g => {
+    if (!currentUser) return true;
+    if (g.member_ids && Array.isArray(g.member_ids)) {
+      return g.member_ids.includes(currentUser.id) || g.created_by === currentUser.id;
+    }
+    return true;
+  });
+
   const filteredMemos = callMemos.filter(m => {
     if (filterStatus === 'unresolved' && m.status === 'resolved') return false;
     if (filterStatus === 'resolved' && m.status !== 'resolved') return false;
@@ -193,14 +202,14 @@ export default function DeskMonitorView({
             )}
 
             {targetCategory === 'group' && (
-              groups.length > 0 ? (
+              myGroups.length > 0 ? (
                 <select
                   className="form-select"
                   value={targetId}
                   onChange={(e) => setTargetId(e.target.value)}
                   style={{ width: '100%', fontSize: '0.85rem' }}
                 >
-                  {groups.map(g => (
+                  {myGroups.map(g => (
                     <option key={g.id} value={g.id}>
                       {g.icon || '💬'} {g.name} ({g.member_count || 0}名)
                     </option>
@@ -208,7 +217,7 @@ export default function DeskMonitorView({
                 </select>
               ) : (
                 <div style={{ fontSize: '0.75rem', color: '#8c7650', padding: '4px 0' }}>
-                  ※ グループがありません。「担当者」から選択してください。
+                  ※ 所属しているグループがありません。「担当者」から選択してください。
                 </div>
               )
             )}
