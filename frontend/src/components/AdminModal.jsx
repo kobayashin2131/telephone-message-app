@@ -236,36 +236,39 @@ export default function AdminModal({
         </div>
 
         {/* Tab Headers */}
-        <div style={{
-          display: 'flex', borderBottom: '1px solid #e8e2d8', background: '#f8f5ef', padding: '0 20px',
-          overflowX: 'auto', WebkitOverflowScrolling: 'touch'
+        <div className="admin-modal-tabs" style={{
+          display: 'flex', borderBottom: '1px solid #e8e2d8', background: '#f8f5ef', padding: '0 12px',
+          overflowX: 'auto', WebkitOverflowScrolling: 'touch', gap: '4px'
         }}>
           <button
+            className="admin-tab-btn"
             style={{
-              padding: '12px 16px', border: 'none', background: 'transparent',
-              fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
+              padding: '10px 12px', border: 'none', background: 'transparent',
+              fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
               color: activeTab === 'users' ? '#7d68a8' : '#48564c',
               borderBottom: activeTab === 'users' ? '2px solid #7d68a8' : '2px solid transparent'
             }}
             onClick={() => setActiveTab('users')}
           >
-            👥 アカウント管理 ({users.length}名)
+            👥 アカウント ({users.length})
           </button>
           <button
+            className="admin-tab-btn"
             style={{
-              padding: '12px 16px', border: 'none', background: 'transparent',
-              fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
+              padding: '10px 12px', border: 'none', background: 'transparent',
+              fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
               color: activeTab === 'departments' ? '#7d68a8' : '#48564c',
               borderBottom: activeTab === 'departments' ? '2px solid #7d68a8' : '2px solid transparent'
             }}
             onClick={() => setActiveTab('departments')}
           >
-            🏢 部門マスタ管理 ({departments.length}部門)
+            🏢 部門マスタ ({departments.length})
           </button>
           <button
+            className="admin-tab-btn"
             style={{
-              padding: '12px 16px', border: 'none', background: 'transparent',
-              fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
+              padding: '10px 12px', border: 'none', background: 'transparent',
+              fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
               color: activeTab === 'plan' ? '#7d68a8' : '#48564c',
               borderBottom: activeTab === 'plan' ? '2px solid #7d68a8' : '2px solid transparent'
             }}
@@ -413,19 +416,19 @@ export default function AdminModal({
                 </form>
               ) : (
                 <>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                    <span style={{ fontSize: '0.85rem', color: '#48564c' }}>所属部署や管理者権限を設定できます</span>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  <div className="admin-user-action-bar" style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                    <span style={{ fontSize: '0.82rem', color: '#48564c' }}>所属部署や管理者権限を設定できます</span>
+                    <div className="admin-user-action-btns" style={{ display: 'flex', gap: '8px' }}>
                       <button
                         className="btn-secondary"
-                        style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', whiteSpace: 'nowrap' }}
+                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontSize: '0.8rem', whiteSpace: 'nowrap', padding: '8px 12px' }}
                         onClick={onOpenCsvImport}
                       >
                         <FileSpreadsheet size={14} /> CSVインポート
                       </button>
                       <button
                         className="btn-primary"
-                        style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', whiteSpace: 'nowrap' }}
+                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontSize: '0.8rem', whiteSpace: 'nowrap', padding: '8px 12px' }}
                         onClick={() => startEditUser()}
                       >
                         <Plus size={14} /> 新規アカウント登録

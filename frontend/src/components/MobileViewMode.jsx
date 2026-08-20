@@ -17,23 +17,27 @@ export default function MobileViewMode({
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: '20px', background: '#f8f5ef', maxWidth: '720px', margin: '0 auto', width: '100%' }}>
       {/* Mobile Top Header */}
-      <div style={{ background: '#ffffff', borderRadius: '18px', padding: '16px 20px', marginBottom: '16px', boxShadow: '0 2px 10px rgba(0,0,0,0.04)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
-          <div style={{ fontWeight: 800, fontSize: '1.1rem', color: '#1e2620' }}>📱 現場・マイ受電一覧</div>
-          <div style={{ fontSize: '0.8rem', color: '#48564c' }}>ログイン: {currentUser?.name}</div>
+      <div className="mobile-mode-header" style={{ background: '#ffffff', borderRadius: '16px', padding: '14px 16px', marginBottom: '14px', boxShadow: '0 2px 10px rgba(0,0,0,0.04)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontWeight: 800, fontSize: '1.0rem', color: '#1e2620', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            📱 現場・マイ受電一覧
+          </div>
+          <div style={{ fontSize: '0.75rem', color: '#48564c', marginTop: '2px' }}>
+            ログイン: {currentUser?.name}
+          </div>
         </div>
-        <div style={{ display: 'flex', gap: '6px' }}>
+        <div className="mobile-mode-tabs" style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
           <button 
             className={`tab-mode-btn ${tab === 'unresolved' ? 'active' : ''}`}
             onClick={() => setTab('unresolved')}
-            style={{ padding: '6px 12px', borderRadius: '10px' }}
+            style={{ padding: '6px 10px', borderRadius: '8px', fontSize: '0.78rem', whiteSpace: 'nowrap' }}
           >
             ⚠️ 未対応
           </button>
           <button 
             className={`tab-mode-btn ${tab === 'resolved' ? 'active' : ''}`}
             onClick={() => setTab('resolved')}
-            style={{ padding: '6px 12px', borderRadius: '10px' }}
+            style={{ padding: '6px 10px', borderRadius: '8px', fontSize: '0.78rem', whiteSpace: 'nowrap' }}
           >
             ✓ 完了
           </button>
