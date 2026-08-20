@@ -7,6 +7,7 @@ import NewCallMemoModal from './components/NewCallMemoModal';
 import ContactsDirectoryModal from './components/ContactsDirectoryModal';
 import AdminModal from './components/AdminModal';
 import ChangePinModal from './components/ChangePinModal';
+import CsvImportModal from './components/CsvImportModal';
 import LoginScreen from './components/LoginScreen';
 import { playChime } from './utils/chime';
 import { subscribeToPush, unsubscribeFromPush } from './utils/push';
@@ -60,6 +61,7 @@ export default function App() {
   const [showContactsModal, setShowContactsModal] = useState(false);
   const [showAdminModal, setShowAdminModal] = useState(false);
   const [showChangePinModal, setShowChangePinModal] = useState(false);
+  const [showCsvImportModal, setShowCsvImportModal] = useState(false);
   const [callMemoDefaultTarget, setCallMemoDefaultTarget] = useState(null);
   const [callMemoPrefillContact, setCallMemoPrefillContact] = useState(null);
 
@@ -579,11 +581,21 @@ export default function App() {
           onResetPin={handleResetPin}
           onSaveDept={handleSaveDept}
           onDeleteDept={handleDeleteDept}
+          onOpenCsvImport={() => setShowCsvImportModal(true)}
         />
       )}
 
       {showChangePinModal && (
         <ChangePinModal auth={auth} onClose={() => setShowChangePinModal(false)} />
+      )}
+
+      {showCsvImportModal && (
+        <CsvImportModal
+          auth={auth}
+          departments={departments}
+          onClose={() => setShowCsvImportModal(false)}
+          onImported={fetchAllData}
+        />
       )}
     </div>
   );

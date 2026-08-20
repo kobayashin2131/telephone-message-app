@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { X, Settings, Users, Building2, Plus, Edit, Trash2, ShieldCheck, UserCheck, KeyRound } from 'lucide-react';
+import { X, Settings, Users, Building2, Plus, Edit, Trash2, ShieldCheck, UserCheck, KeyRound, FileSpreadsheet } from 'lucide-react';
 
 const COLORS = ['#7d68a8', '#6fa382', '#c9a04a', '#7d68a8', '#c97a94', '#6b8fa3', '#c2604f', '#4a5750'];
 
 export default function AdminModal({
-  onClose, users, departments, onSaveUser, onDeleteUser, onSaveDept, onDeleteDept, onResetPin
+  onClose, users, departments, onSaveUser, onDeleteUser, onSaveDept, onDeleteDept, onResetPin, onOpenCsvImport
 }) {
   const [activeTab, setActiveTab] = useState('users'); // 'users' or 'departments'
 
@@ -119,9 +119,12 @@ export default function AdminModal({
                         className="form-input"
                         value={userEdit.email}
                         onChange={(e) => setUserEdit({ ...userEdit, email: e.target.value })}
-                        placeholder="実在するメールアドレスでなくてもOK"
+                        placeholder="ID+PINのみなら実在しなくてもOK"
                         required
                       />
+                      <div style={{ fontSize: '0.72rem', color: '#66766c', marginTop: '3px' }}>
+                        「Googleでログイン」も使わせたい場合は、本人の実際のGoogleアカウントのメールアドレスを入力してください
+                      </div>
                     </div>
                     <div className="form-group">
                       <label className="form-label">所属部門</label>
@@ -189,13 +192,22 @@ export default function AdminModal({
                 <>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                     <span style={{ fontSize: '0.85rem', color: '#48564c' }}>所属部署や管理者権限を設定できます</span>
-                    <button 
-                      className="btn-primary" 
-                      style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem' }}
-                      onClick={() => startEditUser()}
-                    >
-                      <Plus size={14} /> 新規アカウント登録
-                    </button>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button
+                        className="btn-secondary"
+                        style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem' }}
+                        onClick={onOpenCsvImport}
+                      >
+                        <FileSpreadsheet size={14} /> CSVインポート
+                      </button>
+                      <button
+                        className="btn-primary"
+                        style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem' }}
+                        onClick={() => startEditUser()}
+                      >
+                        <Plus size={14} /> 新規アカウント登録
+                      </button>
+                    </div>
                   </div>
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
