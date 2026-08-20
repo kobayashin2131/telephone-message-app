@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
-import { X, Settings, Users, Building2, Plus, Edit, Trash2, ShieldCheck, UserCheck } from 'lucide-react';
+import { X, Settings, Users, Building2, Plus, Edit, Trash2, ShieldCheck, UserCheck, KeyRound } from 'lucide-react';
 
 const COLORS = ['#7d68a8', '#6fa382', '#c9a04a', '#7d68a8', '#c97a94', '#6b8fa3', '#c2604f', '#4a5750'];
 
 export default function AdminModal({
-  onClose, users, departments, onSaveUser, onDeleteUser, onSaveDept, onDeleteDept
+  onClose, users, departments, onSaveUser, onDeleteUser, onSaveDept, onDeleteDept, onResetPin
 }) {
   const [activeTab, setActiveTab] = useState('users'); // 'users' or 'departments'
 
   // User form
-  const [userEdit, setUserEdit] = useState({ id: null, name: '', email: '', password: '', department_id: '', role: 'user', avatar_color: '#7d68a8' });
+  const [userEdit, setUserEdit] = useState({ id: null, name: '', email: '', pin: '', department_id: '', role: 'user', avatar_color: '#7d68a8' });
   const [isEditingUser, setIsEditingUser] = useState(false);
 
   // Dept form
@@ -22,22 +22,30 @@ export default function AdminModal({
         id: u.id,
         name: u.name,
         email: u.email,
-        password: '',
+        pin: '',
         department_id: u.department_id || '',
         role: u.role || 'user',
         avatar_color: u.avatar_color || '#7d68a8'
       });
     } else {
-      setUserEdit({ id: null, name: '', email: '', password: 'password123', department_id: departments[0]?.id || '', role: 'user', avatar_color: COLORS[Math.floor(Math.random() * COLORS.length)] });
+      setUserEdit({ id: null, name: '', email: '', pin: '', department_id: departments[0]?.id || '', role: 'user', avatar_color: COLORS[Math.floor(Math.random() * COLORS.length)] });
     }
     setIsEditingUser(true);
   };
 
   const handleSaveUser = (e) => {
     e.preventDefault();
-    if (!userEdit.name || !userEdit.email) return alert('名前とメールアドレスは必須です');
+    if (!userEdit.name || !userEdit.email) return alert('名前とIDは必須です');
+    if (!userEdit.id && userEdit.pin && !/^\d{4,8}$/.test(userEdit.pin)) return alert('PINは4〜8桁の数字で入力してください');
     onSaveUser(userEdit);
     setIsEditingUser(false);
+  };
+
+  const handleResetPin = (u) => {
+    const newPin = window.prompt(`「${u.name}」の新しいPIN（4〜8桁の数字）を入力してください`);
+    if (newPin === null) return;
+    if (!/^\d{4,8}$/.test(newPin)) return alert('PINは4〜8桁の数字で入力してください');
+    onResetPin(u.id, newPin);
   };
 
   const handleSaveDept = (e) => {
@@ -105,18 +113,19 @@ export default function AdminModal({
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                     <div className="form-group">
-                      <label className="form-label">メールアドレス <span style={{ color: '#d97a6c' }}>*</span></label>
-                      <input 
-                        type="email" 
-                        className="form-input" 
-                        value={userEdit.email} 
-                        onChange={(e) => setUserEdit({ ...userEdit, email: e.target.value })} 
-                        required 
+                      <label className="form-label">ID（メールアドレス） <span style={{ color: '#d97a6c' }}>*</span></label>
+                      <input
+                        type="text"
+                        className="form-input"
+                        value={userEdit.email}
+                        onChange={(e) => setUserEdit({ ...userEdit, email: e.target.value })}
+                        placeholder="実在するメールアドレスでなくてもOK"
+                        required
                       />
                     </div>
                     <div className="form-group">
                       <label className="form-label">所属部門</label>
-                      <select 
+                      <select
                         className="form-select"
                         value={userEdit.department_id}
                         onChange={(e) => setUserEdit({ ...userEdit, department_id: Number(e.target.value) })}
@@ -128,6 +137,20 @@ export default function AdminModal({
                       </select>
                     </div>
                   </div>
+
+                  {!userEdit.id && (
+                    <div className="form-group">
+                      <label className="form-label">初期PIN（4〜8桁の数字、未入力なら後で管理者がリセットできます）</label>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        className="form-input"
+                        value={userEdit.pin}
+                        onChange={(e) => setUserEdit({ ...userEdit, pin: e.target.value })}
+                        placeholder="例: 1234"
+                      />
+                    </div>
+                  )}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                     <div className="form-group">
                       <label className="form-label">権限</label>
@@ -204,6 +227,9 @@ export default function AdminModal({
                         </div>
 
                         <div style={{ display: 'flex', gap: '6px' }}>
+                          <button className="btn-secondary" style={{ padding: '6px' }} title="PINをリセット" onClick={() => handleResetPin(u)}>
+                            <KeyRound size={14} />
+                          </button>
                           <button className="btn-secondary" style={{ padding: '6px' }} onClick={() => startEditUser(u)}>
                             <Edit size={14} />
                           </button>

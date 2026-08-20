@@ -247,10 +247,15 @@ export default {
       if (path === '/api/users' && request.method === 'POST') {
         const body = await request.json();
         const orgId = parseOrgId(body.organization_id);
+        let passwordHash = null;
+        if (body.pin) {
+          if (!/^\d{4,8}$/.test(body.pin)) return jsonResponse({ error: 'PINは4〜8桁の数字で入力してください' }, 400);
+          passwordHash = await hashPin(body.pin);
+        }
         const info = await db.prepare(`
-          INSERT INTO users (name, email, password, department_id, role, avatar_color, organization_id)
+          INSERT INTO users (name, email, password_hash, department_id, role, avatar_color, organization_id)
           VALUES (?, ?, ?, ?, ?, ?, ?)
-        `).bind(body.name, body.email, body.password || 'password123', body.department_id || null, body.role || 'user', body.avatar_color || '#3b82f6', orgId).run();
+        `).bind(body.name, body.email, passwordHash, body.department_id || null, body.role || 'user', body.avatar_color || '#3b82f6', orgId).run();
         return jsonResponse({ id: info.meta.last_row_id, ...body });
       }
 

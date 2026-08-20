@@ -6,6 +6,7 @@ import NewGroupModal from './components/NewGroupModal';
 import NewCallMemoModal from './components/NewCallMemoModal';
 import ContactsDirectoryModal from './components/ContactsDirectoryModal';
 import AdminModal from './components/AdminModal';
+import ChangePinModal from './components/ChangePinModal';
 import LoginScreen from './components/LoginScreen';
 import { playChime } from './utils/chime';
 import { subscribeToPush, unsubscribeFromPush } from './utils/push';
@@ -58,6 +59,7 @@ export default function App() {
   const [showNewCallMemoModal, setShowNewCallMemoModal] = useState(false);
   const [showContactsModal, setShowContactsModal] = useState(false);
   const [showAdminModal, setShowAdminModal] = useState(false);
+  const [showChangePinModal, setShowChangePinModal] = useState(false);
   const [callMemoDefaultTarget, setCallMemoDefaultTarget] = useState(null);
   const [callMemoPrefillContact, setCallMemoPrefillContact] = useState(null);
 
@@ -411,6 +413,25 @@ export default function App() {
     }
   };
 
+  const handleResetPin = async (userId, newPin) => {
+    try {
+      const res = await fetch(`${API_BASE}/auth/reset-pin`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${auth.token}` },
+        body: JSON.stringify({ user_id: userId, new_pin: newPin })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || 'PINのリセットに失敗しました');
+        return;
+      }
+      alert('PINをリセットしました');
+    } catch (e) {
+      console.error(e);
+      alert('PINのリセットに失敗しました');
+    }
+  };
+
   const handleSaveDept = async (d) => {
     const orgId = auth.user.organization_id;
     try {
@@ -460,6 +481,7 @@ export default function App() {
         onOpenNewCallMemo={() => openNewCallMemo()}
         onOpenContacts={() => setShowContactsModal(true)}
         onOpenAdmin={() => setShowAdminModal(true)}
+        onOpenChangePin={() => setShowChangePinModal(true)}
         callMemosCount={{ unhandled: unhandledCallsCount, total: callMemos.length }}
         notifyEnabled={notifyEnabled}
         onToggleNotify={onToggleNotify}
@@ -554,9 +576,14 @@ export default function App() {
           onClose={() => setShowAdminModal(false)}
           onSaveUser={handleSaveUser}
           onDeleteUser={handleDeleteUser}
+          onResetPin={handleResetPin}
           onSaveDept={handleSaveDept}
           onDeleteDept={handleDeleteDept}
         />
+      )}
+
+      {showChangePinModal && (
+        <ChangePinModal auth={auth} onClose={() => setShowChangePinModal(false)} />
       )}
     </div>
   );

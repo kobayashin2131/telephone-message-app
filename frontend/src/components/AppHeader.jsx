@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  MessageSquare, Phone, Plus, BookOpen, Settings, Users, Sparkles, Building2, Bell, BellOff, LogOut
+  MessageSquare, Phone, Plus, BookOpen, Settings, Users, Sparkles, Building2, Bell, BellOff, LogOut, KeyRound
 } from 'lucide-react';
 import ThemePicker from './ThemePicker';
 
@@ -10,6 +10,7 @@ export default function AppHeader({
   currentUser,
   users,
   onLogout,
+  onOpenChangePin,
   onOpenNewCallMemo,
   onOpenContacts,
   onOpenAdmin,
@@ -97,6 +98,9 @@ export default function AppHeader({
             <div className="suite-user-label">{currentUser?.role === 'admin' ? '管理者' : currentUser?.department_name || '一般'}</div>
             <div className="suite-user-name">{currentUser?.name}</div>
           </div>
+          <button className="suite-user-logout-btn" onClick={onOpenChangePin} title="PINを変更">
+            <KeyRound size={16} />
+          </button>
           <button className="suite-user-logout-btn" onClick={onLogout} title="ログアウト">
             <LogOut size={16} />
           </button>
