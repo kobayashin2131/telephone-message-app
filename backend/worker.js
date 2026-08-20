@@ -830,18 +830,47 @@ export default {
               url: `/?app=chat&target_type=${body.target_type}&target_id=${body.target_id}`
             };
 
-            await Promise.all([
-              sendFcmToUsers(env, recipientIds, {
-                title,
-                body: previewBody.slice(0, 100),
-                data: pushData
-              }),
-              sendWebPushToUsers(env, recipientIds, {
-                title,
-                body: previewBody.slice(0, 100),
-                data: pushData
-              })
-            ]);
+            // @Mention detection for priority notifications
+            const content = body.content || '';
+            const isMentionAll = /@(全員|all)/i.test(content);
+            const mentionedUserIds = new Set();
+
+            if (isMentionAll) {
+              recipientIds.forEach(id => mentionedUserIds.add(id));
+            } else {
+              const placeholders = recipientIds.map(() => '?').join(',');
+              const { results: rUsers } = await db.prepare(
+                `SELECT id, name FROM users WHERE id IN (${placeholders})`
+              ).bind(...recipientIds).all();
+
+              for (const u of (rUsers || [])) {
+                if (content.includes(`@${u.name}`)) {
+                  mentionedUserIds.add(u.id);
+                }
+              }
+            }
+
+            const normalRecipientIds = recipientIds.filter(id => !mentionedUserIds.has(id));
+            const priorityRecipientIds = Array.from(mentionedUserIds);
+            const priorityTitle = `📢 @あなた宛て: ${sender?.name || '新着'}`;
+
+            const sendPromises = [];
+
+            if (normalRecipientIds.length > 0) {
+              sendPromises.push(
+                sendFcmToUsers(env, normalRecipientIds, { title, body: previewBody.slice(0, 100), data: pushData }),
+                sendWebPushToUsers(env, normalRecipientIds, { title, body: previewBody.slice(0, 100), data: pushData })
+              );
+            }
+
+            if (priorityRecipientIds.length > 0) {
+              sendPromises.push(
+                sendFcmToUsers(env, priorityRecipientIds, { title: priorityTitle, body: previewBody.slice(0, 100), data: pushData }),
+                sendWebPushToUsers(env, priorityRecipientIds, { title: priorityTitle, body: previewBody.slice(0, 100), data: pushData })
+              );
+            }
+
+            await Promise.all(sendPromises);
           })());
         }
 

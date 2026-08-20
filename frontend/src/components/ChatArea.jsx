@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  Send, Phone, Users, Building2, MessageSquare, Check, Eye, Smile, Paperclip, Search, PlusCircle, ArrowLeft, FileText, X, Loader2
+  Send, Phone, Users, Building2, MessageSquare, Check, Eye, Smile, Paperclip, Search, PlusCircle, ArrowLeft, FileText, X, Loader2, AtSign
 } from 'lucide-react';
 import CallMemoCard from './CallMemoCard';
 import { uploadAttachment, ALLOWED_ATTACHMENT_TYPES, MAX_ATTACHMENT_SIZE } from '../utils/upload';
@@ -12,8 +12,40 @@ function formatFileSize(bytes) {
   return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
 }
 
+function hasMentionToMe(content, currentUserName) {
+  if (!content || !currentUserName) return false;
+  return content.includes('@全員') || content.includes('@all') || content.includes(`@${currentUserName}`);
+}
+
+function renderContentWithMentions(content, currentUserName) {
+  if (!content) return null;
+  const regex = /(@[^\s@　]+)/g;
+  const parts = [];
+  let lastIndex = 0;
+  let match;
+
+  while ((match = regex.exec(content)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(content.substring(lastIndex, match.index));
+    }
+    const mentionText = match[1];
+    const name = mentionText.slice(1);
+    const isMe = name === '全員' || name === 'all' || name === currentUserName;
+    parts.push(
+      <span key={match.index} className={`mention-pill ${isMe ? 'is-me' : ''}`}>
+        {mentionText}
+      </span>
+    );
+    lastIndex = regex.lastIndex;
+  }
+  if (lastIndex < content.length) {
+    parts.push(content.substring(lastIndex));
+  }
+  return parts;
+}
+
 export default function ChatArea({
-  activeChat, currentUser, messages, organizationId, onSendMessage, onUpdateStatus, onOpenThread, onOpenNewCallMemo, onBack
+  activeChat, currentUser, users = [], messages, organizationId, onSendMessage, onUpdateStatus, onOpenThread, onOpenNewCallMemo, onBack
 }) {
   const [text, setText] = useState('');
   const [activeReadersPopover, setActiveReadersPopover] = useState(null);
@@ -21,7 +53,13 @@ export default function ChatArea({
   const [pendingPreviewUrl, setPendingPreviewUrl] = useState(null);
   const [sending, setSending] = useState(false);
   const [uploadError, setUploadError] = useState('');
+  
+  const [showMentionSuggest, setShowMentionSuggest] = useState(false);
+  const [mentionFilter, setMentionFilter] = useState('');
+  const [mentionCursorPos, setMentionCursorPos] = useState(0);
+
   const fileInputRef = useRef(null);
+  const textareaRef = useRef(null);
   const timelineEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -33,7 +71,6 @@ export default function ChatArea({
   }, [messages]);
 
   useEffect(() => {
-    // プレビュー用のBlob URLはコンポーネントが破棄・差し替えられる際に解放する
     return () => {
       if (pendingPreviewUrl) URL.revokeObjectURL(pendingPreviewUrl);
     };
@@ -45,9 +82,82 @@ export default function ChatArea({
     setPendingPreviewUrl(null);
   };
 
+  const candidateUsers = [
+    { id: 'all', name: '全員', isAll: true, department_name: 'チャンネル参加者全員' },
+    ...users.filter(u => u.id !== currentUser?.id)
+  ];
+
+  const filteredCandidates = candidateUsers.filter(u => 
+    u.name.toLowerCase().includes(mentionFilter.toLowerCase()) ||
+    (u.department_name && u.department_name.toLowerCase().includes(mentionFilter.toLowerCase()))
+  );
+
+  const handleTextChange = (e) => {
+    const val = e.target.value;
+    const pos = e.target.selectionStart;
+    setText(val);
+    setMentionCursorPos(pos);
+
+    const textBeforeCursor = val.slice(0, pos);
+    const lastAtIndex = textBeforeCursor.lastIndexOf('@');
+
+    if (lastAtIndex !== -1 && (lastAtIndex === 0 || /\s/.test(textBeforeCursor[lastAtIndex - 1]))) {
+      const query = textBeforeCursor.slice(lastAtIndex + 1);
+      if (!/\s/.test(query)) {
+        setMentionFilter(query);
+        setShowMentionSuggest(true);
+        return;
+      }
+    }
+    setShowMentionSuggest(false);
+  };
+
+  const insertMention = (user) => {
+    const textBeforeCursor = text.slice(0, mentionCursorPos);
+    const lastAtIndex = textBeforeCursor.lastIndexOf('@');
+    const textAfterCursor = text.slice(mentionCursorPos);
+
+    const prefix = lastAtIndex !== -1 ? text.slice(0, lastAtIndex) : textBeforeCursor;
+    const mentionString = `@${user.name} `;
+    const newText = prefix + mentionString + textAfterCursor;
+
+    setText(newText);
+    setShowMentionSuggest(false);
+
+    setTimeout(() => {
+      if (textareaRef.current) {
+        textareaRef.current.focus();
+        const nextPos = (prefix + mentionString).length;
+        textareaRef.current.setSelectionRange(nextPos, nextPos);
+      }
+    }, 0);
+  };
+
+  const handleOpenMentionPicker = () => {
+    const pos = textareaRef.current?.selectionStart ?? text.length;
+    const textBefore = text.slice(0, pos);
+    const textAfter = text.slice(pos);
+    const needsSpace = textBefore.length > 0 && !/\s$/.test(textBefore);
+    const inserted = (needsSpace ? ' @' : '@');
+    const newText = textBefore + inserted + textAfter;
+    setText(newText);
+    setMentionCursorPos(pos + inserted.length);
+    setMentionFilter('');
+    setShowMentionSuggest(true);
+
+    setTimeout(() => {
+      if (textareaRef.current) {
+        textareaRef.current.focus();
+        const nextPos = pos + inserted.length;
+        textareaRef.current.setSelectionRange(nextPos, nextPos);
+      }
+    }, 0);
+  };
+
   const handleSend = async (e) => {
-    e.preventDefault();
+    e?.preventDefault();
     if (!text.trim() && !pendingFile) return;
+    setShowMentionSuggest(false);
 
     if (pendingFile) {
       setUploadError('');
@@ -70,7 +180,16 @@ export default function ChatArea({
   };
 
   const handleKeyDown = (e) => {
+    if (showMentionSuggest && (e.key === 'Escape')) {
+      setShowMentionSuggest(false);
+      return;
+    }
     if (e.key === 'Enter' && !e.shiftKey) {
+      if (showMentionSuggest && filteredCandidates.length > 0) {
+        e.preventDefault();
+        insertMention(filteredCandidates[0]);
+        return;
+      }
       e.preventDefault();
       handleSend(e);
     }
@@ -78,7 +197,7 @@ export default function ChatArea({
 
   const handleFileSelected = (e) => {
     const file = e.target.files?.[0];
-    e.target.value = ''; // 同じファイルを連続で選んでもonChangeが発火するように
+    e.target.value = '';
     if (!file) return;
 
     setUploadError('');
@@ -152,6 +271,7 @@ export default function ChatArea({
             const isMe = m.sender_id === currentUser?.id;
             const isSystem = m.message_type === 'system';
             const isCallCard = m.message_type === 'call_card';
+            const isMentionedToMe = !isMe && hasMentionToMe(m.content, currentUser?.name);
 
             if (isSystem) {
               return (
@@ -164,7 +284,7 @@ export default function ChatArea({
             }
 
             return (
-              <div key={m.id} className="message-item">
+              <div key={m.id} className={`message-item ${isMentionedToMe ? 'mentioned-me' : ''}`}>
                 <div 
                   className="message-avatar" 
                   style={{ backgroundColor: m.sender_avatar || '#9b84c4' }}
@@ -176,6 +296,7 @@ export default function ChatArea({
                   <div className="message-header">
                     <span className="message-sender">{m.sender_name}</span>
                     {m.sender_role === 'admin' && <span className="message-role-tag">管理者</span>}
+                    {isMentionedToMe && <span className="mention-to-me-badge">あなた宛て</span>}
                     <span className="message-time">
                       {formatTime(m.created_at)}
                     </span>
@@ -203,17 +324,15 @@ export default function ChatArea({
                           </div>
                         </a>
                       )}
-                      {m.content && <div className="message-text" style={{ marginTop: '6px' }}>{m.content}</div>}
+                      {m.content && <div className="message-text" style={{ marginTop: '6px' }}>{renderContentWithMentions(m.content, currentUser?.name)}</div>}
                     </div>
                   ) : (
                     <div className="message-text">
-                      {m.content}
+                      {renderContentWithMentions(m.content, currentUser?.name)}
                     </div>
                   )}
 
-                  {/* Message Meta Footer: Read Receipts & Thread Link */}
                   <div className="message-meta-footer">
-                    {/* Read Receipts indicator */}
                     {activeChat.type === 'dm' ? (
                       <span className="read-indicator">
                         {m.read_count > 1 ? '✓ 既読' : '未読'}
@@ -230,7 +349,6 @@ export default function ChatArea({
                           <Eye size={12} /> 既読 {m.read_count}人
                         </span>
 
-                        {/* Readers list Popover */}
                         {activeReadersPopover === m.id && (
                           <div style={{
                             position: 'absolute', bottom: '100%', left: 0, zIndex: 60,
@@ -253,7 +371,6 @@ export default function ChatArea({
                       </div>
                     )}
 
-                    {/* Thread link for regular message */}
                     {!isCallCard && (
                       <button className="thread-link-btn" onClick={() => onOpenThread(m)}>
                         <MessageSquare size={13} />
@@ -269,7 +386,6 @@ export default function ChatArea({
         <div ref={timelineEndRef} />
       </div>
 
-      {/* Input Bar */}
       <div className="chat-input-bar">
         {uploadError && (
           <div className="attachment-error-banner">
@@ -277,6 +393,41 @@ export default function ChatArea({
             <button type="button" onClick={() => setUploadError('')}><X size={13} /></button>
           </div>
         )}
+
+        {showMentionSuggest && (
+          <div className="mention-suggest-popover">
+            <div className="mention-suggest-header">
+              <span>メンバーをメンション (@)</span>
+              <button type="button" onClick={() => setShowMentionSuggest(false)}><X size={12} /></button>
+            </div>
+            <div className="mention-suggest-list">
+              {filteredCandidates.length === 0 ? (
+                <div className="mention-suggest-empty">該当するメンバーが見つかりません</div>
+              ) : (
+                filteredCandidates.map(c => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    className="mention-suggest-item"
+                    onClick={() => insertMention(c)}
+                  >
+                    <div 
+                      className="mention-suggest-avatar" 
+                      style={{ backgroundColor: c.isAll ? '#4f46e5' : (c.avatar_color || '#9b84c4') }}
+                    >
+                      {c.isAll ? '📢' : c.name.charAt(0)}
+                    </div>
+                    <div className="mention-suggest-info">
+                      <span className="mention-suggest-name">@{c.name}</span>
+                      <span className="mention-suggest-dept">{c.department_name || (c.isAll ? '全員' : '一般')}</span>
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+
         <form onSubmit={handleSend}>
           <div className="input-box-wrapper">
             {pendingFile && (
@@ -293,10 +444,11 @@ export default function ChatArea({
               </div>
             )}
             <textarea
+              ref={textareaRef}
               className="chat-textarea"
-              placeholder={pendingFile ? '添付にひとことメッセージを添える(空欄でも送信できます)' : `${activeChat.name} へメッセージを送信... (Enterで送信, Shift+Enterで改行)`}
+              placeholder={pendingFile ? '添付にひとことメッセージを添える(空欄でも送信できます)' : `${activeChat.name} へメッセージを送信... (@でメンバー指名, Enterで送信)`}
               value={text}
-              onChange={(e) => setText(e.target.value)}
+              onChange={handleTextChange}
               onKeyDown={handleKeyDown}
               rows="2"
             />
@@ -317,6 +469,15 @@ export default function ChatArea({
                   title="画像・PDFを添付"
                 >
                   <Paperclip size={20} />
+                </button>
+                <button
+                  type="button"
+                  className="btn-tool btn-mention"
+                  onClick={handleOpenMentionPicker}
+                  disabled={sending}
+                  title="@メンションを挿入"
+                >
+                  <AtSign size={20} />
                 </button>
               </div>
 

@@ -145,6 +145,7 @@ export default function ChatApp({
         <ChatArea
           activeChat={activeChat}
           currentUser={currentUser}
+          users={users}
           messages={messages}
           organizationId={organizationId}
           onSendMessage={onSendMessage}
