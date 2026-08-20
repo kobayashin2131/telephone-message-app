@@ -343,3 +343,33 @@ Claude Codeによるコードレビュー＋大規模な不具合修正・デザ
 - IDのグローバル一意性そのもの（ログインに組織選択がない設計）は今回は変更していない。プレフィックス方式はあくまで「衝突を実質的に防ぐ」運用上の対策であり、本気で複数組織対応のログイン設計にするなら、将来的にはログイン時に組織を選ばせる／組織ごとのサブドメインにするなどの見直しも選択肢になる
 - オーナー権限の委譲プロセスは未実装（今回はUI・APIともに完全に不可能にしただけ）。将来必要になったら、プラットフォーム管理者を経由する、または現オーナーの本人確認を伴う専用フローとして別途設計するのが良さそう
 - 電話メモ側・その他画面のレイアウト崩れは今回スコープ外。次にそちら（nonbaPC予定）に着手する際は、今回と同じ「日本語ラベルはスペースがなく任意の位置で折り返されるので、`white-space: nowrap`＋`overflow-x: auto`か`flex-wrap`のどちらかで意図的に制御する」という考え方を踏襲すると良い
+
+---
+
+## ⚠️ 2026-08-20 セッション最終盤：組織サブドメインログイン機能を実装 → 本番事故（他アプリを巻き込んだ）→ ルート削除で復旧、ドメイン方針を再検討
+
+**背景**: 上記の組織番号プレフィックス方式（`007_yamada`）について、オーナーから「これは本来やりたかった形（Slackのワークスペースみたいに会社ごとのURL）とは違う」と指摘。会社ごとのサブドメインログイン（`会社名.easystance.app`）を作ることに合意し、実装した。ドメインは新規取得ではなく、既存の`easystance.app`（他のアプリ`worklog.easystance.app`と共有中）を無料で流用する方針でスタート。
+
+**実装内容（コードは本番反映済み・機能自体は正しく動作することを確認済み）**:
+- `organizations.slug`列を追加（`migrations/0009_org_slug.sql`。SQLiteは`ALTER TABLE ADD COLUMN ... UNIQUE`ができないため、列追加とUNIQUE INDEX作成を分離）
+- `GET /api/auth/check-slug`（空き状況チェック、予約語リストあり）、オーナー専用`POST /api/organization/slug`（既存組織が後からURLを設定できる）
+- `worker.js`に`resolveOrgFromHost()`を追加。`Host`ヘッダーから組織を解決できた場合はログインをその組織にスコープし、解決できない場合（サブドメイン未設定の組織、`callsync-app.pages.dev`、`workers.dev`経由など）は**今まで通りのグローバル検索にフォールバック**——既存動作は一切変更していない
+- **重要な設計判断（意図的に見送った部分）**: `users.email`のグローバルUNIQUE制約はそのまま。これを`UNIQUE(organization_id, email)`に緩めれば「別会社が同じID文字列を使える」という本来のゴールに近づくが、SQLite/D1でのテーブル再構築が必要な上、グローバルフォールバックが存在する間にこれをやると危険（2社が同じIDを持てるようになった瞬間、フォールバック側の検索が曖昧になる）。今回は見送り、別途の慎重な移行として扱う
+- サインアップ画面に会社URL（任意）の入力欄＋空き状況のリアルタイム確認、登録完了後にURLを大きく表示。管理者メニューの「プラン・容量」タブに、既存組織が後からURLを設定できるカードを追加
+- Cloudflare Pagesはワイルドカードカスタムドメインをサポートしていないことが判明したため（無料枠はもちろん有料枠でも非対応、コミュニティで継続議論中）、フロント＋バックエンドを1つのWorker（`callsync-backend`）に統合。`wrangler.jsonc`に`assets`バインディング（`not_found_handling: "single-page-application"`でSPAフォールバック）を追加し、`/api/*`以外は静的アセットとして配信するように変更。**既存の`callsync-app.pages.dev`（Pages）はそのまま残し、レガシーアクセス経路として維持**（置き換えていない）
+
+**⚠️ 本番事故とその後**: サブドメインを実現するために`*.easystance.app/*`というワイルドカードルートをWorkerに追加したところ、**同じドメインを使っている別アプリ`worklog.easystance.app`（timeline-worklog-app、無関係な別プロジェクト）を一時的に乗っ取ってしまった**（`worklog.easystance.app`にアクセスするとConnect Suiteの画面が出る状態になった）。Cloudflareの公式ドキュメントでは「完全一致のルートがワイルドカードより優先される」とあったが、実際の挙動はそうならなかった（Pages カスタムドメイン vs Workers ワイルドカードルートの優先順位の実挙動がドキュメント通りではなかった、と考えられる）。
+
+対応: `wrangler.jsonc`からルートを削除して`wrangler deploy`・`wrangler triggers deploy`を実行したが、**Cloudflare側に登録されたルートが実際には削除されず**、`worklog.easystance.app`が直らなかった。最終的にCloudflare API（`DELETE /zones/{zone_id}/workers/routes/{route_id}`）を直接叩いてルートを強制削除し、復旧を確認（`worklog.easystance.app`・`callsync-backend.nonba30.workers.dev`とも正常に戻ったことを確認済み）。
+
+また、この作業の途中で別の設定ミスにも気づいて即座に修正済み: `wrangler.jsonc`に`routes`を追加すると、デフォルトの`workers_dev`ルート（`callsync-backend.nonba30.workers.dev`——フロント全体のAPI_BASEがハードコードで依存している本番の生命線URL）が**自動的に無効化される**Wranglerの仕様があり、一時的にAPI全体が404になっていた。`"workers_dev": true`を明示することで復旧（現在の`wrangler.jsonc`にはこの設定が入っている）。
+
+**現在の状態**: サブドメインログイン機能のコード自体（`resolveOrgFromHost`、slug設定UI、check-slugなど）は本番に残っており、ロジックとしては正しく動作することを確認済み（別々の組織のサブドメインで、他組織の認証情報でログインできないことも確認済み）。**しかし実際にその機能を使うための`*.easystance.app/*`ルートは削除したまま**——つまり、オーナーが管理画面で組織URLを設定すること自体はできるが、実際にそのURLにアクセスしても今は何にも繋がらない状態。危険なので意図的にこのままにしてある。
+
+**オーナーの決定**: この事故を踏まえ、`easystance.app`を共有し続ける対応（worklog専用の除外プロキシを足すなど）は採用せず、**「収益が見込める状況になったタイミングで、Connect Suite専用の新規ドメインを取得する」**という方針に決定。専用ドメインなら他アプリとの衝突が構造的に起こり得ないため、今回のような事故のリスクがそもそも存在しなくなる（Cloudflareの有料オプション「Advanced Certificate Manager」月$10で`*.connect-suite.easystance.app`のような2段階ワイルドカードを使う案より、専用ドメイン年数千円の方が安く、かつ安全）。メモ`subdomain-multitenancy-plan.md`にも記録済み。
+
+**次にこの作業をする人へ**:
+- **今すぐ`*.easystance.app/*`のようなワイルドカードルートを`easystance.app`ゾーンに追加しないこと**——同じアカウント上の他アプリを巻き込む実績があるので要注意。追加するなら、まずそのゾーンに登録されている既存の全ルート（`GET /zones/{zone_id}/workers/routes`で確認可能）を事前に確認すること
+- Cloudflareの`routes`設定を`wrangler.jsonc`に追加する時は、必ず`"workers_dev": true`も明示すること（デフォルト無効化される仕様のため）
+- ルートの削除は`wrangler deploy`だけでは反映されないことがある（今回`wrangler triggers deploy`も試したが同様に反映されず、結局Cloudflare API直叩きが必要だった）。ルート変更後は必ず影響範囲（自分のアプリ・共有ドメイン上の他アプリ両方）を実際にcurlして確認すること
+- 専用ドメイン取得のタイミングになったら: ドメイン取得→そのゾーンをCloudflareに追加→`wrangler.jsonc`の`routes`をそのドメインに向ける→動作確認、という流れで良いはず。他アプリとの共有がなくなるので、今回のような事故の心配は不要になる

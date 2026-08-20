@@ -2,15 +2,13 @@
   "name": "callsync-backend",
   "main": "backend/worker.js",
   "compatibility_date": "2026-08-18",
+  "workers_dev": true,
   "assets": {
     "directory": "./frontend/dist",
     "binding": "ASSETS",
     "not_found_handling": "single-page-application",
     "run_worker_first": ["/api/*"]
   },
-  "routes": [
-    { "pattern": "*.easystance.app/*", "zone_name": "easystance.app" }
-  ],
   "vars": {
     "GOOGLE_CLIENT_ID": "291797704774-b4vasdifrsch05n9mog6hhl1n962454i.apps.googleusercontent.com",
     "R2_PUBLIC_DOMAIN": "pub-63d6d73205084f4aa99e917275a72360.r2.dev"
