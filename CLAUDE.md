@@ -3,10 +3,10 @@
 ## 📌 プロジェクト概要
 **Connect Suite** は、中小企業や現場・オフィス向けに、**「社内チャット（Google Chatリプレイス）」** と **「電話連絡DX（CallSync / 紙の電話メモ全廃）」** を1つの共通アカウント基盤（SSO）でシームレスに行き来・相互連携できるB2B SaaSスイートアプリです。
 
-- **本番Webアプリ (Cloudflare Pages)**: [https://callsync-app.pages.dev](https://callsync-app.pages.dev)
-- **バックエンドAPI (Cloudflare Workers)**: `https://callsync-backend.nonba30.workers.dev/api`
+- **本番Webアプリ・API (Cloudflare Workers、フロント/バックエンド統合)**: [https://callsync-backend.nonba30.workers.dev](https://callsync-backend.nonba30.workers.dev) ← **これが正式URL（2026-08-21〜）。ブックマークはこちらに変更してください**
 - **クラウドDB (Cloudflare D1)**: `callsync-db`
 - **リポジトリ**: `telephone-message-app` (OneDrive上: `C:\Users\nonba\OneDrive\telephone-message-app`)
+- ⚠️ `https://callsync-app.pages.dev`（旧Cloudflare Pages配信）は**廃止・メンテ対象外**。中身は同一だが今後更新されない。詳細は「Pages廃止」セクション参照
 
 ---
 
@@ -90,8 +90,12 @@ npm run dev
 # プロダクションビルド
 npm run build
 
-# Cloudflare Pages への本番デプロイ
-npx wrangler pages deploy dist --project-name callsync-app
+# 本番デプロイ（2026-08-21〜: フロント+バックエンドを統合したWorkerへ。リポジトリルートで実行）
+cd ..
+npx wrangler deploy
+
+# ⚠️ 以下は廃止済み。もう実行しないこと（詳細は「Pages廃止」セクション参照）
+# npx wrangler pages deploy dist --project-name callsync-app
 ```
 
 ---
@@ -391,3 +395,19 @@ Claude Codeによるコードレビュー＋大規模な不具合修正・デザ
 **次にこの作業をする人へ**:
 - Pages（`callsync-app.pages.dev`）を今後再デプロイする予定があるなら、`_redirects`削除の影響（`/platform-admin`直アクセスの404化）を先に確認・対応してから行うこと。あるいは、Pages自体をもう使わない方針に倒すなら、レガシー経路として案内している記述をどこかで整理する
 - Capacitorのライブ更新化により、今後ネイティブアプリの検証は「Web側をデプロイ→アプリを再起動」で完結するはずなので、Codemagicでの再ビルドが本当に必要なケース（プラグインのネイティブコード変更、`capacitor.config.ts`自体の変更など）と、不要なケース（JS/CSSの変更のみ）を区別して案内すると手間が減る
+
+---
+
+## 🗑️ 2026-08-21：Cloudflare Pages（`callsync-app.pages.dev`）を正式に廃止
+
+**経緯**: 上記の`_redirects`削除の影響について、オーナーに「Pages自体もう使ってないのでは？」と確認したところ、実は**まだWeb版のブックマークとして`callsync-app.pages.dev`を使っている状態**だったことが判明（「まだ使ってるって程の状態ではないけど」とのこと）。中身は今のWorker配信と完全に同一（配信ファイルのハッシュも一致確認済み）なので、機能を失わずに乗り換え可能と判断し、正式にPagesを廃止する方針に決定。
+
+**やったこと**:
+- CLAUDE.md冒頭の「本番Webアプリ」の記載を、Worker側URL（`https://callsync-backend.nonba30.workers.dev`）に変更
+- デプロイコマンドの案内から`wrangler pages deploy`を削除（廃止済みの注記を追加）
+
+**オーナー・今後この作業をする人へのご案内**:
+- **これからWeb版を開く時は `https://callsync-backend.nonba30.workers.dev` を使ってください**（ブックマークの差し替えをお願いします）
+- 中身・機能は今までと完全に同じですが、**ドメインが変わるためログインは再度必要**になります（ブラウザの保存領域はドメインごとに独立しているため、旧URLでのログイン状態は新URLには引き継がれません）
+- `callsync-app.pages.dev`自体は当面残りますが、**今後一切更新されません**（`wrangler pages deploy`は二度と実行しないでください）。中身が古いまま固定されるため、いずれ本体との差異が出ます
+- 将来的に完全に削除（Cloudflareのプロジェクト自体を消す）してもよいが、今回は「触らず放置」にとどめている。積極的に消したい場合は`wrangler pages project delete callsync-app`が該当コマンド（未実行）
