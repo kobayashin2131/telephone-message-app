@@ -117,15 +117,21 @@ export default function ChatApp({
                       name: u.name,
                       icon: '👤',
                       avatarColor: u.avatar_color,
-                      department: u.department_name
+                      department: u.department_name || (u.role === 'owner' ? 'オーナー' : u.role === 'admin' ? '管理者' : '未所属')
                     })}
                   >
                     <div className="chat-user-avatar" style={{ backgroundColor: u.avatar_color || '#9b84c4' }}>
                       {u.name.charAt(0)}
                     </div>
                     <div className="chat-item-info">
-                      <div className="chat-item-name">{u.name}</div>
-                      <div className="chat-item-sub">{u.department_name || '一般'}</div>
+                      <div className="chat-item-name-row" style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                        <span className="chat-item-name">{u.name}</span>
+                        {u.role === 'owner' && <span className="role-tag-badge owner">オーナー</span>}
+                        {u.role === 'admin' && <span className="role-tag-badge admin">管理者</span>}
+                      </div>
+                      <div className="chat-item-sub">
+                        {u.department_name || (u.role === 'owner' ? '👑 オーナー' : u.role === 'admin' ? '🛡️ 管理者' : '一般メンバー')}
+                      </div>
                     </div>
                     {unread > 0 && (
                       <span className="suite-badge-pill unread-pill" style={{ marginLeft: 'auto', fontSize: '11px', padding: '2px 7px' }}>

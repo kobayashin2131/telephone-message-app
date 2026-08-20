@@ -1,12 +1,26 @@
 import React, { useState } from 'react';
-import { X, Users, Check, Building2, User } from 'lucide-react';
+import { X, Users, Check, Building2, ChevronDown, Smile } from 'lucide-react';
 
-const ICONS = ['👥', '🚀', '🚨', '💡', '🛠', '📢', '🏆', '📦', '💼', '🤝', '🎯', '⚡'];
+const ICON_CATEGORIES = [
+  {
+    label: '💼 ビジネス・プロジェクト',
+    icons: ['💬', '🚀', '💼', '📊', '🏢', '🤝', '🎯', '💡', '📌', '🏆']
+  },
+  {
+    label: '⚡ 現場・運用・緊急',
+    icons: ['⚡', '🚨', '🛠️', '📦', '🚚', '📞', '🛡️', '⚙️', '📋', '🔑']
+  },
+  {
+    label: '✨ チーム・コミュニケーション',
+    icons: ['👥', '🌟', '☕', '💎', '🌿', '🎨', '🔥', '🎉', '🍀', '✨']
+  }
+];
 
 export default function NewGroupModal({ onClose, users, departments, currentUserId, onCreateGroup }) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [icon, setIcon] = useState('👥');
+  const [icon, setIcon] = useState('💬');
+  const [showIconPalette, setShowIconPalette] = useState(false);
   const [selectedUserIds, setSelectedUserIds] = useState([currentUserId]);
 
   // Toggle individual user
@@ -69,15 +83,48 @@ export default function NewGroupModal({ onClose, users, departments, currentUser
             {/* Group Name & Icon */}
             <div className="form-group">
               <label className="form-label">アイコン ＆ グループ名 <span style={{ color: '#d97a6c' }}>*</span></label>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <select 
-                  className="form-select" 
-                  value={icon} 
-                  onChange={(e) => setIcon(e.target.value)}
-                  style={{ width: '64px', fontSize: '1.2rem', textAlign: 'center' }}
+              <div style={{ display: 'flex', gap: '8px', position: 'relative' }}>
+                <button
+                  type="button"
+                  className="icon-picker-btn"
+                  onClick={() => setShowIconPalette(!showIconPalette)}
+                  title="アイコンを変更"
                 >
-                  {ICONS.map(i => <option key={i} value={i}>{i}</option>)}
-                </select>
+                  <span className="icon-picker-emoji">{icon}</span>
+                  <ChevronDown size={14} color="#64748b" />
+                </button>
+
+                {showIconPalette && (
+                  <div className="icon-palette-popover">
+                    <div className="icon-palette-header">
+                      <span>アイコンを選択</span>
+                      <button type="button" onClick={() => setShowIconPalette(false)}><X size={13} /></button>
+                    </div>
+                    <div className="icon-palette-scroll">
+                      {ICON_CATEGORIES.map(cat => (
+                        <div key={cat.label} className="icon-category-block">
+                          <div className="icon-category-label">{cat.label}</div>
+                          <div className="icon-grid">
+                            {cat.icons.map(emoji => (
+                              <button
+                                key={emoji}
+                                type="button"
+                                className={`icon-grid-btn ${icon === emoji ? 'active' : ''}`}
+                                onClick={() => {
+                                  setIcon(emoji);
+                                  setShowIconPalette(false);
+                                }}
+                              >
+                                {emoji}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <input 
                   type="text" 
                   className="form-input" 
@@ -137,6 +184,8 @@ export default function NewGroupModal({ onClose, users, departments, currentUser
               <div className="members-check-list">
                 {users.map(u => {
                   const isSelected = selectedUserIds.includes(u.id);
+                  const isOwner = u.role === 'owner';
+                  const isAdmin = u.role === 'admin';
                   return (
                     <div 
                       key={u.id}
@@ -151,6 +200,12 @@ export default function NewGroupModal({ onClose, users, departments, currentUser
                           {u.name.charAt(0)}
                         </div>
                         <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#38443c' }}>{u.name}</span>
+                        {isOwner && (
+                          <span className="role-tag-badge owner">オーナー</span>
+                        )}
+                        {isAdmin && !isOwner && (
+                          <span className="role-tag-badge admin">管理者</span>
+                        )}
                         <span style={{ fontSize: '0.7rem', color: '#48564c', background: '#f2ede1', padding: '1px 6px', borderRadius: '4px' }}>
                           {u.department_name || '未所属'}
                         </span>
@@ -158,7 +213,7 @@ export default function NewGroupModal({ onClose, users, departments, currentUser
                       <input 
                         type="checkbox" 
                         checked={isSelected} 
-                        onChange={() => {}} // handled by row click
+                        onChange={() => {}}
                         style={{ cursor: 'pointer' }}
                       />
                     </div>
