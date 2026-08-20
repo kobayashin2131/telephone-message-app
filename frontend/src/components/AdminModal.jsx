@@ -61,9 +61,11 @@ export default function AdminModal({
   onClose, users, departments, currentUser, auth, onSaveUser, onDeleteUser, onSaveDept, onDeleteDept, onResetPin, onOpenCsvImport
 }) {
   const [activeTab, setActiveTab] = useState('users'); // 'users' or 'departments'
+  const orgCode = String(auth.user.organization_id).padStart(3, '0');
 
   // User form
   const [userEdit, setUserEdit] = useState({ id: null, name: '', email: '', pin: '', department_id: '', role: 'user', avatar_color: '#7d68a8' });
+  const [emailSuffix, setEmailSuffix] = useState('');
   const [isEditingUser, setIsEditingUser] = useState(false);
 
   // Dept form
@@ -83,15 +85,17 @@ export default function AdminModal({
       });
     } else {
       setUserEdit({ id: null, name: '', email: '', pin: '', department_id: departments[0]?.id || '', role: 'user', avatar_color: COLORS[Math.floor(Math.random() * COLORS.length)] });
+      setEmailSuffix('');
     }
     setIsEditingUser(true);
   };
 
   const handleSaveUser = (e) => {
     e.preventDefault();
-    if (!userEdit.name || !userEdit.email) return alert('名前とIDは必須です');
+    const finalEmail = userEdit.id ? userEdit.email : `${orgCode}_${emailSuffix.trim().replace(/\s+/g, '')}`;
+    if (!userEdit.name || (userEdit.id ? !finalEmail : !emailSuffix.trim())) return alert('名前とIDは必須です');
     if (!userEdit.id && userEdit.pin && !/^\d{4,8}$/.test(userEdit.pin)) return alert('PINは4〜8桁の数字で入力してください');
-    onSaveUser(userEdit);
+    onSaveUser({ ...userEdit, email: finalEmail });
     setIsEditingUser(false);
   };
 
@@ -122,11 +126,14 @@ export default function AdminModal({
         </div>
 
         {/* Tab Headers */}
-        <div style={{ display: 'flex', borderBottom: '1px solid #e8e2d8', background: '#f8f5ef', padding: '0 20px' }}>
-          <button 
+        <div style={{
+          display: 'flex', borderBottom: '1px solid #e8e2d8', background: '#f8f5ef', padding: '0 20px',
+          overflowX: 'auto', WebkitOverflowScrolling: 'touch'
+        }}>
+          <button
             style={{
               padding: '12px 16px', border: 'none', background: 'transparent',
-              fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer',
+              fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
               color: activeTab === 'users' ? '#7d68a8' : '#48564c',
               borderBottom: activeTab === 'users' ? '2px solid #7d68a8' : '2px solid transparent'
             }}
@@ -134,10 +141,10 @@ export default function AdminModal({
           >
             👥 アカウント管理 ({users.length}名)
           </button>
-          <button 
+          <button
             style={{
               padding: '12px 16px', border: 'none', background: 'transparent',
-              fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer',
+              fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
               color: activeTab === 'departments' ? '#7d68a8' : '#48564c',
               borderBottom: activeTab === 'departments' ? '2px solid #7d68a8' : '2px solid transparent'
             }}
@@ -148,7 +155,7 @@ export default function AdminModal({
           <button
             style={{
               padding: '12px 16px', border: 'none', background: 'transparent',
-              fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer',
+              fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
               color: activeTab === 'plan' ? '#7d68a8' : '#48564c',
               borderBottom: activeTab === 'plan' ? '2px solid #7d68a8' : '2px solid transparent'
             }}
@@ -189,24 +196,50 @@ export default function AdminModal({
                       ))}
                     </select>
                   </div>
-                  <div className="form-group">
-                    <label className="form-label">ID（メールアドレス） <span style={{ color: '#d97a6c' }}>*</span></label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      value={userEdit.email}
-                      onChange={(e) => setUserEdit({ ...userEdit, email: e.target.value })}
-                      placeholder="例: yamada@example.com"
-                      required
-                    />
-                    <div style={{ fontSize: '0.72rem', color: '#66766c', marginTop: '3px' }}>
-                      ID+PINでのみ使う場合は実在しなくてもOKです。「Googleでログイン」も使わせたい場合は、本人の実際のGoogleアカウントのメールアドレスを入力してください
+                  {userEdit.id ? (
+                    <div className="form-group">
+                      <label className="form-label">ID（ログイン用） <span style={{ color: '#d97a6c' }}>*</span></label>
+                      <input
+                        type="text"
+                        className="form-input"
+                        value={userEdit.email}
+                        onChange={(e) => setUserEdit({ ...userEdit, email: e.target.value })}
+                        required
+                      />
+                      <div style={{ fontSize: '0.72rem', color: '#66766c', marginTop: '3px' }}>
+                        「Googleでログイン」も使わせたい場合は、本人の実際のGoogleアカウントのメールアドレスを入力してください
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="form-group">
+                      <label className="form-label">ID（ログイン用） <span style={{ color: '#d97a6c' }}>*</span></label>
+                      <div style={{ display: 'flex', alignItems: 'stretch' }}>
+                        <span style={{
+                          display: 'flex', alignItems: 'center', padding: '0 10px',
+                          border: '1px solid #e8e2d8', borderRight: 'none', borderRadius: '8px 0 0 8px',
+                          background: '#f8f5ef', color: '#48564c', fontSize: '0.85rem', fontWeight: 700, whiteSpace: 'nowrap'
+                        }}>
+                          {orgCode}_
+                        </span>
+                        <input
+                          type="text"
+                          className="form-input"
+                          style={{ borderRadius: '0 8px 8px 0' }}
+                          value={emailSuffix}
+                          onChange={(e) => setEmailSuffix(e.target.value)}
+                          placeholder="例: yamada"
+                          required
+                        />
+                      </div>
+                      <div style={{ fontSize: '0.72rem', color: '#66766c', marginTop: '3px' }}>
+                        先頭の「{orgCode}_」は自社の組織番号で自動的に付きます。実在するメールアドレスでなくてもOKです。「Googleでログイン」も使わせたい場合は、本人の実際のGoogleアカウントのメールアドレスを入力してください
+                      </div>
+                    </div>
+                  )}
 
                   {!userEdit.id && (
                     <div className="form-group">
-                      <label className="form-label">初期PIN（4〜8桁の数字、未入力なら後で管理者がリセットできます）</label>
+                      <label className="form-label">初期PIN（4〜8桁の数字。空欄の場合は「0000」になります）</label>
                       <input
                         type="text"
                         inputMode="numeric"
@@ -215,6 +248,9 @@ export default function AdminModal({
                         onChange={(e) => setUserEdit({ ...userEdit, pin: e.target.value })}
                         placeholder="例: 1234"
                       />
+                      <div style={{ fontSize: '0.72rem', color: '#66766c', marginTop: '3px' }}>
+                        本人には初回ログイン時にPINの変更をお願いする仕様です
+                      </div>
                     </div>
                   )}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
@@ -267,19 +303,19 @@ export default function AdminModal({
                 </form>
               ) : (
                 <>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
                     <span style={{ fontSize: '0.85rem', color: '#48564c' }}>所属部署や管理者権限を設定できます</span>
-                    <div style={{ display: 'flex', gap: '8px' }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                       <button
                         className="btn-secondary"
-                        style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem' }}
+                        style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', whiteSpace: 'nowrap' }}
                         onClick={onOpenCsvImport}
                       >
                         <FileSpreadsheet size={14} /> CSVインポート
                       </button>
                       <button
                         className="btn-primary"
-                        style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem' }}
+                        style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', whiteSpace: 'nowrap' }}
                         onClick={() => startEditUser()}
                       >
                         <Plus size={14} /> 新規アカウント登録

@@ -278,14 +278,12 @@ export default {
         if (role === 'owner') {
           return jsonResponse({ error: 'オーナー権限の付与はこの画面では行えません' }, 403);
         }
-        let passwordHash = null;
-        if (body.pin) {
-          if (!/^\d{4,8}$/.test(body.pin)) return jsonResponse({ error: 'PINは4〜8桁の数字で入力してください' }, 400);
-          passwordHash = await hashPin(body.pin);
-        }
+        const pin = body.pin || '0000';
+        if (!/^\d{4,8}$/.test(pin)) return jsonResponse({ error: 'PINは4〜8桁の数字で入力してください' }, 400);
+        const passwordHash = await hashPin(pin);
         const info = await db.prepare(`
-          INSERT INTO users (name, email, password_hash, department_id, role, avatar_color, organization_id)
-          VALUES (?, ?, ?, ?, ?, ?, ?)
+          INSERT INTO users (name, email, password_hash, department_id, role, avatar_color, organization_id, must_change_pin)
+          VALUES (?, ?, ?, ?, ?, ?, ?, 1)
         `).bind(body.name, body.email, passwordHash, body.department_id || null, role, body.avatar_color || '#3b82f6', orgId).run();
         return jsonResponse({ id: info.meta.last_row_id, ...body });
       }
@@ -816,7 +814,7 @@ export default {
 
         return jsonResponse({
           token,
-          user: { id: userInfo.meta.last_row_id, name: ownerName, email, role: 'owner', organization_id: orgId }
+          user: { id: userInfo.meta.last_row_id, name: ownerName, email, role: 'owner', organization_id: orgId, must_change_pin: false }
         });
       }
 
@@ -835,7 +833,7 @@ export default {
         await db.prepare('INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)').bind(token, user.id, expiresAt).run();
         return jsonResponse({
           token,
-          user: { id: user.id, name: user.name, email: user.email, role: user.role, organization_id: user.organization_id }
+          user: { id: user.id, name: user.name, email: user.email, role: user.role, organization_id: user.organization_id, must_change_pin: !!user.must_change_pin }
         });
       }
 
@@ -862,7 +860,7 @@ export default {
         await db.prepare('INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)').bind(token, user.id, expiresAt).run();
         return jsonResponse({
           token,
-          user: { id: user.id, name: user.name, email: user.email, role: user.role, organization_id: user.organization_id }
+          user: { id: user.id, name: user.name, email: user.email, role: user.role, organization_id: user.organization_id, must_change_pin: !!user.must_change_pin }
         });
       }
 
@@ -886,7 +884,7 @@ export default {
           return jsonResponse({ error: 'PINは4〜8桁の数字で入力してください' }, 400);
         }
         const newHash = await hashPin(body.new_pin);
-        await db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').bind(newHash, session.user_id).run();
+        await db.prepare('UPDATE users SET password_hash = ?, must_change_pin = 0 WHERE id = ?').bind(newHash, session.user_id).run();
         return jsonResponse({ success: true });
       }
 
@@ -903,7 +901,7 @@ export default {
         if (!target) return jsonResponse({ error: '対象ユーザーが見つかりません' }, 404);
 
         const newHash = await hashPin(body.new_pin);
-        await db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').bind(newHash, body.user_id).run();
+        await db.prepare('UPDATE users SET password_hash = ?, must_change_pin = 1 WHERE id = ?').bind(newHash, body.user_id).run();
         return jsonResponse({ success: true });
       }
 

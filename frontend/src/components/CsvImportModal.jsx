@@ -2,8 +2,8 @@ import React, { useState, useRef } from 'react';
 import { X, Upload, Download, FileSpreadsheet } from 'lucide-react';
 
 const API_BASE = 'https://callsync-backend.nonba30.workers.dev/api';
-const TEMPLATE_HEADER = '氏名,ID（メールアドレス）,部門,権限,初期PIN';
-const TEMPLATE_SAMPLE = '山田太郎,yamada@example.com,営業部,一般,1234\n鈴木花子,suzuki-hanako,総務・人事部,管理者,';
+const TEMPLATE_HEADER = '氏名,ID（先頭の組織番号は自動で付きます）,部門,権限,初期PIN';
+const TEMPLATE_SAMPLE = '山田太郎,yamada,営業部,一般,1234\n鈴木花子,suzuki-hanako,総務・人事部,管理者,';
 
 function parseCsv(text) {
   const clean = text.replace(/^﻿/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
@@ -28,6 +28,7 @@ function normalizeRole(raw) {
 }
 
 export default function CsvImportModal({ auth, departments, onClose, onImported }) {
+  const orgCode = String(auth.user.organization_id).padStart(3, '0');
   const [rows, setRows] = useState([]);
   const [fileName, setFileName] = useState('');
   const [importing, setImporting] = useState(false);
@@ -93,7 +94,7 @@ export default function CsvImportModal({ auth, departments, onClose, onImported 
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${auth.token}` },
           body: JSON.stringify({
             name: row.name,
-            email: row.email,
+            email: `${orgCode}_${row.email.trim().replace(/\s+/g, '')}`,
             department_id: departmentId,
             role: normalizeRole(row.role),
             pin: row.pin || undefined,
@@ -132,7 +133,7 @@ export default function CsvImportModal({ auth, departments, onClose, onImported 
 
         <div className="modal-body">
           <div style={{ fontSize: '0.82rem', color: '#48564c', lineHeight: 1.6 }}>
-            1行目は見出し行として無視されます。列の並びは「氏名, ID(メールアドレス), 部門, 権限（一般/管理者）, 初期PIN」の順で固定です（部門・権限・PINは空欄でも構いません）。
+            1行目は見出し行として無視されます。列の並びは「氏名, ID, 部門, 権限（一般/管理者）, 初期PIN」の順で固定です（部門・権限・PINは空欄でも構いません）。IDには先頭に組織番号「{orgCode}_」が自動的に付きます（CSVには自由な部分だけ入力してください）。PINを空欄にした場合は「0000」になり、本人には初回ログイン時の変更をお願いする仕様です。
           </div>
 
           <button
@@ -158,7 +159,7 @@ export default function CsvImportModal({ auth, departments, onClose, onImported 
                 {rows.map((r, i) => (
                   <div key={i} style={{ padding: '6px 12px', fontSize: '0.78rem', borderTop: '1px solid #f0ece0', display: 'flex', gap: '10px' }}>
                     <span style={{ fontWeight: 700, minWidth: '80px' }}>{r.name || '(氏名なし)'}</span>
-                    <span style={{ color: '#66766c' }}>{r.email || '(IDなし)'}</span>
+                    <span style={{ color: '#66766c' }}>{r.email ? `${orgCode}_${r.email}` : '(IDなし)'}</span>
                     <span style={{ color: '#66766c' }}>{r.department || '未所属'}</span>
                     <span style={{ color: '#66766c' }}>{normalizeRole(r.role) === 'admin' ? '管理者' : '一般'}</span>
                   </div>

@@ -487,6 +487,20 @@ export default function App() {
       : <LoginScreen onLogin={handleLogin} onGoToSignup={() => setAuthScreen('signup')} />;
   }
 
+  if (auth.user.must_change_pin) {
+    return (
+      <ChangePinModal
+        auth={auth}
+        forced
+        onClose={() => {
+          const updated = { ...auth, user: { ...auth.user, must_change_pin: false } };
+          saveAuth(updated);
+          setAuth(updated);
+        }}
+      />
+    );
+  }
+
   return (
     <div className="suite-root">
       {/* 1. Global Suite Header (App Switcher & Account) */}

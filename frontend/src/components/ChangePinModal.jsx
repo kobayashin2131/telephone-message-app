@@ -3,7 +3,7 @@ import { X, KeyRound } from 'lucide-react';
 
 const API_BASE = 'https://callsync-backend.nonba30.workers.dev/api';
 
-export default function ChangePinModal({ auth, onClose }) {
+export default function ChangePinModal({ auth, onClose, forced = false }) {
   const [currentPin, setCurrentPin] = useState('');
   const [newPin, setNewPin] = useState('');
   const [newPin2, setNewPin2] = useState('');
@@ -33,7 +33,7 @@ export default function ChangePinModal({ auth, onClose }) {
         setError(data.error || 'PINの変更に失敗しました');
         return;
       }
-      alert('PINを変更しました');
+      if (!forced) alert('PINを変更しました');
       onClose();
     } catch {
       setError('通信エラーが発生しました');
@@ -43,15 +43,20 @@ export default function ChangePinModal({ auth, onClose }) {
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay" onClick={forced ? undefined : onClose}>
       <div className="modal-content" style={{ maxWidth: '360px' }} onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <div className="modal-title">
             <KeyRound size={20} color="#7d68a8" />
             PINを変更
           </div>
-          <button className="btn-close" onClick={onClose}><X size={18} /></button>
+          {!forced && <button className="btn-close" onClick={onClose}><X size={18} /></button>}
         </div>
+        {forced && (
+          <div style={{ padding: '14px 22px 0', fontSize: '0.82rem', color: '#48564c', lineHeight: 1.6 }}>
+            初回ログイン、または管理者によりPINがリセットされました。続ける前に新しいPINを設定してください。
+          </div>
+        )}
         <form onSubmit={handleSubmit} className="modal-body">
           <div className="form-group">
             <label className="form-label">現在のPIN</label>
@@ -91,7 +96,7 @@ export default function ChangePinModal({ auth, onClose }) {
           {error && <div className="login-error">{error}</div>}
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '8px' }}>
-            <button type="button" className="btn-secondary" onClick={onClose}>キャンセル</button>
+            {!forced && <button type="button" className="btn-secondary" onClick={onClose}>キャンセル</button>}
             <button type="submit" className="btn-primary" disabled={submitting}>
               {submitting ? '変更中…' : '変更する'}
             </button>
