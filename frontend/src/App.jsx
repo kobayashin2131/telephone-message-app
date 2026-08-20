@@ -80,7 +80,10 @@ export default function App() {
 
     if (isNativeApp()) {
       hasRequestedNotifyRef.current = true;
-      setupNativePush(currentUserId).catch((e) => console.error('native push setup failed', e));
+      setupNativePush(currentUserId).catch((e) => {
+        console.error('native push setup failed', e);
+        if (e?.code === 'PERMISSION_DENIED') alert(e.message);
+      });
       return;
     }
 
@@ -105,7 +108,7 @@ export default function App() {
           await setupNativePush(currentUserId);
         } catch (e) {
           console.error('native push setup failed', e);
-          alert('通知の設定に失敗しました。もう一度お試しください。');
+          alert(e?.message || '通知の設定に失敗しました。もう一度お試しください。');
           return;
         }
       } else {
