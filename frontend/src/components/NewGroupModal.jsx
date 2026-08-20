@@ -16,12 +16,25 @@ const ICON_CATEGORIES = [
   }
 ];
 
+const QUICK_TEMPLATES = [
+  { icon: '📞', name: '受電・電話連絡共有', desc: '社外からの受電連絡を一括共有・対応するグループ' },
+  { icon: '🚨', name: '緊急対応・至急連絡', desc: '至急案件やトラブル対応の連絡用' },
+  { icon: '💼', name: '営業案件・商談PJ', desc: '商談進捗や見積・提案の共有用' },
+  { icon: '🏢', name: '役員会・幹部連絡', desc: '経営陣・マネージャー陣の意思決定用' }
+];
+
 export default function NewGroupModal({ onClose, users, departments, currentUserId, onCreateGroup }) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [icon, setIcon] = useState('💬');
   const [showIconPalette, setShowIconPalette] = useState(false);
   const [selectedUserIds, setSelectedUserIds] = useState([currentUserId]);
+
+  const applyTemplate = (tpl) => {
+    setIcon(tpl.icon);
+    setName(tpl.name);
+    setDescription(tpl.desc);
+  };
 
   // Toggle individual user
   const toggleUser = (uid) => {
@@ -80,6 +93,27 @@ export default function NewGroupModal({ onClose, users, departments, currentUser
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
           <div className="modal-body">
+            {/* Quick Templates */}
+            <div className="form-group" style={{ marginBottom: '12px' }}>
+              <label className="form-label" style={{ fontSize: '0.72rem', color: '#64748b', marginBottom: '4px' }}>
+                💡 クイックテンプレート（ワンタップで入力）
+              </label>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+                {QUICK_TEMPLATES.map(tpl => (
+                  <button
+                    key={tpl.name}
+                    type="button"
+                    className="dept-chip"
+                    style={{ fontSize: '0.73rem', padding: '3px 8px' }}
+                    onClick={() => applyTemplate(tpl)}
+                  >
+                    <span>{tpl.icon}</span>
+                    <span>{tpl.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Group Name & Icon */}
             <div className="form-group">
               <label className="form-label">アイコン ＆ グループ名 <span style={{ color: '#d97a6c' }}>*</span></label>

@@ -24,6 +24,32 @@ function formatCallDateTime(dateStr) {
   return `${month}/${date} ${hours}:${minutes}`;
 }
 
+function renderContentWithMentions(content, currentUserId) {
+  if (!content) return null;
+  const regex = /([@＠][^\s@＠　]+)/g;
+  const parts = [];
+  let lastIndex = 0;
+  let match;
+
+  while ((match = regex.exec(content)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(content.substring(lastIndex, match.index));
+    }
+    const rawMention = match[1];
+    const name = rawMention.slice(1);
+    parts.push(
+      <span key={match.index} className="mention-pill is-me">
+        @{name}
+      </span>
+    );
+    lastIndex = regex.lastIndex;
+  }
+  if (lastIndex < content.length) {
+    parts.push(content.substring(lastIndex));
+  }
+  return parts;
+}
+
 export default function CallMemoCard({ memo, onUpdateStatus, onOpenThread, currentUserId }) {
   const [showNoteInput, setShowNoteInput] = useState(false);
   const [noteText, setNoteText] = useState(memo?.memo_resolved_note || '');
@@ -119,7 +145,7 @@ export default function CallMemoCard({ memo, onUpdateStatus, onOpenThread, curre
 
       {memo.memo_body && (
         <div className="memo-body-box">
-          {memo.memo_body}
+          {renderContentWithMentions(memo.memo_body, currentUserId)}
         </div>
       )}
 
