@@ -5,9 +5,9 @@ const config: CapacitorConfig = {
   appName: 'Connect Suite',
   webDir: 'dist',
   server: {
-    // 起動時にローカルファイルではなく、直接本番サイト(Cloudflare Pages)を読み込む設定。
-    // Web側の更新はアプリの再ビルドなしにそのまま反映される。
-    url: 'https://callsync-app.pages.dev',
+    // 起動時にローカルファイルではなく、直接本番サイト(Cloudflare Workers)を読み込む設定。
+    // Web側の更新はアプリの再ビルドなしにそのまま即時反映される。
+    url: 'https://callsync-backend.nonba30.workers.dev',
     cleartext: true
   },
   plugins: {
