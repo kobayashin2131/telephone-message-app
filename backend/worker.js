@@ -224,6 +224,45 @@ async function resolvePlatformSession(db, request) {
   return row;
 }
 
+async function sendWebPushToUsers(env, userIds, { title, body, data }) {
+  if (!env.VAPID_PUBLIC_KEY || !env.VAPID_PRIVATE_KEY || !userIds || userIds.length === 0) return;
+
+  const placeholders = userIds.map(() => '?').join(',');
+  const { results: subs } = await env.DB.prepare(
+    `SELECT id, user_id, endpoint, p256dh, auth FROM push_subscriptions WHERE user_id IN (${placeholders})`
+  ).bind(...userIds).all();
+  if (!subs || subs.length === 0) return;
+
+  const vapidKeys = await deserializeVapidKeys({
+    publicKey: env.VAPID_PUBLIC_KEY,
+    privateKey: env.VAPID_PRIVATE_KEY
+  });
+
+  const payload = JSON.stringify({
+    title,
+    body,
+    type: data?.type || 'message',
+    data: data || {},
+    url: data?.url || '/'
+  });
+
+  await Promise.all(subs.map(async (sub) => {
+    try {
+      const res = await sendPushNotification(
+        vapidKeys,
+        { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+        'support@easystance.app',
+        payload
+      );
+      if (res.status === 404 || res.status === 410) {
+        await env.DB.prepare('DELETE FROM push_subscriptions WHERE endpoint = ?').bind(sub.endpoint).run();
+      }
+    } catch (e) {
+      console.error('web push send failed', sub.id, e.message);
+    }
+  }));
+}
+
 async function sendPushToSubscribers(env, excludeUserId, memo, orgId) {
   const { results: subs } = await env.DB.prepare('SELECT * FROM push_subscriptions WHERE user_id != ? AND organization_id = ?')
     .bind(excludeUserId || -1, orgId).all();
@@ -235,9 +274,11 @@ async function sendPushToSubscribers(env, excludeUserId, memo, orgId) {
   });
 
   const payload = JSON.stringify({
+    type: 'call_memo',
     title: `📞 ${memo.company_name} より受電`,
     body: memo.contact_person ? `${memo.contact_person} 様` : (memo.subject || '内容を確認してください'),
-    memoId: memo.id
+    memoId: memo.id,
+    url: `/?app=callsync&memo_id=${memo.id}`
   });
 
   await Promise.all(subs.map(async (sub) => {
@@ -769,13 +810,38 @@ export default {
             const recipientIds = await getMessageRecipientUserIds(db, body.target_type, body.target_id, body.sender_id);
             if (recipientIds.length === 0) return;
             const sender = await db.prepare('SELECT name FROM users WHERE id = ?').bind(body.sender_id).first();
+            let title = sender?.name || '新着メッセージ';
+            if (body.target_type === 'group') {
+              const group = await db.prepare('SELECT name FROM groups WHERE id = ?').bind(body.target_id).first();
+              if (group) title = `${sender?.name || '新着'} #${group.name}`;
+            } else if (body.target_type === 'department') {
+              const dept = await db.prepare('SELECT name FROM departments WHERE id = ?').bind(body.target_id).first();
+              if (dept) title = `${sender?.name || '新着'} #${dept.name}`;
+            }
+
             let previewBody = body.content?.trim();
             if (!previewBody) previewBody = body.message_type === 'image' ? '📷 画像を送信しました' : '📎 ファイルを送信しました';
-            await sendFcmToUsers(env, recipientIds, {
-              title: sender?.name || '新着メッセージ',
-              body: previewBody.slice(0, 100),
-              data: { type: 'message', targetType: body.target_type, targetId: body.target_id }
-            });
+
+            const pushData = {
+              type: 'message',
+              targetType: body.target_type,
+              targetId: body.target_id,
+              senderId: body.sender_id,
+              url: `/?app=chat&target_type=${body.target_type}&target_id=${body.target_id}`
+            };
+
+            await Promise.all([
+              sendFcmToUsers(env, recipientIds, {
+                title,
+                body: previewBody.slice(0, 100),
+                data: pushData
+              }),
+              sendWebPushToUsers(env, recipientIds, {
+                title,
+                body: previewBody.slice(0, 100),
+                data: pushData
+              })
+            ]);
           })());
         }
 
@@ -789,6 +855,43 @@ export default {
             .bind(mid, body.user_id).run();
         }
         return jsonResponse({ success: true });
+      }
+
+      if (path === '/api/messages/unread-summary' && request.method === 'GET') {
+        const userId = Number(url.searchParams.get('user_id'));
+        if (!userId) return jsonResponse({ total_unread: 0, by_target: {}, unread_items: [] });
+
+        const { results } = await db.prepare(`
+          SELECT m.id, m.target_type, m.target_id, m.sender_id, m.message_type, m.content, m.created_at,
+                 u.name as sender_name
+          FROM messages m
+          JOIN users u ON m.sender_id = u.id
+          WHERE m.sender_id != ?
+            AND m.parent_id IS NULL
+            AND (
+              (m.target_type IN ('dm', 'user') AND m.target_id = ?)
+              OR (m.target_type = 'group' AND m.target_id IN (SELECT group_id FROM group_members WHERE user_id = ?))
+              OR (m.target_type = 'department' AND m.target_id IN (SELECT department_id FROM users WHERE id = ?))
+            )
+            AND NOT EXISTS (
+              SELECT 1 FROM message_reads mr WHERE mr.message_id = m.id AND mr.user_id = ?
+            )
+          ORDER BY m.created_at DESC
+        `).bind(userId, userId, userId, userId, userId).all();
+
+        const byTarget = {};
+        let totalUnread = 0;
+        for (const item of (results || [])) {
+          totalUnread++;
+          const key = item.target_type === 'dm' ? `dm-${item.sender_id}` : `${item.target_type}-${item.target_id}`;
+          byTarget[key] = (byTarget[key] || 0) + 1;
+        }
+
+        return jsonResponse({
+          total_unread: totalUnread,
+          by_target: byTarget,
+          unread_items: results || []
+        });
       }
 
       if (path.startsWith('/api/messages/') && path.endsWith('/thread') && request.method === 'GET') {

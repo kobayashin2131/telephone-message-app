@@ -73,16 +73,21 @@ export default function App() {
     setShowNewCallMemoModal(true);
   };
 
-  // Chime + browser notification on new incoming calls
+  // Chime + browser notification on new incoming calls & messages
   // スマホでは通知が無いと実用にならないため、明示的にOFFにされていない限りデフォルトON
   const [notifyEnabled, setNotifyEnabled] = useState(() => localStorage.getItem('callsync_notify') !== '0');
   const seenPendingIdsRef = useRef(null); // null = not yet initialized (skip first load)
+  const seenUnreadMsgIdsRef = useRef(null);
   const hasRequestedNotifyRef = useRef(false);
+
+  // Unread summary for chat
+  const [unreadSummary, setUnreadSummary] = useState({ total_unread: 0, by_target: {} });
 
   // デフォルトONの場合、初回ログイン後に自動で通知許可をリクエストする
   // ネイティブアプリ内ではFCM(ネイティブPush)、Web版ではブラウザのWeb Pushを使う
   useEffect(() => {
     if (!auth || !notifyEnabled || hasRequestedNotifyRef.current) return;
+    const orgId = auth?.user?.organization_id;
 
     if (isNativeApp()) {
       hasRequestedNotifyRef.current = true;
@@ -100,7 +105,7 @@ export default function App() {
       const permission = await Notification.requestPermission();
       if (permission !== 'granted') return;
       try {
-        await subscribeToPush(currentUserId);
+        await subscribeToPush(currentUserId, orgId);
       } catch (e) {
         console.error('push subscribe failed', e);
       }
@@ -108,6 +113,7 @@ export default function App() {
   }, [auth, currentUserId, notifyEnabled]);
 
   const onToggleNotify = async () => {
+    const orgId = auth?.user?.organization_id;
     if (!notifyEnabled) {
       if (isNativeApp()) {
         try {
@@ -133,7 +139,7 @@ export default function App() {
           return;
         }
         try {
-          await subscribeToPush(currentUserId); // タブを閉じていても届くPush通知
+          await subscribeToPush(currentUserId, orgId); // タブを閉じていても届くPush通知
         } catch (e) {
           console.error('push subscribe failed', e);
           alert('通知の設定に失敗しました。もう一度お試しください。');
@@ -181,16 +187,111 @@ export default function App() {
     }
   };
 
+  const notifyNewMessages = (unreadItems) => {
+    const unreadIds = new Set((unreadItems || []).map(m => m.id));
+
+    if (seenUnreadMsgIdsRef.current === null) {
+      seenUnreadMsgIdsRef.current = unreadIds;
+      return;
+    }
+
+    const newOnes = (unreadItems || []).filter(m => !seenUnreadMsgIdsRef.current.has(m.id) && m.sender_id !== currentUserId);
+    seenUnreadMsgIdsRef.current = unreadIds;
+
+    if (newOnes.length === 0 || !notifyEnabled) return;
+
+    playChime();
+    if ('Notification' in window && Notification.permission === 'granted') {
+      newOnes.forEach(m => {
+        const title = m.target_type === 'dm' ? `💬 ${m.sender_name} さんより` : `💬 新着メッセージ (${m.sender_name})`;
+        new Notification(title, {
+          body: m.content || (m.message_type === 'image' ? '📷 画像を送信しました' : '📎 ファイルを送信しました'),
+          tag: `chat-${m.target_type}-${m.target_id}`,
+          data: {
+            type: 'message',
+            targetType: m.target_type,
+            targetId: m.target_id
+          }
+        });
+      });
+    }
+  };
+
+  const handleNavigateTarget = (targetType, targetId) => {
+    setActiveApp('chat');
+    const tid = Number(targetId);
+    if (targetType === 'group') {
+      const g = groups.find(x => x.id === tid);
+      if (g) {
+        setActiveChat({
+          type: 'group',
+          id: g.id,
+          name: g.name,
+          icon: g.icon,
+          memberCount: g.member_count,
+          description: g.description
+        });
+      }
+    } else if (targetType === 'dm' || targetType === 'user') {
+      const u = users.find(x => x.id === tid);
+      if (u) {
+        setActiveChat({
+          type: 'dm',
+          id: u.id,
+          name: u.name,
+          icon: '👤',
+          avatarColor: u.avatar_color,
+          department: u.department_name
+        });
+      }
+    }
+  };
+
+  // Deep link listener from Service Worker
+  useEffect(() => {
+    const onSwMessage = (e) => {
+      if (e.data?.type === 'NAVIGATE_TARGET') {
+        const d = e.data.data || {};
+        if (d.targetType && d.targetId) {
+          handleNavigateTarget(d.targetType, d.targetId);
+        } else if (e.data.url?.includes('app=callsync')) {
+          setActiveApp('callsync');
+        } else {
+          setActiveApp('chat');
+        }
+      }
+    };
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.addEventListener('message', onSwMessage);
+      return () => navigator.serviceWorker.removeEventListener('message', onSwMessage);
+    }
+  }, [users, groups]);
+
+  // Deep link check from initial URL
+  useEffect(() => {
+    if (users.length === 0 && groups.length === 0) return;
+    const params = new URLSearchParams(window.location.search);
+    const app = params.get('app');
+    const targetType = params.get('target_type');
+    const targetId = params.get('target_id');
+    if (app === 'callsync') {
+      setActiveApp('callsync');
+    } else if (app === 'chat' && targetType && targetId) {
+      handleNavigateTarget(targetType, targetId);
+    }
+  }, [users, groups]);
+
   const fetchAllData = async () => {
     if (!auth) return;
     const orgId = auth.user.organization_id;
     try {
-      const [uRes, dRes, gRes, cRes, mRes] = await Promise.all([
+      const [uRes, dRes, gRes, cRes, mRes, unreadRes] = await Promise.all([
         fetch(`${API_BASE}/users?organization_id=${orgId}`),
         fetch(`${API_BASE}/departments?organization_id=${orgId}`),
         fetch(`${API_BASE}/groups?organization_id=${orgId}`),
         fetch(`${API_BASE}/contacts?organization_id=${orgId}`),
-        fetch(`${API_BASE}/call-memos?organization_id=${orgId}`)
+        fetch(`${API_BASE}/call-memos?organization_id=${orgId}`),
+        fetch(`${API_BASE}/messages/unread-summary?user_id=${currentUserId}`)
       ]);
       if (uRes.ok) setUsers(await uRes.json());
       if (dRes.ok) setDepartments(await dRes.json());
@@ -200,6 +301,14 @@ export default function App() {
         const memos = await mRes.json();
         notifyNewCalls(memos);
         setCallMemos(memos);
+      }
+      if (unreadRes.ok) {
+        const summary = await unreadRes.json();
+        notifyNewMessages(summary.unread_items);
+        setUnreadSummary({
+          total_unread: summary.total_unread || 0,
+          by_target: summary.by_target || {}
+        });
       }
     } catch (e) {
       console.error('Error fetching initial data', e);
@@ -515,6 +624,7 @@ export default function App() {
         onOpenAdmin={() => setShowAdminModal(true)}
         onOpenChangePin={() => setShowChangePinModal(true)}
         callMemosCount={{ unhandled: unhandledCallsCount, total: callMemos.length }}
+        unreadMessagesCount={unreadSummary.total_unread}
         notifyEnabled={notifyEnabled}
         onToggleNotify={onToggleNotify}
       />
@@ -530,6 +640,7 @@ export default function App() {
             onSelectChat={setActiveChat}
             messages={messages}
             organizationId={auth?.user?.organization_id}
+            unreadByTarget={unreadSummary.by_target}
             onSendMessage={handleSendMessage}
             onUpdateStatus={handleUpdateCallStatus}
             onOpenNewGroup={() => setShowNewGroupModal(true)}

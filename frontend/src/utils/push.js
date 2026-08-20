@@ -7,7 +7,7 @@ function base64UrlToUint8Array(base64Url) {
   return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
 }
 
-export async function subscribeToPush(userId) {
+export async function subscribeToPush(userId, organizationId = null) {
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false;
 
   const reg = await navigator.serviceWorker.register('/sw.js');
@@ -22,7 +22,12 @@ export async function subscribeToPush(userId) {
   await fetch(`${API_BASE}/push/subscribe`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ user_id: userId, endpoint: sub.endpoint, keys: sub.toJSON().keys })
+    body: JSON.stringify({
+      user_id: userId,
+      organization_id: organizationId,
+      endpoint: sub.endpoint,
+      keys: sub.toJSON().keys
+    })
   });
   return true;
 }

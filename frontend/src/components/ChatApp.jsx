@@ -13,6 +13,7 @@ export default function ChatApp({
   onSelectChat,
   messages,
   organizationId,
+  unreadByTarget = {},
   onSendMessage,
   onUpdateStatus,
   onOpenNewGroup,
@@ -67,6 +68,7 @@ export default function ChatApp({
             <div className="chat-list">
               {filteredGroups.map(g => {
                 const isSelected = activeChat?.type === 'group' && activeChat?.id === g.id;
+                const unread = unreadByTarget[`group-${g.id}`] || 0;
                 return (
                   <button 
                     key={`group-${g.id}`}
@@ -85,6 +87,11 @@ export default function ChatApp({
                       <div className="chat-item-name">{g.name}</div>
                       <div className="chat-item-sub">{g.member_count}名参加 {g.description ? `• ${g.description}` : ''}</div>
                     </div>
+                    {unread > 0 && (
+                      <span className="suite-badge-pill unread-pill" style={{ marginLeft: 'auto', fontSize: '11px', padding: '2px 7px' }}>
+                        {unread}
+                      </span>
+                    )}
                   </button>
                 );
               })}
@@ -99,6 +106,7 @@ export default function ChatApp({
             <div className="chat-list">
               {filteredUsers.map(u => {
                 const isSelected = activeChat?.type === 'dm' && activeChat?.id === u.id;
+                const unread = unreadByTarget[`dm-${u.id}`] || 0;
                 return (
                   <button 
                     key={`user-${u.id}`}
@@ -119,6 +127,11 @@ export default function ChatApp({
                       <div className="chat-item-name">{u.name}</div>
                       <div className="chat-item-sub">{u.department_name || '一般'}</div>
                     </div>
+                    {unread > 0 && (
+                      <span className="suite-badge-pill unread-pill" style={{ marginLeft: 'auto', fontSize: '11px', padding: '2px 7px' }}>
+                        {unread}
+                      </span>
+                    )}
                   </button>
                 );
               })}

@@ -6,29 +6,31 @@ import { formatTime } from '../utils/datetime';
 export default function ThreadDrawer({ 
   parentMessage, onClose, currentUserId, onSendReply, onUpdateStatus 
 }) {
-  if (!parentMessage) return null;
-
   const [replies, setReplies] = useState([]);
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const fetchReplies = async () => {
-    try {
-      const res = await fetch(`https://callsync-backend.nonba30.workers.dev/api/messages/${parentMessage.id}/thread`);
-      if (res.ok) {
-        const data = await res.json();
-        setReplies(data);
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  };
+  const parentId = parentMessage?.id;
 
   useEffect(() => {
+    if (!parentId) return;
+    const fetchReplies = async () => {
+      try {
+        const res = await fetch(`https://callsync-backend.nonba30.workers.dev/api/messages/${parentId}/thread`);
+        if (res.ok) {
+          const data = await res.json();
+          setReplies(data);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    };
     fetchReplies();
     const timer = setInterval(fetchReplies, 3000);
     return () => clearInterval(timer);
-  }, [parentMessage.id]);
+  }, [parentId]);
+
+  if (!parentMessage) return null;
 
   const handleSend = async (e) => {
     e.preventDefault();
