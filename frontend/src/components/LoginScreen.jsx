@@ -115,7 +115,10 @@ export default function LoginScreen({ onLogin }) {
 
         {showGoogleSection && (
           <>
-            <div className="login-google-btn" ref={googleButtonRef}>
+            <div className="login-google-btn">
+              {/* GoogleのスクリプトがこのdivのDOMを直接書き換えるため、
+                  Reactの子要素は一切置かない（"読み込み中"はSiblingで表示） */}
+              <div ref={googleButtonRef} />
               {!googleReady && <span className="login-google-loading">読み込み中…</span>}
             </div>
             <div className="login-divider"><span>または</span></div>
