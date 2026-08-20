@@ -275,8 +275,8 @@ export default {
           return jsonResponse({ error: '管理者権限が必要です' }, 403);
         }
         const role = body.role || 'user';
-        if (role === 'owner' && session.role !== 'owner') {
-          return jsonResponse({ error: 'オーナー権限の付与はオーナーのみ行えます' }, 403);
+        if (role === 'owner') {
+          return jsonResponse({ error: 'オーナー権限の付与はこの画面では行えません' }, 403);
         }
         let passwordHash = null;
         if (body.pin) {
@@ -299,15 +299,13 @@ export default {
           return jsonResponse({ error: '管理者権限が必要です' }, 403);
         }
         const role = body.role || 'user';
-        if (role === 'owner' && session.role !== 'owner') {
-          return jsonResponse({ error: 'オーナー権限の付与はオーナーのみ行えます' }, 403);
+        const target = await db.prepare('SELECT role FROM users WHERE id = ? AND organization_id = ?').bind(id, orgId).first();
+        if (role === 'owner' && target?.role !== 'owner') {
+          return jsonResponse({ error: 'オーナー権限の付与はこの画面では行えません' }, 403);
         }
-        if (role !== 'owner') {
-          const target = await db.prepare('SELECT role FROM users WHERE id = ? AND organization_id = ?').bind(id, orgId).first();
-          if (target?.role === 'owner') {
-            const { results: owners } = await db.prepare('SELECT id FROM users WHERE organization_id = ? AND role = ?').bind(orgId, 'owner').all();
-            if (owners.length <= 1) return jsonResponse({ error: '組織に最低1人はオーナーが必要です' }, 400);
-          }
+        if (role !== 'owner' && target?.role === 'owner') {
+          const { results: owners } = await db.prepare('SELECT id FROM users WHERE organization_id = ? AND role = ?').bind(orgId, 'owner').all();
+          if (owners.length <= 1) return jsonResponse({ error: '組織に最低1人はオーナーが必要です' }, 400);
         }
         await db.prepare(`
           UPDATE users SET name = ?, email = ?, department_id = ?, role = ?, avatar_color = ? WHERE id = ? AND organization_id = ?
@@ -786,6 +784,9 @@ export default {
 
         if (!orgName || !ownerName || !email) {
           return jsonResponse({ error: '組織名・氏名・IDは必須です' }, 400);
+        }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+          return jsonResponse({ error: 'オーナーのIDは有効なメールアドレスを入力してください' }, 400);
         }
         if (!/^\d{4,8}$/.test(pin)) {
           return jsonResponse({ error: 'PINは4〜8桁の数字で入力してください' }, 400);

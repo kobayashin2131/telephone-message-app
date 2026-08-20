@@ -60,7 +60,6 @@ function PlanTab({ auth }) {
 export default function AdminModal({
   onClose, users, departments, currentUser, auth, onSaveUser, onDeleteUser, onSaveDept, onDeleteDept, onResetPin, onOpenCsvImport
 }) {
-  const isOwner = currentUser?.role === 'owner';
   const [activeTab, setActiveTab] = useState('users'); // 'users' or 'departments'
 
   // User form
@@ -177,33 +176,31 @@ export default function AdminModal({
                       required 
                     />
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                    <div className="form-group">
-                      <label className="form-label">ID（メールアドレス） <span style={{ color: '#d97a6c' }}>*</span></label>
-                      <input
-                        type="text"
-                        className="form-input"
-                        value={userEdit.email}
-                        onChange={(e) => setUserEdit({ ...userEdit, email: e.target.value })}
-                        placeholder="例: yamada@example.com"
-                        required
-                      />
-                      <div style={{ fontSize: '0.72rem', color: '#66766c', marginTop: '3px' }}>
-                        ID+PINでのみ使う場合は実在しなくてもOKです。「Googleでログイン」も使わせたい場合は、本人の実際のGoogleアカウントのメールアドレスを入力してください
-                      </div>
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">所属部門</label>
-                      <select
-                        className="form-select"
-                        value={userEdit.department_id}
-                        onChange={(e) => setUserEdit({ ...userEdit, department_id: Number(e.target.value) })}
-                      >
-                        <option value="">未所属</option>
-                        {departments.map(d => (
-                          <option key={d.id} value={d.id}>{d.name}</option>
-                        ))}
-                      </select>
+                  <div className="form-group">
+                    <label className="form-label">所属部門</label>
+                    <select
+                      className="form-select"
+                      value={userEdit.department_id}
+                      onChange={(e) => setUserEdit({ ...userEdit, department_id: Number(e.target.value) })}
+                    >
+                      <option value="">未所属</option>
+                      {departments.map(d => (
+                        <option key={d.id} value={d.id}>{d.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">ID（メールアドレス） <span style={{ color: '#d97a6c' }}>*</span></label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={userEdit.email}
+                      onChange={(e) => setUserEdit({ ...userEdit, email: e.target.value })}
+                      placeholder="例: yamada@example.com"
+                      required
+                    />
+                    <div style={{ fontSize: '0.72rem', color: '#66766c', marginTop: '3px' }}>
+                      ID+PINでのみ使う場合は実在しなくてもOKです。「Googleでログイン」も使わせたい場合は、本人の実際のGoogleアカウントのメールアドレスを入力してください
                     </div>
                   </div>
 
@@ -223,19 +220,27 @@ export default function AdminModal({
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                     <div className="form-group">
                       <label className="form-label">権限</label>
-                      <select 
-                        className="form-select"
-                        value={userEdit.role}
-                        onChange={(e) => setUserEdit({ ...userEdit, role: e.target.value })}
-                      >
-                        <option value="user">一般社員</option>
-                        <option value="admin">管理者 (Admin)</option>
-                        {isOwner && <option value="owner">オーナー</option>}
-                      </select>
-                      {userEdit.role === 'owner' && (
-                        <div style={{ fontSize: '0.72rem', color: '#c2604f', marginTop: '3px' }}>
-                          オーナーは削除できず、組織に最低1人必要です
-                        </div>
+                      {userEdit.role === 'owner' ? (
+                        <>
+                          <div style={{
+                            padding: '9px 12px', border: '1px solid #e8e2d8', borderRadius: '8px',
+                            fontSize: '0.85rem', color: '#48564c', background: '#f8f5ef'
+                          }}>
+                            オーナー
+                          </div>
+                          <div style={{ fontSize: '0.72rem', color: '#c2604f', marginTop: '3px' }}>
+                            オーナー権限はこの画面では変更できません。委譲は別途ご相談ください
+                          </div>
+                        </>
+                      ) : (
+                        <select
+                          className="form-select"
+                          value={userEdit.role}
+                          onChange={(e) => setUserEdit({ ...userEdit, role: e.target.value })}
+                        >
+                          <option value="user">一般社員</option>
+                          <option value="admin">管理者 (Admin)</option>
+                        </select>
                       )}
                     </div>
                     <div className="form-group">

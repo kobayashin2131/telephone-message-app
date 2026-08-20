@@ -15,6 +15,10 @@ export default function SignupScreen({ onSignup, onBackToLogin }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(loginId.trim())) {
+      setError('オーナーのIDは有効なメールアドレスを入力してください（今後の請求連絡に使用します）');
+      return;
+    }
     if (!/^\d{4,8}$/.test(pin)) {
       setError('PINは4〜8桁の数字で入力してください');
       return;
@@ -93,14 +97,17 @@ export default function SignupScreen({ onSignup, onBackToLogin }) {
           <label className="login-label">
             ID（メールアドレス）
             <input
-              type="text"
+              type="email"
               className="login-input"
               value={loginId}
               onChange={(e) => setLoginId(e.target.value)}
               autoComplete="username"
-              placeholder="ログインに使うID"
+              placeholder="例: yamada@example.com"
               required
             />
+            <div style={{ fontSize: '0.72rem', color: '#66766c', fontWeight: 400 }}>
+              オーナーのIDは有効なメールアドレスをご登録ください（今後のプラン・お支払いに関するご連絡に使用します）
+            </div>
           </label>
           <label className="login-label">
             PIN（4〜8桁の数字）
