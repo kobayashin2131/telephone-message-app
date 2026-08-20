@@ -9,6 +9,7 @@ import AdminModal from './components/AdminModal';
 import ChangePinModal from './components/ChangePinModal';
 import CsvImportModal from './components/CsvImportModal';
 import LoginScreen from './components/LoginScreen';
+import SignupScreen from './components/SignupScreen';
 import { playChime } from './utils/chime';
 import { subscribeToPush, unsubscribeFromPush } from './utils/push';
 import { isNativeApp, setupNativePush } from './utils/nativePush';
@@ -19,6 +20,7 @@ const API_BASE = 'https://callsync-backend.nonba30.workers.dev/api';
 
 export default function App() {
   const [auth, setAuth] = useState(() => loadAuth());
+  const [authScreen, setAuthScreen] = useState('login'); // 'login' | 'signup'
 
   const [users, setUsers] = useState([]);
   const [departments, setDepartments] = useState([]);
@@ -480,7 +482,9 @@ export default function App() {
   const unhandledCallsCount = callMemos.filter(m => m.status === 'pending').length;
 
   if (!auth) {
-    return <LoginScreen onLogin={handleLogin} />;
+    return authScreen === 'signup'
+      ? <SignupScreen onSignup={handleLogin} onBackToLogin={() => setAuthScreen('login')} />
+      : <LoginScreen onLogin={handleLogin} onGoToSignup={() => setAuthScreen('signup')} />;
   }
 
   return (

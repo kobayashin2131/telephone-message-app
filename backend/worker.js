@@ -739,6 +739,48 @@ export default {
       }
 
       // 7. Auth
+      if (path === '/api/auth/signup' && request.method === 'POST') {
+        const body = await request.json();
+        const orgName = (body.organization_name || '').trim();
+        const ownerName = (body.owner_name || '').trim();
+        const email = (body.email || '').trim();
+        const pin = body.pin || '';
+
+        if (!orgName || !ownerName || !email) {
+          return jsonResponse({ error: '組織名・氏名・IDは必須です' }, 400);
+        }
+        if (!/^\d{4,8}$/.test(pin)) {
+          return jsonResponse({ error: 'PINは4〜8桁の数字で入力してください' }, 400);
+        }
+
+        const existing = await db.prepare('SELECT id FROM users WHERE email = ?').bind(email).first();
+        if (existing) return jsonResponse({ error: 'このIDはすでに使われています' }, 409);
+
+        const orgInfo = await db.prepare('INSERT INTO organizations (name) VALUES (?)').bind(orgName).run();
+        const orgId = orgInfo.meta.last_row_id;
+        const passwordHash = await hashPin(pin);
+
+        let userInfo;
+        try {
+          userInfo = await db.prepare(`
+            INSERT INTO users (name, email, password_hash, role, organization_id)
+            VALUES (?, ?, ?, 'owner', ?)
+          `).bind(ownerName, email, passwordHash, orgId).run();
+        } catch (e) {
+          await db.prepare('DELETE FROM organizations WHERE id = ?').bind(orgId).run();
+          return jsonResponse({ error: 'このIDはすでに使われています' }, 409);
+        }
+
+        const token = generateToken();
+        const expiresAt = new Date(Date.now() + SESSION_TTL_MS).toISOString();
+        await db.prepare('INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)').bind(token, userInfo.meta.last_row_id, expiresAt).run();
+
+        return jsonResponse({
+          token,
+          user: { id: userInfo.meta.last_row_id, name: ownerName, email, role: 'owner', organization_id: orgId }
+        });
+      }
+
       if (path === '/api/auth/login' && request.method === 'POST') {
         const body = await request.json();
         const user = await db.prepare('SELECT * FROM users WHERE email = ?').bind(body.email || '').first();

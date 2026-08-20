@@ -4,7 +4,7 @@ import { Sparkles, LogIn } from 'lucide-react';
 const API_BASE = 'https://callsync-backend.nonba30.workers.dev/api';
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
-export default function LoginScreen({ onLogin }) {
+export default function LoginScreen({ onLogin, onGoToSignup }) {
   const [loginId, setLoginId] = useState('');
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
@@ -157,6 +157,10 @@ export default function LoginScreen({ onLogin }) {
           <button type="submit" className="login-submit-btn" disabled={submitting}>
             <LogIn size={16} />
             <span>{submitting ? 'ログイン中…' : 'ログイン'}</span>
+          </button>
+
+          <button type="button" className="login-back-link" onClick={onGoToSignup}>
+            組織を新しく登録する方はこちら
           </button>
         </form>
       </div>

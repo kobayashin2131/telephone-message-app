@@ -2062,6 +2062,24 @@ button, input, select, textarea {
   cursor: default;
 }
 
+.login-back-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 6px;
+  text-decoration: underline;
+}
+
+.login-back-link:hover {
+  color: var(--ink);
+}
+
 .suite-user-logout-btn {
   display: flex;
   align-items: center;
