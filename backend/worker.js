@@ -188,7 +188,7 @@ async function resolveSession(db, request) {
   if (!token) return null;
 
   const row = await db.prepare(`
-    SELECT s.token, s.expires_at, u.id as user_id, u.name, u.email, u.role, u.organization_id, o.status as org_status
+    SELECT s.token, s.expires_at, u.id as user_id, u.name, u.email, u.role, u.organization_id, u.deleted_at, o.status as org_status
     FROM sessions s
     JOIN users u ON s.user_id = u.id
     LEFT JOIN organizations o ON u.organization_id = o.id
@@ -201,6 +201,7 @@ async function resolveSession(db, request) {
     return null;
   }
   if (row.org_status === 'cancelled') return null;
+  if (row.deleted_at) return null;
   return row;
 }
 
@@ -342,7 +343,7 @@ export default {
           SELECT u.id, u.name, u.email, u.avatar_color, u.role, u.department_id, d.name as department_name, u.created_at
           FROM users u
           LEFT JOIN departments d ON u.department_id = d.id
-          WHERE u.organization_id = ?
+          WHERE u.organization_id = ? AND u.deleted_at IS NULL
           ORDER BY u.id ASC
         `).bind(orgId).all();
         return jsonResponse(results);
@@ -401,7 +402,11 @@ export default {
         }
         const target = await db.prepare('SELECT role FROM users WHERE id = ? AND organization_id = ?').bind(id, orgId).first();
         if (target?.role === 'owner') return jsonResponse({ error: 'オーナーのアカウントは削除できません' }, 400);
-        await db.prepare('DELETE FROM users WHERE id = ? AND organization_id = ?').bind(id, orgId).run();
+        // ソフトデリート: チャット履歴（他メンバーのグループ会話含む）を残すため、行自体は消さず
+        // deleted_atだけ立てる。ログイン・一覧表示からは除外されるが、送信済みメッセージの
+        // 送信者名表示は引き続き機能する
+        await db.prepare('UPDATE users SET deleted_at = CURRENT_TIMESTAMP WHERE id = ? AND organization_id = ?').bind(id, orgId).run();
+        await db.prepare('DELETE FROM sessions WHERE user_id = ?').bind(id).run();
         return jsonResponse({ success: true });
       }
 
@@ -1057,8 +1062,8 @@ export default {
         const body = await request.json();
         const hostOrg = await resolveOrgFromHost(db, request);
         const user = hostOrg
-          ? await db.prepare('SELECT * FROM users WHERE email = ? AND organization_id = ?').bind(body.email || '', hostOrg.id).first()
-          : await db.prepare('SELECT * FROM users WHERE email = ?').bind(body.email || '').first();
+          ? await db.prepare('SELECT * FROM users WHERE email = ? AND organization_id = ? AND deleted_at IS NULL').bind(body.email || '', hostOrg.id).first()
+          : await db.prepare('SELECT * FROM users WHERE email = ? AND deleted_at IS NULL').bind(body.email || '').first();
         if (!user || !(await verifyPin(body.pin || '', user.password_hash))) {
           return jsonResponse({ error: 'メールアドレスまたはPINが正しくありません' }, 401);
         }
@@ -1088,7 +1093,7 @@ export default {
           return jsonResponse({ error: 'Googleトークンが無効です' }, 401);
         }
 
-        const user = await db.prepare('SELECT * FROM users WHERE email = ?').bind(payload.email).first();
+        const user = await db.prepare('SELECT * FROM users WHERE email = ? AND deleted_at IS NULL').bind(payload.email).first();
         if (!user) {
           return jsonResponse({ error: 'このメールアドレスは登録されていません。管理者に連絡してください。' }, 403);
         }
