@@ -4,7 +4,7 @@ import CallMemoCard from './CallMemoCard';
 import { adaptCallMemo } from '../utils/memoAdapter';
 
 export default function DeskMonitorView({
-  users, departments, groups, contacts, callMemos, currentUser, 
+  users, departments, groups, contacts, callMemos, currentUser, callCategories = [],
   onSubmitCallMemo, onUpdateStatus, onOpenThread, onOpenNewCallMemo
 }) {
   const [filterStatus, setFilterStatus] = useState('unresolved'); // 'unresolved', 'all', 'resolved'
@@ -22,6 +22,17 @@ export default function DeskMonitorView({
   const [subject, setSubject] = useState('折り返しのお願い');
   const [body, setBody] = useState('');
   const [saveContact, setSaveContact] = useState(true);
+  const [categoryId, setCategoryId] = useState(null);
+
+  // 宛先から部門を解決（部署宛てはそのまま、担当者宛てはその人の所属部門、グループ宛ては未対応）
+  const resolvedDepartmentId = targetCategory === 'dept'
+    ? Number(targetId)
+    : targetCategory === 'user'
+      ? users.find(u => Number(u.id) === Number(targetId))?.department_id
+      : null;
+  const availableCategories = resolvedDepartmentId
+    ? callCategories.filter(c => c.department_id === resolvedDepartmentId)
+    : [];
 
   // Filter groups: only show groups the current user belongs to (or created)
   const myGroups = groups.filter(g => {
@@ -66,6 +77,7 @@ export default function DeskMonitorView({
       target_type: mappedTargetType,
       target_id: finalTargetId,
       call_type: callType,
+      category_id: categoryId,
       subject,
       body: finalBody,
       save_contact: saveContact,
@@ -77,6 +89,7 @@ export default function DeskMonitorView({
     setPhoneNumber('');
     setBody('');
     setMentionTarget('');
+    setCategoryId(null);
   };
 
   return (
@@ -144,6 +157,7 @@ export default function DeskMonitorView({
                 onClick={() => {
                   setTargetCategory('user');
                   setTargetId(users[0]?.id || 1);
+                  setCategoryId(null);
                 }}
               >
                 👤 担当者
@@ -155,6 +169,7 @@ export default function DeskMonitorView({
                 onClick={() => {
                   setTargetCategory('dept');
                   setTargetId(departments[0]?.id || 1);
+                  setCategoryId(null);
                 }}
               >
                 🏢 部署
@@ -166,6 +181,7 @@ export default function DeskMonitorView({
                 onClick={() => {
                   setTargetCategory('group');
                   setTargetId(groups[0]?.id || 1);
+                  setCategoryId(null);
                 }}
               >
                 💬 グループ
@@ -177,7 +193,7 @@ export default function DeskMonitorView({
               <select
                 className="form-select"
                 value={targetId}
-                onChange={(e) => setTargetId(e.target.value)}
+                onChange={(e) => { setTargetId(e.target.value); setCategoryId(null); }}
                 style={{ width: '100%', fontSize: '0.85rem' }}
               >
                 {users.map(u => (
@@ -193,7 +209,7 @@ export default function DeskMonitorView({
                 <select
                   className="form-select"
                   value={targetId}
-                  onChange={(e) => setTargetId(e.target.value)}
+                  onChange={(e) => { setTargetId(e.target.value); setCategoryId(null); }}
                   style={{ width: '100%', fontSize: '0.85rem' }}
                 >
                   {departments.map(d => (
@@ -253,6 +269,34 @@ export default function DeskMonitorView({
               </div>
             )}
           </div>
+
+          {/* Category (department-specific, optional) */}
+          {availableCategories.length > 0 && (
+            <div className="form-group">
+              <label className="form-label">受電カテゴリ（任意）</label>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                <button
+                  type="button"
+                  className={`dept-chip ${categoryId === null ? 'active' : ''}`}
+                  style={{ fontSize: '0.75rem' }}
+                  onClick={() => setCategoryId(null)}
+                >
+                  指定なし
+                </button>
+                {availableCategories.map(c => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    className={`dept-chip ${categoryId === c.id ? 'active' : ''}`}
+                    style={{ fontSize: '0.75rem' }}
+                    onClick={() => setCategoryId(c.id)}
+                  >
+                    {c.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Call Type */}
           <div className="form-group">

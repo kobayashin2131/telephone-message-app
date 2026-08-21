@@ -16,6 +16,7 @@ export default function CallSyncApp({
   contacts,
   currentUser,
   auth,
+  callCategories = [],
   onSubmitCallMemo,
   onUpdateStatus,
   onOpenThread,
@@ -144,11 +145,12 @@ export default function CallSyncApp({
       {/* 2. Sub-views */}
       {subView === 'desk' && (
         <div className="callsync-body-view">
-          <DeskMonitorView 
+          <DeskMonitorView
             users={users}
             departments={departments}
             groups={groups}
             contacts={contacts}
+            callCategories={callCategories}
             callMemos={callMemos}
             currentUser={currentUser}
             onSubmitCallMemo={onSubmitCallMemo}

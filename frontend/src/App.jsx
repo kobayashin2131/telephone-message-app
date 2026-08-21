@@ -732,6 +732,7 @@ export default function App() {
             contacts={contacts}
             currentUser={currentUser}
             auth={auth}
+            callCategories={callCategories}
             onSubmitCallMemo={handleSubmitCallMemo}
             onUpdateStatus={handleUpdateCallStatus}
             onOpenThread={(msg) => {
