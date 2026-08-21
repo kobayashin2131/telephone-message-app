@@ -16,6 +16,7 @@ export function adaptCallMemo(m) {
     memo_resolver_name: m.resolver_name,
     memo_target_type: m.target_type,
     memo_target_name: m.target_name,
+    memo_category_label: m.category_label,
     thread_count: 0
   };
 }

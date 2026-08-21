@@ -145,6 +145,12 @@ export default function CallMemoCard({ memo, onUpdateStatus, onOpenThread, curre
         </a>
       )}
 
+      {memo.memo_category_label && (
+        <span className="call-badge-tag" style={{ marginBottom: '4px', background: 'var(--brand-soft)', color: 'var(--brand-dark)' }}>
+          📋 {memo.memo_category_label}
+        </span>
+      )}
+
       {memo.memo_subject && (
         <div className="memo-subject-line">
           件名: {memo.memo_subject}

@@ -887,6 +887,7 @@ export default {
                    cu.name as memo_creator_name,
                    cm.resolved_note as memo_resolved_note, cm.resolved_at as memo_resolved_at,
                    ru.name as memo_resolver_name,
+                   cc.label as memo_category_label,
                    m.target_type as memo_target_type,
                    (SELECT name FROM users WHERE id = m.target_id) as memo_target_name,
                    (SELECT COUNT(*) FROM messages WHERE parent_id = m.id) as thread_count
@@ -895,6 +896,7 @@ export default {
             LEFT JOIN call_memos cm ON m.call_memo_id = cm.id
             LEFT JOIN users cu ON cm.created_by = cu.id
             LEFT JOIN users ru ON cm.resolved_by = ru.id
+            LEFT JOIN call_categories cc ON cm.category_id = cc.id
             WHERE m.target_type = 'dm'
               AND m.parent_id IS NULL
               AND ((m.sender_id = ? AND m.target_id = ?) OR (m.sender_id = ? AND m.target_id = ?))
@@ -910,6 +912,7 @@ export default {
                    cu.name as memo_creator_name,
                    cm.resolved_note as memo_resolved_note, cm.resolved_at as memo_resolved_at,
                    ru.name as memo_resolver_name,
+                   cc.label as memo_category_label,
                    m.target_type as memo_target_type,
                    CASE 
                      WHEN m.target_type = 'group' THEN (SELECT name FROM chat_groups WHERE id = m.target_id)
@@ -922,6 +925,7 @@ export default {
             LEFT JOIN call_memos cm ON m.call_memo_id = cm.id
             LEFT JOIN users cu ON cm.created_by = cu.id
             LEFT JOIN users ru ON cm.resolved_by = ru.id
+            LEFT JOIN call_categories cc ON cm.category_id = cc.id
             WHERE m.target_type = ? AND m.target_id = ? AND m.parent_id IS NULL
             ORDER BY m.created_at ASC
           `).bind(targetType, targetId);

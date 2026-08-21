@@ -47,6 +47,11 @@ function CallMemoTrayDetail({ memo, onUpdateStatus }) {
         </a>
       )}
 
+      {memo.category_label && (
+        <span className="call-badge-tag" style={{ background: 'var(--brand-soft)', color: 'var(--brand-dark)', marginBottom: '4px' }}>
+          📋 {memo.category_label}
+        </span>
+      )}
       {memo.subject && <div className="memo-subject-line">件名: {memo.subject}</div>}
       {memo.body && <div className="memo-body-box">{memo.body}</div>}
 
