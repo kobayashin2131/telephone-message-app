@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Phone, AlertTriangle, Clock, CheckCircle, Search, Filter, Plus, User, Building2, ExternalLink } from 'lucide-react';
 import CallMemoCard from './CallMemoCard';
 import { adaptCallMemo } from '../utils/memoAdapter';
@@ -17,6 +17,10 @@ export default function DeskMonitorView({
   const [companyName, setCompanyName] = useState('');
   const [contactPerson, setContactPerson] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [frequentNotes, setFrequentNotes] = useState('');
+  const [selectedContactId, setSelectedContactId] = useState(null);
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [targetCategory, setTargetCategory] = useState('user'); // 'user', 'dept', 'group'
   const [targetId, setTargetId] = useState(users[0]?.id || 1);
   const [mentionTarget, setMentionTarget] = useState('');
@@ -25,6 +29,32 @@ export default function DeskMonitorView({
   const [body, setBody] = useState('');
   const [saveContact, setSaveContact] = useState(true);
   const [categoryId, setCategoryId] = useState(null);
+
+  // 会社名の入力から受電先リストを検索してオートコンプリート
+  useEffect(() => {
+    if (!companyName.trim()) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+    const q = companyName.toLowerCase();
+    const matches = contacts.filter(c =>
+      c.company_name.toLowerCase().includes(q) ||
+      (c.contact_person && c.contact_person.toLowerCase().includes(q)) ||
+      (c.phone_number && c.phone_number.includes(q))
+    );
+    setSuggestions(matches);
+    setShowSuggestions(matches.length > 0);
+  }, [companyName, contacts]);
+
+  const selectContact = (c) => {
+    setSelectedContactId(c.id);
+    setCompanyName(c.company_name);
+    setContactPerson(c.contact_person || '');
+    setPhoneNumber(c.phone_number || '');
+    setFrequentNotes(c.frequent_notes || '');
+    setShowSuggestions(false);
+  };
 
   // 宛先から部門を解決（部署宛てはそのまま、担当者宛てはその人の所属部門、グループ宛ては未対応）
   const resolvedDepartmentId = targetCategory === 'dept'
@@ -73,22 +103,26 @@ export default function DeskMonitorView({
     }
 
     onSubmitCallMemo({
+      caller_contact_id: selectedContactId,
       company_name: companyName.trim(),
       contact_person: contactPerson.trim(),
       phone_number: phoneNumber.trim(),
+      frequent_notes: frequentNotes.trim(),
       target_type: mappedTargetType,
       target_id: finalTargetId,
       call_type: callType,
       category_id: categoryId,
       subject,
       body: finalBody,
-      save_contact: saveContact,
+      save_contact: saveContact && !selectedContactId,
       created_by: currentUser?.id || 1
     });
 
     setCompanyName('');
     setContactPerson('');
     setPhoneNumber('');
+    setFrequentNotes('');
+    setSelectedContactId(null);
     setBody('');
     setMentionTarget('');
     setCategoryId(null);
@@ -109,15 +143,51 @@ export default function DeskMonitorView({
         </div>
 
         <form onSubmit={handleQuickSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <div className="form-group">
-            <label className="form-label">会社名（個人のお客様なら空欄でOK）</label>
+          <div className="form-group" style={{ position: 'relative' }}>
+            <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span>会社名（受電先リストから検索・登録。個人のお客様なら空欄でOK）</span>
+              {selectedContactId && (
+                <span style={{ fontSize: '0.72rem', color: '#6fa382', fontWeight: 600 }}>✓ 登録済み受電先を選択中</span>
+              )}
+            </label>
             <input
               type="text"
               className="form-input"
-              placeholder="例: 株式会社オアシス商事"
+              placeholder="例: 株式会社オアシス商事（入力すると候補が表示されます）"
               value={companyName}
-              onChange={(e) => setCompanyName(e.target.value)}
+              onChange={(e) => {
+                setCompanyName(e.target.value);
+                setSelectedContactId(null);
+              }}
             />
+
+            {showSuggestions && (
+              <div style={{
+                position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50,
+                background: '#ffffff', border: '1px solid #d4ccbc', borderRadius: '8px',
+                boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', maxHeight: '200px', overflowY: 'auto'
+              }}>
+                {suggestions.map(s => (
+                  <div
+                    key={s.id}
+                    style={{ padding: '8px 12px', borderBottom: '1px solid #f2ede1', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                    onClick={() => selectContact(s)}
+                    onMouseEnter={(e) => e.currentTarget.style.background = '#f8f5ef'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = '#ffffff'}
+                  >
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: '0.9rem', color: '#1e2620' }}>{s.company_name}</div>
+                      <div style={{ fontSize: '0.75rem', color: '#48564c' }}>
+                        担当: {s.contact_person || '指定なし'} | 📞 {s.phone_number}
+                      </div>
+                    </div>
+                    <span style={{ fontSize: '0.7rem', background: '#f7f3fb', color: '#7d68a8', padding: '2px 6px', borderRadius: '4px', fontWeight: 600 }}>
+                      過去{s.call_count}回受電
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
@@ -142,6 +212,23 @@ export default function DeskMonitorView({
               />
             </div>
           </div>
+
+          {frequentNotes && (
+            <div style={{ fontSize: '0.78rem', background: '#f8f0dc', border: '1px solid #ecdba0', padding: '6px 10px', borderRadius: '6px', color: '#8a6d33' }}>
+              💡 <strong>この相手の定番メモ:</strong> {frequentNotes}
+            </div>
+          )}
+
+          {!selectedContactId && (
+            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', color: '#4a5750', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={saveContact}
+                onChange={(e) => setSaveContact(e.target.checked)}
+              />
+              この会社情報を受電先リスト（顧客台帳）に新規保存する
+            </label>
+          )}
 
           {/* Destination Target Picker */}
           <div className="form-group" style={{ background: '#f7f4ec', padding: '10px', borderRadius: '8px', border: '1px solid #e5dfd3' }}>
