@@ -28,6 +28,7 @@ export default function App() {
   const [groups, setGroups] = useState([]);
   const [contacts, setContacts] = useState([]);
   const [callMemos, setCallMemos] = useState([]);
+  const [callCategories, setCallCategories] = useState([]);
 
   // Active top-level suite app: 'chat' | 'callsync'
   const [activeApp, setActiveApp] = useState('chat');
@@ -348,18 +349,20 @@ export default function App() {
     if (!auth) return;
     const orgId = auth.user.organization_id;
     try {
-      const [uRes, dRes, gRes, cRes, mRes, unreadRes] = await Promise.all([
+      const [uRes, dRes, gRes, cRes, mRes, catRes, unreadRes] = await Promise.all([
         fetch(`${API_BASE}/users?organization_id=${orgId}`),
         fetch(`${API_BASE}/departments?organization_id=${orgId}`),
         fetch(`${API_BASE}/groups?organization_id=${orgId}`),
         fetch(`${API_BASE}/contacts?organization_id=${orgId}`),
         fetch(`${API_BASE}/call-memos?organization_id=${orgId}`),
+        fetch(`${API_BASE}/call-categories?organization_id=${orgId}`),
         fetch(`${API_BASE}/messages/unread-summary?user_id=${currentUserId}`)
       ]);
       if (uRes.ok) setUsers(await uRes.json());
       if (dRes.ok) setDepartments(await dRes.json());
       if (gRes.ok) setGroups(await gRes.json());
       if (cRes.ok) setContacts(await cRes.json());
+      if (catRes.ok) setCallCategories(await catRes.json());
       if (mRes.ok) {
         const memos = await mRes.json();
         notifyNewCalls(memos);
@@ -748,6 +751,7 @@ export default function App() {
           departments={departments}
           groups={groups}
           contacts={contacts}
+          callCategories={callCategories}
           currentUserId={currentUserId}
           defaultTarget={callMemoDefaultTarget}
           prefillContact={callMemoPrefillContact}
@@ -786,6 +790,7 @@ export default function App() {
           groups={groups}
           auth={auth}
           currentUser={currentUser}
+          callCategories={callCategories}
           onClose={() => setShowAdminModal(false)}
           onSaveUser={handleSaveUser}
           onDeleteUser={handleDeleteUser}
@@ -793,6 +798,7 @@ export default function App() {
           onSaveDept={handleSaveDept}
           onDeleteDept={handleDeleteDept}
           onOpenCsvImport={() => setShowCsvImportModal(true)}
+          onCallCategoriesChanged={fetchAllData}
         />
       )}
 

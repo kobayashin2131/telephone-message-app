@@ -504,6 +504,52 @@ export default {
         return jsonResponse({ success: true });
       }
 
+      // 2b. 部門ごとの受電カテゴリ(任意項目、業務内容の分類。call_typeとは別軸)
+      if (path === '/api/call-categories' && request.method === 'GET') {
+        const orgId = orgIdFromQuery();
+        const { results } = await db.prepare(
+          'SELECT * FROM call_categories WHERE organization_id = ? ORDER BY department_id, sort_order, id'
+        ).bind(orgId).all();
+        return jsonResponse(results);
+      }
+
+      if (path === '/api/call-categories' && request.method === 'POST') {
+        const body = await request.json();
+        const orgId = parseOrgId(body.organization_id);
+        const session = await resolveSession(db, request);
+        if (!session || session.organization_id !== orgId || !STAFF_ROLES.includes(session.role)) {
+          return jsonResponse({ error: '管理者権限が必要です' }, 403);
+        }
+        const info = await db.prepare(
+          'INSERT INTO call_categories (department_id, organization_id, label, sort_order) VALUES (?, ?, ?, ?)'
+        ).bind(body.department_id, orgId, body.label, body.sort_order || 0).run();
+        return jsonResponse({ id: info.meta.last_row_id, department_id: body.department_id, label: body.label });
+      }
+
+      if (path.startsWith('/api/call-categories/') && request.method === 'PUT') {
+        const id = path.split('/')[3];
+        const body = await request.json();
+        const orgId = parseOrgId(body.organization_id);
+        const session = await resolveSession(db, request);
+        if (!session || session.organization_id !== orgId || !STAFF_ROLES.includes(session.role)) {
+          return jsonResponse({ error: '管理者権限が必要です' }, 403);
+        }
+        await db.prepare('UPDATE call_categories SET label = ?, sort_order = ? WHERE id = ? AND organization_id = ?')
+          .bind(body.label, body.sort_order || 0, id, orgId).run();
+        return jsonResponse({ success: true });
+      }
+
+      if (path.startsWith('/api/call-categories/') && request.method === 'DELETE') {
+        const id = path.split('/')[3];
+        const orgId = orgIdFromQuery();
+        const session = await resolveSession(db, request);
+        if (!session || session.organization_id !== orgId || !STAFF_ROLES.includes(session.role)) {
+          return jsonResponse({ error: '管理者権限が必要です' }, 403);
+        }
+        await db.prepare('DELETE FROM call_categories WHERE id = ? AND organization_id = ?').bind(id, orgId).run();
+        return jsonResponse({ success: true });
+      }
+
       // 3. Groups
       if (path === '/api/groups' && request.method === 'GET') {
         const orgId = orgIdFromQuery();
@@ -614,8 +660,9 @@ export default {
           SELECT cm.*,
                  cu.name as creator_name, cu.avatar_color as creator_avatar,
                  ru.name as resolver_name,
+                 cc.label as category_label,
                  m.target_type, m.target_id,
-                 CASE 
+                 CASE
                    WHEN m.target_type = 'dm' THEN (SELECT name FROM users WHERE id = m.target_id)
                    WHEN m.target_type = 'group' THEN (SELECT name FROM chat_groups WHERE id = m.target_id)
                    WHEN m.target_type = 'department' THEN (SELECT name FROM departments WHERE id = m.target_id)
@@ -624,6 +671,7 @@ export default {
           FROM call_memos cm
           LEFT JOIN users cu ON cm.created_by = cu.id
           LEFT JOIN users ru ON cm.resolved_by = ru.id
+          LEFT JOIN call_categories cc ON cm.category_id = cc.id
           LEFT JOIN messages m ON m.call_memo_id = cm.id AND m.message_type = 'call_card'
           WHERE cm.organization_id = ?
           ORDER BY cm.created_at DESC
@@ -672,6 +720,15 @@ export default {
           GROUP BY m.target_type, m.target_id ORDER BY count DESC LIMIT 10
         `).bind(orgId).all();
 
+        const { results: byCategory } = await db.prepare(`
+          SELECT cm.category_id, cc.label as category_label, d.name as department_name, COUNT(*) as count
+          FROM call_memos cm
+          JOIN call_categories cc ON cm.category_id = cc.id
+          JOIN departments d ON cc.department_id = d.id
+          WHERE cm.organization_id = ? ${sinceClause}
+          GROUP BY cm.category_id ORDER BY count DESC LIMIT 15
+        `).bind(orgId).all();
+
         const { results: byResolver } = await db.prepare(`
           SELECT cm.resolved_by, u.name as resolver_name, COUNT(*) as count,
                  AVG((julianday(cm.resolved_at) - julianday(cm.created_at)) * 24 * 60) as avg_resolution_minutes
@@ -709,7 +766,7 @@ export default {
             resolved: overview.resolved || 0,
             avg_resolution_minutes: overview.avg_resolution_minutes != null ? Math.round(overview.avg_resolution_minutes) : null
           },
-          byCompany, byRecipient, byResolver, byWeekday, byHour, dailyTrend
+          byCompany, byRecipient, byCategory, byResolver, byWeekday, byHour, dailyTrend
         });
       }
 
@@ -730,9 +787,9 @@ export default {
         }
 
         const memoInfo = await db.prepare(`
-          INSERT INTO call_memos (caller_contact_id, company_name, contact_person, phone_number, subject, body, call_type, status, created_by, organization_id)
-          VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)
-        `).bind(contactId || null, body.company_name, body.contact_person || '', body.phone_number || '', body.subject || '受電連絡', body.body || '', body.call_type || 'callback', body.created_by || 1, orgId).run();
+          INSERT INTO call_memos (caller_contact_id, company_name, contact_person, phone_number, subject, body, call_type, status, created_by, organization_id, category_id)
+          VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?)
+        `).bind(contactId || null, body.company_name, body.contact_person || '', body.phone_number || '', body.subject || '受電連絡', body.body || '', body.call_type || 'callback', body.created_by || 1, orgId, body.category_id || null).run();
 
         const memoId = memoInfo.meta.last_row_id;
 

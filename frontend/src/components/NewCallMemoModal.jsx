@@ -4,7 +4,7 @@ import { X, Phone, User, Building2, Users, AlertTriangle, Clock, Check, Search, 
 const COMMON_SUBJECTS = ['折り返しのお願い', '見積もり仕様確認の件', '納期・出荷日の確認', '現場施工日程の調整', '定期保守・点検の件', 'ご挨拶・アポイント'];
 
 export default function NewCallMemoModal({
-  onClose, users, departments, groups, contacts, currentUserId, defaultTarget, prefillContact, onSubmitCallMemo
+  onClose, users, departments, groups, contacts, callCategories = [], currentUserId, defaultTarget, prefillContact, onSubmitCallMemo
 }) {
   const [companyName, setCompanyName] = useState(prefillContact?.company_name || '');
   const [contactPerson, setContactPerson] = useState(prefillContact?.contact_person || '');
@@ -26,6 +26,21 @@ export default function NewCallMemoModal({
   const [callType, setCallType] = useState('callback');
   const [subject, setSubject] = useState(COMMON_SUBJECTS[0]);
   const [body, setBody] = useState('');
+  const [categoryId, setCategoryId] = useState(null);
+
+  // 宛先から部門を解決（部門宛てはそのまま、個人DM宛てはその人の所属部門、グループ宛ては未対応）
+  const resolvedDepartmentId = targetType === 'department'
+    ? Number(targetId)
+    : targetType === 'dm'
+      ? users.find(u => Number(u.id) === Number(targetId))?.department_id
+      : null;
+  const availableCategories = resolvedDepartmentId
+    ? callCategories.filter(c => c.department_id === resolvedDepartmentId)
+    : [];
+
+  useEffect(() => {
+    if (!availableCategories.some(c => c.id === categoryId)) setCategoryId(null);
+  }, [resolvedDepartmentId]);
 
   // Filter autocomplete contacts
   useEffect(() => {
@@ -73,6 +88,7 @@ export default function NewCallMemoModal({
       target_type: targetType,
       target_id: Number(targetId),
       call_type: callType,
+      category_id: categoryId,
       subject,
       body: finalBody,
       created_by: currentUserId
@@ -285,6 +301,32 @@ export default function NewCallMemoModal({
                 </button>
               </div>
             </div>
+
+            {/* Category (department-specific, optional) */}
+            {availableCategories.length > 0 && (
+              <div className="form-group">
+                <label className="form-label">受電カテゴリ（任意）</label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                  <button
+                    type="button"
+                    className={`dept-chip ${categoryId === null ? 'active' : ''}`}
+                    onClick={() => setCategoryId(null)}
+                  >
+                    指定なし
+                  </button>
+                  {availableCategories.map(c => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      className={`dept-chip ${categoryId === c.id ? 'active' : ''}`}
+                      onClick={() => setCategoryId(c.id)}
+                    >
+                      {c.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Common Subject Buttons */}
             <div className="form-group">

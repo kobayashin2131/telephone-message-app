@@ -167,10 +167,104 @@ function PlanTab({ auth }) {
   );
 }
 
+function CallCategoryManager({ auth, department, categories, onChanged }) {
+  const [label, setLabel] = useState('');
+  const [editingId, setEditingId] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const authHeaders = { 'Content-Type': 'application/json', Authorization: `Bearer ${auth.token}` };
+  const orgId = auth.user.organization_id;
+
+  const handleAdd = async (e) => {
+    e.preventDefault();
+    if (!label.trim()) return;
+    setSaving(true);
+    try {
+      if (editingId) {
+        await fetch(`${API_BASE}/call-categories/${editingId}`, {
+          method: 'PUT', headers: authHeaders,
+          body: JSON.stringify({ label: label.trim(), organization_id: orgId })
+        });
+      } else {
+        await fetch(`${API_BASE}/call-categories`, {
+          method: 'POST', headers: authHeaders,
+          body: JSON.stringify({ department_id: department.id, label: label.trim(), organization_id: orgId, sort_order: categories.length })
+        });
+      }
+      setLabel('');
+      setEditingId(null);
+      onChanged();
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (cat) => {
+    if (!window.confirm(`カテゴリ「${cat.label}」を削除してもよろしいですか？（過去の受電メモの記録は残ります）`)) return;
+    await fetch(`${API_BASE}/call-categories/${cat.id}?organization_id=${orgId}`, {
+      method: 'DELETE', headers: authHeaders
+    });
+    onChanged();
+  };
+
+  return (
+    <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px dashed #e8e2d8' }}>
+      <div style={{ fontSize: '0.75rem', color: '#66766c', marginBottom: '8px' }}>
+        受電カテゴリ（任意項目。受電メモ登録時にこの部門宛てだと選べるようになります）
+      </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '10px' }}>
+        {categories.length === 0 && <span style={{ fontSize: '0.78rem', color: '#8a978c' }}>まだカテゴリがありません</span>}
+        {categories.map(cat => (
+          <span key={cat.id} style={{
+            display: 'inline-flex', alignItems: 'center', gap: '4px',
+            background: '#f3f9f5', border: '1px solid #e3f0e8', borderRadius: '999px',
+            padding: '3px 4px 3px 10px', fontSize: '0.78rem'
+          }}>
+            {cat.label}
+            <button
+              type="button"
+              onClick={() => { setLabel(cat.label); setEditingId(cat.id); }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', color: '#5c8f74', display: 'flex' }}
+            >
+              <Edit size={11} />
+            </button>
+            <button
+              type="button"
+              onClick={() => handleDelete(cat)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', color: '#c2604f', display: 'flex' }}
+            >
+              <Trash2 size={11} />
+            </button>
+          </span>
+        ))}
+      </div>
+      <form onSubmit={handleAdd} style={{ display: 'flex', gap: '6px' }}>
+        <input
+          type="text"
+          value={label}
+          onChange={(e) => setLabel(e.target.value)}
+          placeholder="例: 貸布団 / クリーニング / 固定客の注文"
+          className="form-input"
+          style={{ flex: 1, fontSize: '0.82rem', padding: '6px 10px' }}
+        />
+        <button type="submit" className="btn-secondary" disabled={saving} style={{ whiteSpace: 'nowrap', fontSize: '0.8rem' }}>
+          {editingId ? '更新' : '＋ 追加'}
+        </button>
+        {editingId && (
+          <button type="button" className="btn-secondary" style={{ fontSize: '0.8rem' }} onClick={() => { setEditingId(null); setLabel(''); }}>
+            取消
+          </button>
+        )}
+      </form>
+    </div>
+  );
+}
+
 export default function AdminModal({
-  onClose, users, departments, currentUser, auth, onSaveUser, onDeleteUser, onSaveDept, onDeleteDept, onResetPin, onOpenCsvImport
+  onClose, users, departments, currentUser, auth, onSaveUser, onDeleteUser, onSaveDept, onDeleteDept, onResetPin, onOpenCsvImport,
+  callCategories = [], onCallCategoriesChanged
 }) {
   const [activeTab, setActiveTab] = useState('users'); // 'users' or 'departments'
+  const [expandedCategoryDeptId, setExpandedCategoryDeptId] = useState(null);
   const orgCode = String(auth.user.organization_id).padStart(3, '0');
 
   // User form
@@ -517,42 +611,60 @@ export default function AdminModal({
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 {departments.map(d => (
-                  <div 
+                  <div
                     key={d.id}
                     style={{
                       border: '1px solid #e8e2d8', borderRadius: '8px', padding: '10px 14px',
-                      display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#ffffff'
+                      background: '#ffffff'
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <Building2 size={16} color="#7d68a8" />
-                      <span style={{ fontWeight: 600, fontSize: '0.9rem', color: '#1e2620' }}>{d.name}</span>
-                      <span style={{ fontSize: '0.75rem', color: '#48564c', background: '#f8f5ef', padding: '2px 6px', borderRadius: '4px' }}>
-                        所属: {d.user_count}名
-                      </span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Building2 size={16} color="#7d68a8" />
+                        <span style={{ fontWeight: 600, fontSize: '0.9rem', color: '#1e2620' }}>{d.name}</span>
+                        <span style={{ fontSize: '0.75rem', color: '#48564c', background: '#f8f5ef', padding: '2px 6px', borderRadius: '4px' }}>
+                          所属: {d.user_count}名
+                        </span>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        <button
+                          className="btn-secondary"
+                          style={{ padding: '6px', fontSize: '0.78rem' }}
+                          onClick={() => setExpandedCategoryDeptId(expandedCategoryDeptId === d.id ? null : d.id)}
+                        >
+                          {expandedCategoryDeptId === d.id ? 'カテゴリを閉じる' : '📋 受電カテゴリ'}
+                        </button>
+                        <button
+                          className="btn-secondary"
+                          style={{ padding: '6px' }}
+                          onClick={() => {
+                            setEditingDeptId(d.id);
+                            setDeptName(d.name);
+                          }}
+                        >
+                          <Edit size={14} />
+                        </button>
+                        <button
+                          className="btn-secondary"
+                          style={{ padding: '6px', color: '#d97a6c' }}
+                          onClick={() => {
+                            if (window.confirm(`部門「${d.name}」を削除してもよろしいですか？`)) onDeleteDept(d.id);
+                          }}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
                     </div>
 
-                    <div style={{ display: 'flex', gap: '6px' }}>
-                      <button 
-                        className="btn-secondary" 
-                        style={{ padding: '6px' }}
-                        onClick={() => {
-                          setEditingDeptId(d.id);
-                          setDeptName(d.name);
-                        }}
-                      >
-                        <Edit size={14} />
-                      </button>
-                      <button 
-                        className="btn-secondary" 
-                        style={{ padding: '6px', color: '#d97a6c' }}
-                        onClick={() => {
-                          if (window.confirm(`部門「${d.name}」を削除してもよろしいですか？`)) onDeleteDept(d.id);
-                        }}
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
+                    {expandedCategoryDeptId === d.id && (
+                      <CallCategoryManager
+                        auth={auth}
+                        department={d}
+                        categories={callCategories.filter(c => c.department_id === d.id)}
+                        onChanged={onCallCategoriesChanged}
+                      />
+                    )}
                   </div>
                 ))}
               </div>

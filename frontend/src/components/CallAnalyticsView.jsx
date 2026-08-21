@@ -52,9 +52,10 @@ export default function CallAnalyticsView({ auth }) {
     return <div className="analytics-empty-state">読み込み中...</div>;
   }
 
-  const { overview, byCompany, byRecipient, byResolver, byWeekday, byHour, dailyTrend } = data;
+  const { overview, byCompany, byRecipient, byCategory, byResolver, byWeekday, byHour, dailyTrend } = data;
   const maxCompany = Math.max(0, ...byCompany.map(r => r.count));
   const maxRecipient = Math.max(0, ...byRecipient.map(r => r.count));
+  const maxCategory = Math.max(0, ...byCategory.map(r => r.count));
   const maxResolver = Math.max(0, ...byResolver.map(r => r.count));
   const weekdayMap = new Map(byWeekday.map(r => [r.weekday, r.count]));
   const maxWeekday = Math.max(0, ...byWeekday.map(r => r.count));
@@ -135,6 +136,15 @@ export default function CallAnalyticsView({ auth }) {
             ))}
         </div>
       </div>
+
+      {byCategory.length > 0 && (
+        <div className="analytics-section">
+          <h3>受電カテゴリ別 件数（部門ごとに設定した種別）</h3>
+          {byCategory.map(row => (
+            <Bar key={row.category_id} label={`${row.department_name} - ${row.category_label}`} count={row.count} max={maxCategory} />
+          ))}
+        </div>
+      )}
 
       <div className="analytics-columns">
         <div className="analytics-section">

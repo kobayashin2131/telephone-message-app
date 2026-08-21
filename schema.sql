@@ -87,10 +87,12 @@ CREATE TABLE call_memos (
   resolved_at DATETIME,
   resolved_note TEXT,
   organization_id INTEGER NOT NULL DEFAULT 1,
+  category_id INTEGER,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (caller_contact_id) REFERENCES caller_contacts(id),
   FOREIGN KEY (created_by) REFERENCES users(id),
-  FOREIGN KEY (resolved_by) REFERENCES users(id)
+  FOREIGN KEY (resolved_by) REFERENCES users(id),
+  FOREIGN KEY (category_id) REFERENCES call_categories(id) ON DELETE SET NULL
 );
 
 CREATE TABLE messages (
@@ -177,4 +179,15 @@ CREATE TABLE fcm_tokens (
   platform TEXT NOT NULL,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+CREATE TABLE call_categories (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  department_id INTEGER NOT NULL,
+  organization_id INTEGER NOT NULL,
+  label TEXT NOT NULL,
+  sort_order INTEGER DEFAULT 0,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE CASCADE,
+  FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE
 );
