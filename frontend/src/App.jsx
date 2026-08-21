@@ -395,7 +395,10 @@ export default function App() {
   };
 
   useEffect(() => {
+    if (!activeChat) return;
     fetchMessages();
+    const timer = setInterval(fetchMessages, 3000);
+    return () => clearInterval(timer);
   }, [activeChat, currentUserId]);
 
   const handleSendMessage = async (content, attachment = null) => {

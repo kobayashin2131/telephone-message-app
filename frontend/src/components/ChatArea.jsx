@@ -48,6 +48,7 @@ function renderContentWithMentions(content, currentUserName) {
 export default function ChatArea({
   activeChat, currentUser, users = [], messages, organizationId, onSendMessage, onUpdateStatus, onOpenThread, onOpenNewCallMemo, onBack
 }) {
+  const isDM = activeChat?.type === 'dm';
   const [text, setText] = useState('');
   const [activeReadersPopover, setActiveReadersPopover] = useState(null);
   const [pendingFile, setPendingFile] = useState(null);
@@ -98,6 +99,11 @@ export default function ChatArea({
     const pos = e.target.selectionStart;
     setText(val);
     setMentionCursorPos(pos);
+
+    if (isDM) {
+      setShowMentionSuggest(false);
+      return;
+    }
 
     const textBeforeCursor = val.slice(0, pos);
     const atMatch = textBeforeCursor.match(/[@＠]([^\s@＠　]*)$/);
@@ -435,7 +441,7 @@ export default function ChatArea({
             <textarea
               ref={textareaRef}
               className="chat-textarea"
-              placeholder={pendingFile ? '添付にひとことメッセージを添える(空欄でも送信できます)' : `${activeChat.name} へメッセージを送信... (@でメンバー指名, Enterで送信)`}
+              placeholder={pendingFile ? '添付にひとことメッセージを添える(空欄でも送信できます)' : `${activeChat.name} へメッセージを送信... (${isDM ? '' : '@でメンバー指名, '}Enterで送信)`}
               value={text}
               onChange={handleTextChange}
               onKeyDown={handleKeyDown}
@@ -459,15 +465,17 @@ export default function ChatArea({
                 >
                   <Paperclip size={20} />
                 </button>
-                <button
-                  type="button"
-                  className="btn-tool btn-mention"
-                  onClick={handleOpenMentionPicker}
-                  disabled={sending}
-                  title="@メンションを挿入"
-                >
-                  <AtSign size={20} />
-                </button>
+                {!isDM && (
+                  <button
+                    type="button"
+                    className="btn-tool btn-mention"
+                    onClick={handleOpenMentionPicker}
+                    disabled={sending}
+                    title="@メンションを挿入"
+                  >
+                    <AtSign size={20} />
+                  </button>
+                )}
               </div>
 
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
