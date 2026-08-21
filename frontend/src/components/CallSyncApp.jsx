@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { 
-  Phone, LayoutDashboard, Smartphone, BookOpen, Plus, Search, Filter, AlertTriangle, Clock, CheckCircle
+import {
+  Phone, LayoutDashboard, Smartphone, BookOpen, Plus, Search, Filter, AlertTriangle, Clock, CheckCircle, BarChart3
 } from 'lucide-react';
 import DeskMonitorView from './DeskMonitorView';
 import MobileViewMode from './MobileViewMode';
 import CallMemoCard from './CallMemoCard';
+import CallAnalyticsView from './CallAnalyticsView';
 import { adaptCallMemo } from '../utils/memoAdapter';
 
 export default function CallSyncApp({
@@ -14,12 +15,14 @@ export default function CallSyncApp({
   groups,
   contacts,
   currentUser,
+  auth,
   onSubmitCallMemo,
   onUpdateStatus,
   onOpenThread,
   onOpenNewCallMemo,
   onOpenContacts
 }) {
+  const isStaff = currentUser?.role === 'owner' || currentUser?.role === 'admin';
   const [subView, setSubView] = useState(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('callsync_default_subview');
@@ -118,6 +121,16 @@ export default function CallSyncApp({
             <span className="subnav-label-long">受電先台帳（{contacts.length}）</span>
             <span className="subnav-label-short">台帳({contacts.length})</span>
           </button>
+          {isStaff && (
+            <button
+              className={`subnav-tab ${subView === 'analytics' ? 'active' : ''}`}
+              onClick={() => handleSwitchSubView('analytics')}
+            >
+              <BarChart3 size={15} />
+              <span className="subnav-label-long">受電分析</span>
+              <span className="subnav-label-short">分析</span>
+            </button>
+          )}
         </div>
 
         <div className="callsync-actions-right">
@@ -157,7 +170,13 @@ export default function CallSyncApp({
         </div>
       )}
 
-      {subView === 'board' && (
+      {subView === 'analytics' && isStaff && (
+        <div className="callsync-body-view">
+          <CallAnalyticsView auth={auth} />
+        </div>
+      )}
+
+      {(subView === 'board' || (subView === 'analytics' && !isStaff)) && (
         <div className="callsync-board-view">
           {/* Filter & Search Bar */}
           <div className="board-toolbar">

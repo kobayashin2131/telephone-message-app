@@ -631,6 +631,88 @@ export default {
         return jsonResponse(results);
       }
 
+      if (path === '/api/call-memos/analytics' && request.method === 'GET') {
+        const session = await resolveSession(db, request);
+        if (!session || !STAFF_ROLES.includes(session.role)) return jsonResponse({ error: '管理者権限が必要です' }, 403);
+        const orgId = session.organization_id;
+
+        const daysParam = url.searchParams.get('days');
+        const days = daysParam === 'all' ? null : (parseInt(daysParam, 10) || 30);
+        const sinceClause = days ? `AND cm.created_at >= datetime('now', '-${days} days')` : '';
+
+        const overview = await db.prepare(`
+          SELECT
+            COUNT(*) as total,
+            SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
+            SUM(CASE WHEN status = 'in_progress' THEN 1 ELSE 0 END) as in_progress,
+            SUM(CASE WHEN status = 'resolved' THEN 1 ELSE 0 END) as resolved,
+            AVG(CASE WHEN status = 'resolved' AND resolved_at IS NOT NULL
+                THEN (julianday(resolved_at) - julianday(created_at)) * 24 * 60 END) as avg_resolution_minutes
+          FROM call_memos cm WHERE cm.organization_id = ? ${sinceClause}
+        `).bind(orgId).first();
+
+        const { results: byCompany } = await db.prepare(`
+          SELECT company_name, COUNT(*) as count
+          FROM call_memos cm WHERE cm.organization_id = ? ${sinceClause}
+          GROUP BY company_name ORDER BY count DESC LIMIT 10
+        `).bind(orgId).all();
+
+        const { results: byRecipient } = await db.prepare(`
+          SELECT m.target_type, m.target_id,
+                 CASE
+                   WHEN m.target_type = 'dm' THEN (SELECT name FROM users WHERE id = m.target_id)
+                   WHEN m.target_type = 'group' THEN (SELECT name FROM chat_groups WHERE id = m.target_id)
+                   WHEN m.target_type = 'department' THEN (SELECT name FROM departments WHERE id = m.target_id)
+                   ELSE '(宛先未設定)'
+                 END as target_name,
+                 COUNT(*) as count
+          FROM call_memos cm
+          LEFT JOIN messages m ON m.call_memo_id = cm.id AND m.message_type = 'call_card'
+          WHERE cm.organization_id = ? ${sinceClause}
+          GROUP BY m.target_type, m.target_id ORDER BY count DESC LIMIT 10
+        `).bind(orgId).all();
+
+        const { results: byResolver } = await db.prepare(`
+          SELECT cm.resolved_by, u.name as resolver_name, COUNT(*) as count,
+                 AVG((julianday(cm.resolved_at) - julianday(cm.created_at)) * 24 * 60) as avg_resolution_minutes
+          FROM call_memos cm
+          LEFT JOIN users u ON cm.resolved_by = u.id
+          WHERE cm.organization_id = ? AND cm.status = 'resolved' AND cm.resolved_by IS NOT NULL ${sinceClause}
+          GROUP BY cm.resolved_by ORDER BY count DESC LIMIT 10
+        `).bind(orgId).all();
+
+        // JST (UTC+9) 補正: created_atはタイムゾーン情報なしのUTCで保存されているため
+        const { results: byWeekday } = await db.prepare(`
+          SELECT CAST(strftime('%w', datetime(cm.created_at, '+9 hours')) AS INTEGER) as weekday, COUNT(*) as count
+          FROM call_memos cm WHERE cm.organization_id = ? ${sinceClause}
+          GROUP BY weekday ORDER BY weekday
+        `).bind(orgId).all();
+
+        const { results: byHour } = await db.prepare(`
+          SELECT CAST(strftime('%H', datetime(cm.created_at, '+9 hours')) AS INTEGER) as hour, COUNT(*) as count
+          FROM call_memos cm WHERE cm.organization_id = ? ${sinceClause}
+          GROUP BY hour ORDER BY hour
+        `).bind(orgId).all();
+
+        const { results: dailyTrend } = await db.prepare(`
+          SELECT strftime('%Y-%m-%d', datetime(cm.created_at, '+9 hours')) as date, COUNT(*) as count
+          FROM call_memos cm
+          WHERE cm.organization_id = ? AND cm.created_at >= datetime('now', '-30 days')
+          GROUP BY date ORDER BY date
+        `).bind(orgId).all();
+
+        return jsonResponse({
+          overview: {
+            total: overview.total || 0,
+            pending: overview.pending || 0,
+            in_progress: overview.in_progress || 0,
+            resolved: overview.resolved || 0,
+            avg_resolution_minutes: overview.avg_resolution_minutes != null ? Math.round(overview.avg_resolution_minutes) : null
+          },
+          byCompany, byRecipient, byResolver, byWeekday, byHour, dailyTrend
+        });
+      }
+
       if (path === '/api/call-memos' && request.method === 'POST') {
         const body = await request.json();
         const orgId = parseOrgId(body.organization_id);

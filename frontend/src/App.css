@@ -2813,3 +2813,216 @@ button, input, select, textarea {
   align-items: center;
   padding: 2px;
 }
+
+/* --- 受電分析ダッシュボード --- */
+.analytics-view {
+  padding: 20px;
+  overflow-y: auto;
+  height: 100%;
+}
+
+.analytics-empty-state {
+  padding: 40px;
+  text-align: center;
+  color: var(--ink-faint);
+}
+
+.analytics-range-toggle {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+
+.analytics-range-btn {
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--ink-soft);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.analytics-range-btn.active {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #fff;
+}
+
+.analytics-stat-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-bottom: 22px;
+}
+
+.analytics-stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--brand-dark);
+}
+
+.analytics-stat-label {
+  font-size: 12px;
+  color: var(--ink-faint);
+}
+
+.analytics-stat-value {
+  font-size: 22px;
+  color: var(--ink);
+}
+
+.analytics-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+@media (max-width: 768px) {
+  .analytics-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+.analytics-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 16px 18px;
+  margin-bottom: 16px;
+}
+
+.analytics-section h3 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--ink-soft);
+  margin: 0 0 12px;
+}
+
+.analytics-empty-note {
+  color: var(--ink-faint);
+  font-size: 13px;
+}
+
+.analytics-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.analytics-bar-label {
+  flex: 0 0 100px;
+  font-size: 13px;
+  color: var(--ink-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.analytics-bar-track {
+  flex: 1;
+  background: var(--surface-alt);
+  border-radius: 999px;
+  height: 10px;
+  overflow: hidden;
+}
+
+.analytics-bar-fill {
+  height: 100%;
+  background: var(--brand);
+  border-radius: 999px;
+}
+
+.analytics-bar-value {
+  flex: 0 0 auto;
+  font-size: 12px;
+  color: var(--ink-faint);
+  min-width: 40px;
+  text-align: right;
+}
+
+.analytics-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.analytics-table th {
+  text-align: left;
+  color: var(--ink-faint);
+  font-weight: 500;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.analytics-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+  color: var(--ink-soft);
+}
+
+.analytics-weekday-row {
+  margin-bottom: 14px;
+}
+
+.analytics-trend-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 90px;
+}
+
+.analytics-trend-col {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+}
+
+.analytics-trend-bar {
+  width: 100%;
+  background: var(--brand);
+  border-radius: 3px 3px 0 0;
+  min-height: 2px;
+}
+
+.analytics-hour-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 70px;
+}
+
+.analytics-hour-col {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  position: relative;
+}
+
+.analytics-hour-bar {
+  width: 100%;
+  background: var(--brand-soft);
+  border: 1px solid var(--brand);
+  border-radius: 2px 2px 0 0;
+  min-height: 2px;
+}
+
+.analytics-hour-label {
+  font-size: 9px;
+  color: var(--ink-faint);
+  margin-top: 2px;
+}

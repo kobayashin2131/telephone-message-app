@@ -721,13 +721,14 @@ export default function App() {
         )}
 
         {activeApp === 'callsync' && (
-          <CallSyncApp 
+          <CallSyncApp
             callMemos={callMemos}
             users={users}
             departments={departments}
             groups={groups}
             contacts={contacts}
             currentUser={currentUser}
+            auth={auth}
             onSubmitCallMemo={handleSubmitCallMemo}
             onUpdateStatus={handleUpdateCallStatus}
             onOpenThread={(msg) => {
