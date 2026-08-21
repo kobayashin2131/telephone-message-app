@@ -12,6 +12,7 @@ import LoginScreen from './components/LoginScreen';
 import SignupScreen from './components/SignupScreen';
 import { playChime } from './utils/chime';
 import { subscribeToPush, unsubscribeFromPush } from './utils/push';
+import { App as CapacitorApp } from '@capacitor/app';
 import { isNativeApp, setupNativePush, setupNativePushListeners } from './utils/nativePush';
 import { loadAuth, saveAuth, clearAuth } from './utils/auth';
 import './App.css';
@@ -309,6 +310,25 @@ export default function App() {
       }
     });
   }, [users, groups]);
+
+  // Android/iOS hardware back button: close the topmost open thing instead of
+  // exiting the app（デフォルトだとアプリごと終了してしまうため）
+  useEffect(() => {
+    if (!isNativeApp()) return;
+    let handle;
+    CapacitorApp.addListener('backButton', () => {
+      if (showAdminModal) return setShowAdminModal(false);
+      if (showCsvImportModal) return setShowCsvImportModal(false);
+      if (showChangePinModal) return setShowChangePinModal(false);
+      if (showContactsModal) return setShowContactsModal(false);
+      if (showNewCallMemoModal) return setShowNewCallMemoModal(false);
+      if (showNewGroupModal) return setShowNewGroupModal(false);
+      if (activeThread) return setActiveThread(null);
+      if (activeChat) return setActiveChat(null);
+      CapacitorApp.exitApp();
+    }).then((h) => { handle = h; });
+    return () => { handle?.remove(); };
+  }, [showAdminModal, showCsvImportModal, showChangePinModal, showContactsModal, showNewCallMemoModal, showNewGroupModal, activeThread, activeChat]);
 
   // Deep link check from initial URL
   useEffect(() => {
