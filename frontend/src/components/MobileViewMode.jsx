@@ -4,11 +4,23 @@ import CallMemoCard from './CallMemoCard';
 import { adaptCallMemo } from '../utils/memoAdapter';
 
 export default function MobileViewMode({
-  callMemos, currentUser, onUpdateStatus, onOpenThread
+  callMemos, currentUser, groups = [], onUpdateStatus, onOpenThread
 }) {
   const [tab, setTab] = useState('unresolved'); // 'unresolved' or 'resolved'
 
+  // 自分が所属しているグループ（作成者含む）
+  const myGroupIds = groups
+    .filter(g => (g.member_ids && Array.isArray(g.member_ids) && g.member_ids.includes(currentUser?.id)) || g.created_by === currentUser?.id)
+    .map(g => Number(g.id));
+
   const myMemos = callMemos.filter(m => {
+    // 自分宛て（DM）／自分の所属部門宛て／自分が入っているグループ宛て、のいずれかだけを対象にする
+    const isForMe =
+      (m.target_type === 'dm' && Number(m.target_id) === Number(currentUser?.id)) ||
+      (m.target_type === 'department' && currentUser?.department_id && Number(m.target_id) === Number(currentUser.department_id)) ||
+      (m.target_type === 'group' && myGroupIds.includes(Number(m.target_id)));
+    if (!isForMe) return false;
+
     if (tab === 'unresolved' && m.status === 'resolved') return false;
     if (tab === 'resolved' && m.status !== 'resolved') return false;
     return true;

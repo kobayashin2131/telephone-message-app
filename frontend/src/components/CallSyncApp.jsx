@@ -163,9 +163,10 @@ export default function CallSyncApp({
 
       {subView === 'mobile' && (
         <div className="callsync-body-view">
-          <MobileViewMode 
+          <MobileViewMode
             callMemos={callMemos}
             currentUser={currentUser}
+            groups={groups}
             onUpdateStatus={onUpdateStatus}
             onOpenThread={onOpenThread}
           />
