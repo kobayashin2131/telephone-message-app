@@ -713,10 +713,18 @@ button, input, select, textarea {
 
 .call-memo-tray-item {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 6px;
   border-radius: 10px;
   background: var(--surface);
+}
+
+.call-memo-tray-detail {
+  flex: 1 1 100%;
+  padding: 4px 12px 12px;
+  border-top: 1px solid var(--border);
+  margin-top: 4px;
 }
 
 .call-memo-tray-item-main {

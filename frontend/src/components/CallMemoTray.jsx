@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Phone, ChevronDown, ChevronUp, Check } from 'lucide-react';
+import { Phone, ChevronDown, ChevronUp, Check, CheckCircle, AlertTriangle, Clock } from 'lucide-react';
 
 function timeAgo(dateStr) {
   const diffMs = Date.now() - new Date(dateStr.replace(' ', 'T') + 'Z').getTime();
@@ -11,8 +11,100 @@ function timeAgo(dateStr) {
   return `${Math.floor(hours / 24)}日前`;
 }
 
-export default function CallMemoTray({ callMemos = [], currentUser, groups = [], onSelectChat, onUpdateStatus }) {
+function CallMemoTrayDetail({ memo, onUpdateStatus }) {
+  const [noteText, setNoteText] = useState(memo.resolved_note || '');
+  const isResolved = memo.status === 'resolved';
+  const isInProgress = memo.status === 'in_progress';
+  const isUrgent = memo.call_type === 'urgent';
+  const isCallback = memo.call_type === 'callback';
+
+  return (
+    <div className="call-memo-tray-detail">
+      <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap' }}>
+        {isUrgent ? (
+          <span className="call-badge-tag tag-urgent"><AlertTriangle size={13} /> 緊急受電</span>
+        ) : isCallback ? (
+          <span className="call-badge-tag tag-callback"><Phone size={13} /> 折り返し要</span>
+        ) : (
+          <span className="call-badge-tag tag-info"><Clock size={13} /> 伝言のみ</span>
+        )}
+        {memo.target_type === 'group' && memo.target_name && (
+          <span className="call-target-pill">💬 宛先: <strong>{memo.target_name}</strong></span>
+        )}
+      </div>
+
+      {memo.creator_name && (
+        <div style={{ fontSize: '0.75rem', color: '#66766c', marginBottom: '4px' }}>
+          📞 {memo.target_type === 'dm' ? '記録してくれた人' : '受電者'}: <strong>{memo.creator_name}</strong>
+        </div>
+      )}
+
+      {memo.phone_number && (
+        <a href={`tel:${memo.phone_number}`} className="phone-pill-btn">
+          <Phone size={14} color="#7aab8f" />
+          <span>{memo.phone_number}</span>
+          <span style={{ fontSize: '0.72rem', color: '#7aab8f', fontWeight: 500 }}>（タップで発信）</span>
+        </a>
+      )}
+
+      {memo.subject && <div className="memo-subject-line">件名: {memo.subject}</div>}
+      {memo.body && <div className="memo-body-box">{memo.body}</div>}
+
+      {memo.resolved_note && (
+        <div className="memo-note-display-card">
+          <div style={{ fontWeight: 700, fontSize: '0.75rem', color: '#3b6e4c', marginBottom: '4px' }}>📝 対応コメント・結果:</div>
+          <div style={{ fontSize: '0.85rem', color: '#2d4d38', lineHeight: 1.4 }}>{memo.resolved_note}</div>
+        </div>
+      )}
+
+      {!isResolved && (
+        <div className="memo-inline-note-form" style={{ marginTop: '8px' }}>
+          <textarea
+            className="memo-note-textarea"
+            placeholder="例: 14:30に折り返し発信。不在のため再度連絡予定"
+            value={noteText}
+            onChange={(e) => setNoteText(e.target.value)}
+            rows="2"
+          />
+          <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end', marginTop: '6px' }}>
+            {!isInProgress && (
+              <button
+                type="button"
+                className="pop-btn-secondary"
+                style={{ fontSize: '0.72rem', padding: '3px 8px' }}
+                onClick={() => onUpdateStatus(memo.id, 'in_progress', noteText.trim())}
+              >
+                ⏳ 対応中にする
+              </button>
+            )}
+            <button
+              type="button"
+              className="btn-status-act resolve"
+              style={{ fontSize: '0.72rem', padding: '3px 10px' }}
+              onClick={() => onUpdateStatus(memo.id, 'resolved', noteText.trim())}
+            >
+              <CheckCircle size={12} /> 完了にする
+            </button>
+          </div>
+        </div>
+      )}
+      {isResolved && (
+        <button
+          type="button"
+          className="pop-btn-secondary"
+          style={{ fontSize: '0.75rem', padding: '4px 10px', borderRadius: '8px', marginTop: '8px' }}
+          onClick={() => onUpdateStatus(memo.id, 'pending')}
+        >
+          ↩ 未対応に戻す
+        </button>
+      )}
+    </div>
+  );
+}
+
+export default function CallMemoTray({ callMemos = [], currentUser, groups = [], onUpdateStatus }) {
   const [expanded, setExpanded] = useState(false);
+  const [expandedMemoId, setExpandedMemoId] = useState(null);
 
   const myGroupIds = new Set(
     groups.filter(g => currentUser && (g.member_ids?.includes(currentUser.id) || g.created_by === currentUser.id)).map(g => g.id)
@@ -46,11 +138,7 @@ export default function CallMemoTray({ callMemos = [], currentUser, groups = [],
             <div key={m.id} className={`call-memo-tray-item ${m.status}`}>
               <button
                 className="call-memo-tray-item-main"
-                onClick={() => onSelectChat(
-                  m.target_type === 'dm'
-                    ? { type: 'dm', id: m.created_by, name: m.creator_name, icon: '👤' }
-                    : { type: m.target_type, id: m.target_id, name: m.target_name, icon: '💬' }
-                )}
+                onClick={() => setExpandedMemoId(expandedMemoId === m.id ? null : m.id)}
               >
                 <span className={`status-pill ${m.status}`}>
                   {m.status === 'resolved' ? '✓ 完了' : m.status === 'in_progress' ? '⏳ 対応中' : '⚠️ 未対応'}
@@ -71,6 +159,7 @@ export default function CallMemoTray({ callMemos = [], currentUser, groups = [],
                   <Check size={14} />
                 </button>
               )}
+              {expandedMemoId === m.id && <CallMemoTrayDetail memo={m} onUpdateStatus={onUpdateStatus} />}
             </div>
           ))}
         </div>

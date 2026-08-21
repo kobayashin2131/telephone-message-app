@@ -75,7 +75,6 @@ export default function ChatApp({
             callMemos={callMemos}
             currentUser={currentUser}
             groups={groups}
-            onSelectChat={onSelectChat}
             onUpdateStatus={onUpdateStatus}
           />
 
