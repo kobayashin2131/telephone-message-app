@@ -727,6 +727,27 @@ button, input, select, textarea {
   margin-top: 4px;
 }
 
+.call-memo-tray-open-app {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 8px;
+  margin-top: 2px;
+  border: 1px dashed var(--status-pending);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--status-pending);
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.call-memo-tray-open-app:hover {
+  background: var(--status-pending-soft);
+}
+
 .call-memo-tray-item-main {
   flex: 1;
   display: flex;

@@ -712,6 +712,7 @@ export default function App() {
             onUpdateStatus={handleUpdateCallStatus}
             onOpenNewGroup={() => setShowNewGroupModal(true)}
             onOpenNewCallMemo={(target) => openNewCallMemo({ target })}
+            onOpenCallSyncApp={() => setActiveApp('callsync')}
             activeThread={activeThread}
             onOpenThread={(msg) => setActiveThread(msg)}
             onCloseThread={() => setActiveThread(null)}

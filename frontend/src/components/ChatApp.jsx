@@ -20,6 +20,7 @@ export default function ChatApp({
   onUpdateStatus,
   onOpenNewGroup,
   onOpenNewCallMemo,
+  onOpenCallSyncApp,
   activeThread,
   onOpenThread,
   onCloseThread,
@@ -76,6 +77,7 @@ export default function ChatApp({
             currentUser={currentUser}
             groups={groups}
             onUpdateStatus={onUpdateStatus}
+            onOpenCallSyncApp={onOpenCallSyncApp}
           />
 
           {/* Groups / Channels */}

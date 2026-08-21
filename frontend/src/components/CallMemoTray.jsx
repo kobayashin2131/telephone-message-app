@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Phone, ChevronDown, ChevronUp, Check, CheckCircle, AlertTriangle, Clock } from 'lucide-react';
+import { Phone, ChevronDown, ChevronUp, Check, CheckCircle, AlertTriangle, Clock, ExternalLink } from 'lucide-react';
 
 function timeAgo(dateStr) {
   const diffMs = Date.now() - new Date(dateStr.replace(' ', 'T') + 'Z').getTime();
@@ -102,7 +102,7 @@ function CallMemoTrayDetail({ memo, onUpdateStatus }) {
   );
 }
 
-export default function CallMemoTray({ callMemos = [], currentUser, groups = [], onUpdateStatus }) {
+export default function CallMemoTray({ callMemos = [], currentUser, groups = [], onUpdateStatus, onOpenCallSyncApp }) {
   const [expanded, setExpanded] = useState(false);
   const [expandedMemoId, setExpandedMemoId] = useState(null);
 
@@ -117,24 +117,24 @@ export default function CallMemoTray({ callMemos = [], currentUser, groups = [],
     return false;
   };
 
-  const myMemos = callMemos.filter(isMine).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-  const unhandled = myMemos.filter(m => m.status !== 'resolved');
+  // 対応済みは「もう気にしなくていい」ものなので通知欄には出さない。ここは常に「今対応が要るもの」だけの一覧
+  const unhandled = callMemos.filter(isMine).filter(m => m.status !== 'resolved').sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
-  if (myMemos.length === 0) return null;
+  if (unhandled.length === 0) return null;
 
   return (
-    <div className={`chat-sidebar-section call-memo-tray ${unhandled.length > 0 ? 'has-unhandled' : ''}`}>
+    <div className="chat-sidebar-section call-memo-tray has-unhandled">
       <button className="call-memo-tray-header" onClick={() => setExpanded(!expanded)}>
         <span className="call-memo-tray-title">
           <Phone size={14} /> 受電メモ
-          {unhandled.length > 0 && <span className="suite-badge-pill urgent-pill">{unhandled.length}件 未対応</span>}
+          <span className="suite-badge-pill urgent-pill">{unhandled.length}件 未対応</span>
         </span>
         {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
       </button>
 
       {expanded && (
         <div className="call-memo-tray-list">
-          {myMemos.map(m => (
+          {unhandled.map(m => (
             <div key={m.id} className={`call-memo-tray-item ${m.status}`}>
               <button
                 className="call-memo-tray-item-main"
@@ -150,18 +150,21 @@ export default function CallMemoTray({ callMemos = [], currentUser, groups = [],
                   </div>
                 </div>
               </button>
-              {m.status !== 'resolved' && (
-                <button
-                  className="call-memo-tray-item-resolve"
-                  title="対応済みにする"
-                  onClick={() => onUpdateStatus(m.id, 'resolved', '')}
-                >
-                  <Check size={14} />
-                </button>
-              )}
+              <button
+                className="call-memo-tray-item-resolve"
+                title="対応済みにする"
+                onClick={() => onUpdateStatus(m.id, 'resolved', '')}
+              >
+                <Check size={14} />
+              </button>
               {expandedMemoId === m.id && <CallMemoTrayDetail memo={m} onUpdateStatus={onUpdateStatus} />}
             </div>
           ))}
+          {onOpenCallSyncApp && (
+            <button type="button" className="call-memo-tray-open-app" onClick={onOpenCallSyncApp}>
+              <ExternalLink size={13} /> 電話メモアプリで全て見る
+            </button>
+          )}
         </div>
       )}
     </div>
