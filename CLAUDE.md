@@ -3,7 +3,8 @@
 ## 📌 プロジェクト概要
 **Connect Suite** は、中小企業や現場・オフィス向けに、**「社内チャット（Google Chatリプレイス）」** と **「電話連絡DX（CallSync / 紙の電話メモ全廃）」** を1つの共通アカウント基盤（SSO）でシームレスに行き来・相互連携できるB2B SaaSスイートアプリです。
 
-- **本番Webアプリ・API (Cloudflare Workers、フロント/バックエンド統合)**: [https://callsync-backend.nonba30.workers.dev](https://callsync-backend.nonba30.workers.dev) ← **これが正式URL（2026-08-21〜）。ブックマークはこちらに変更してください**
+- **本番Webアプリ・API**: [https://connectsuite.easystance.app](https://connectsuite.easystance.app) ← **これが正式URL（2026-08-21〜）。ブックマークはこちらに変更してください**
+  - 実体はCloudflare Workers（`callsync-backend`、フロント/バックエンド統合）。`https://callsync-backend.nonba30.workers.dev`でも同じものにアクセスできるが、URLに個人アカウント名が出てしまうため、`connectsuite.easystance.app`を正式な案内先とする（詳細は「固定サブドメイン追加」セクション参照）
 - **クラウドDB (Cloudflare D1)**: `callsync-db`
 - **リポジトリ**: `telephone-message-app` (OneDrive上: `C:\Users\nonba\OneDrive\telephone-message-app`)
 - ⚠️ `https://callsync-app.pages.dev`（旧Cloudflare Pages配信）は**廃止・メンテ対象外**。中身は同一だが今後更新されない。詳細は「Pages廃止」セクション参照
@@ -411,3 +412,18 @@ Claude Codeによるコードレビュー＋大規模な不具合修正・デザ
 - 中身・機能は今までと完全に同じですが、**ドメインが変わるためログインは再度必要**になります（ブラウザの保存領域はドメインごとに独立しているため、旧URLでのログイン状態は新URLには引き継がれません）
 - `callsync-app.pages.dev`自体は当面残りますが、**今後一切更新されません**（`wrangler pages deploy`は二度と実行しないでください）。中身が古いまま固定されるため、いずれ本体との差異が出ます
 - 将来的に完全に削除（Cloudflareのプロジェクト自体を消す）してもよいが、今回は「触らず放置」にとどめている。積極的に消したい場合は`wrangler pages project delete callsync-app`が該当コマンド（未実行）
+
+---
+
+## 🌐 2026-08-21：固定サブドメイン `connectsuite.easystance.app` を追加（個人アカウント名を隠すため）
+
+**背景**: オーナーから「`callsync-backend.nonba30.workers.dev`はURLに個人のCloudflareアカウント名（`nonba30`）が出てしまうので使いたくない」との指摘。あわせて、元々「`connectsuite.easystance.app`のようなアプリ全体の固定URLを1つ用意し、その下に契約ごとの部屋（会社サブドメイン）を並べる」という2段構えのプランだったことが判明——上のセクションの事故で分かった「2段階目のワイルドカード（`*.connectsuite.easystance.app`）は無料SSLでカバーされない」という制約のせいで、下の階層（会社ごとの部屋）だけ収益が見込めるまで保留、という位置づけ。今回はその上の階層（固定URL）を実現した。
+
+**なぜ今回は安全か**: 前回の事故は「`*.easystance.app/*`」という**ワイルドカード**ルートが、ゾーン上の他の全サブドメイン（`worklog.easystance.app`など）を巻き込んでしまったのが原因。今回追加したのは`connectsuite.easystance.app/*`という**完全一致（ワイルドカードなし）**のルートなので、他のどのサブドメインにも一切影響しない。追加前後で`worklog.easystance.app`が無事であることを実機確認済み。
+
+**実装**: `wrangler.jsonc`の`routes`に`{ "pattern": "connectsuite.easystance.app/*", "zone_name": "easystance.app" }`を追加し`wrangler deploy`。DNS側は、Cloudflare APIの権限（zone:read のみ、DNS書き込み権限なし）の都合でこちらでは追加できないため、オーナーにダッシュボードでのCNAMEレコード追加（`connectsuite` → `easystance.app`、プロキシON）をお願いした。
+
+**次にこの作業をする人へ**:
+- `easystance.app`ゾーンにルートを追加する時は、**必ず完全一致パターン（ワイルドカードなし）にすること**。ワイルドカード（`*.easystance.app/*`のような）は二度と追加しないこと（他アプリを巻き込む実績があるため）
+- フロント側の`API_BASE`は今も`https://callsync-backend.nonba30.workers.dev/api`のまま（`connectsuite.easystance.app`も同じWorkerを指しているため機能的には問題ないが、ブラウザの開発者ツールでネットワークタブを見ると`nonba30`のドメインへの通信が見える。今回はアドレスバー・ブックマークに出ないことを優先し、ここまでは変更していない。完全に隠したい場合は`API_BASE`もこの新ドメインに揃える対応が別途必要）
+- 会社ごとの部屋分け（`会社名.connectsuite.easystance.app`のような2段階目のワイルドカード）は、上のセクション通り「収益が見込めるタイミングで専用ドメイン取得」の方針のまま変更なし

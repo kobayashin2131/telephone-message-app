@@ -3,6 +3,9 @@
   "main": "backend/worker.js",
   "compatibility_date": "2026-08-18",
   "workers_dev": true,
+  "routes": [
+    { "pattern": "connectsuite.easystance.app/*", "zone_name": "easystance.app" }
+  ],
   "assets": {
     "directory": "./frontend/dist",
     "binding": "ASSETS",
