@@ -3,6 +3,8 @@ import { Phone, AlertTriangle, Clock, CheckCircle, Search, Filter, Plus, User, B
 import CallMemoCard from './CallMemoCard';
 import { adaptCallMemo } from '../utils/memoAdapter';
 
+const COMMON_SUBJECTS = ['折り返しのお願い', '見積もり仕様確認の件', '納期・出荷日の確認', '現場施工日程の調整', '定期保守・点検の件', 'ご挨拶・アポイント'];
+
 export default function DeskMonitorView({
   users, departments, groups, contacts, callMemos, currentUser, callCategories = [],
   onSubmitCallMemo, onUpdateStatus, onOpenThread, onOpenNewCallMemo
@@ -328,12 +330,39 @@ export default function DeskMonitorView({
             </div>
           </div>
 
+          {/* Subject */}
+          <div className="form-group">
+            <label className="form-label">件名 / 用件</label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '6px' }}>
+              {COMMON_SUBJECTS.map(s => (
+                <button
+                  key={s}
+                  type="button"
+                  style={{
+                    fontSize: '0.75rem', padding: '2px 8px', borderRadius: '4px',
+                    border: '1px solid #d4ccbc', background: subject === s ? '#efe9f8' : '#f8f5ef',
+                    color: subject === s ? '#6b5590' : '#4a5750', cursor: 'pointer'
+                  }}
+                  onClick={() => setSubject(s)}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+            <input
+              type="text"
+              className="form-input"
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+            />
+          </div>
+
           <div className="form-group">
             <label className="form-label">伝言内容</label>
-            <textarea 
-              className="form-textarea" 
-              rows="3" 
-              placeholder="折り返し希望時間や用件の詳細など" 
+            <textarea
+              className="form-textarea"
+              rows="3"
+              placeholder="折り返し希望時間や用件の詳細など"
               value={body}
               onChange={(e) => setBody(e.target.value)}
             />
