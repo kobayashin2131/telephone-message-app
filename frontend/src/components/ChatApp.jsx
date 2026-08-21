@@ -4,11 +4,13 @@ import {
 } from 'lucide-react';
 import ChatArea from './ChatArea';
 import ThreadDrawer from './ThreadDrawer';
+import CallMemoTray from './CallMemoTray';
 
 export default function ChatApp({
   currentUser,
   users,
   groups,
+  callMemos = [],
   activeChat,
   onSelectChat,
   messages,
@@ -69,6 +71,14 @@ export default function ChatApp({
         </div>
 
         <div className="chat-sidebar-scroll">
+          <CallMemoTray
+            callMemos={callMemos}
+            currentUser={currentUser}
+            groups={groups}
+            onSelectChat={onSelectChat}
+            onUpdateStatus={onUpdateStatus}
+          />
+
           {/* Groups / Channels */}
           <div className="chat-sidebar-section">
             <div className="chat-section-label">

@@ -702,6 +702,7 @@ export default function App() {
             currentUser={currentUser}
             users={users}
             groups={groups}
+            callMemos={callMemos}
             activeChat={activeChat}
             onSelectChat={setActiveChat}
             messages={messages}
