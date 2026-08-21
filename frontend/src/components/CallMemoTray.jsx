@@ -46,12 +46,11 @@ export default function CallMemoTray({ callMemos = [], currentUser, groups = [],
             <div key={m.id} className={`call-memo-tray-item ${m.status}`}>
               <button
                 className="call-memo-tray-item-main"
-                onClick={() => onSelectChat({
-                  type: m.target_type,
-                  id: m.target_id,
-                  name: m.target_name,
-                  icon: m.target_type === 'dm' ? '👤' : '💬'
-                })}
+                onClick={() => onSelectChat(
+                  m.target_type === 'dm'
+                    ? { type: 'dm', id: m.created_by, name: m.creator_name, icon: '👤' }
+                    : { type: m.target_type, id: m.target_id, name: m.target_name, icon: '💬' }
+                )}
               >
                 <span className={`status-pill ${m.status}`}>
                   {m.status === 'resolved' ? '✓ 完了' : m.status === 'in_progress' ? '⏳ 対応中' : '⚠️ 未対応'}
