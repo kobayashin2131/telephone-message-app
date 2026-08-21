@@ -49,6 +49,8 @@ export default function ChatArea({
   activeChat, currentUser, users = [], messages, organizationId, onSendMessage, onUpdateStatus, onOpenThread, onOpenNewCallMemo, onBack
 }) {
   const isDM = activeChat?.type === 'dm';
+  // スマホはShift+Enterが使いにくいため、Enterでの送信はPC幅のみ。スマホは常に改行、送信は送信ボタンで行う
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
   const [text, setText] = useState('');
   const [activeReadersPopover, setActiveReadersPopover] = useState(null);
   const [pendingFile, setPendingFile] = useState(null);
@@ -179,12 +181,12 @@ export default function ChatArea({
       setShowMentionSuggest(false);
       return;
     }
-    if (e.key === 'Enter' && !e.shiftKey) {
-      if (showMentionSuggest && filteredCandidates.length > 0) {
-        e.preventDefault();
-        insertMention(filteredCandidates[0]);
-        return;
-      }
+    if (e.key === 'Enter' && showMentionSuggest && filteredCandidates.length > 0) {
+      e.preventDefault();
+      insertMention(filteredCandidates[0]);
+      return;
+    }
+    if (e.key === 'Enter' && !e.shiftKey && !isMobile) {
       e.preventDefault();
       handleSend(e);
     }
@@ -441,7 +443,7 @@ export default function ChatArea({
             <textarea
               ref={textareaRef}
               className="chat-textarea"
-              placeholder={pendingFile ? '添付にひとことメッセージを添える(空欄でも送信できます)' : `${activeChat.name} へメッセージを送信... (${isDM ? '' : '@でメンバー指名, '}Enterで送信)`}
+              placeholder={pendingFile ? '添付にひとことメッセージを添える(空欄でも送信できます)' : `${activeChat.name} へメッセージを送信... (${isDM ? '' : '@でメンバー指名, '}${isMobile ? '送信ボタンをタップ' : 'Enterで送信'})`}
               value={text}
               onChange={handleTextChange}
               onKeyDown={handleKeyDown}

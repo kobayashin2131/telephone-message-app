@@ -1233,7 +1233,7 @@ export default {
           await db.prepare(`DELETE FROM fcm_tokens WHERE user_id IN (${placeholders})`).bind(...ids).run();
         }
         await db.prepare('DELETE FROM message_reads WHERE user_id IN (SELECT id FROM users WHERE organization_id = ?)').bind(id).run();
-        await db.prepare(`DELETE FROM messages WHERE target_type = 'group' AND target_id IN (SELECT id FROM chat_groups WHERE organization_id = ?)`).bind(id).run();
+        await db.prepare(`DELETE FROM messages WHERE sender_id IN (SELECT id FROM users WHERE organization_id = ?)`).bind(id).run();
         await db.prepare('DELETE FROM group_members WHERE group_id IN (SELECT id FROM chat_groups WHERE organization_id = ?)').bind(id).run();
         await db.prepare('DELETE FROM chat_groups WHERE organization_id = ?').bind(id).run();
         await db.prepare('DELETE FROM call_memos WHERE organization_id = ?').bind(id).run();
