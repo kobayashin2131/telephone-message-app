@@ -237,12 +237,15 @@ function CallCategoryManager({ auth, department, categories, onChanged }) {
           </span>
         ))}
       </div>
+      <div style={{ fontSize: '0.72rem', color: '#8a978c', marginBottom: '4px' }}>
+        1つずつ入力して「＋ 追加」してください（複数まとめて入力しないでください）
+      </div>
       <form onSubmit={handleAdd} style={{ display: 'flex', gap: '6px' }}>
         <input
           type="text"
           value={label}
           onChange={(e) => setLabel(e.target.value)}
-          placeholder="例: 貸布団 / クリーニング / 固定客の注文"
+          placeholder="例: 貸布団（個人）"
           className="form-input"
           style={{ flex: 1, fontSize: '0.82rem', padding: '6px 10px' }}
         />

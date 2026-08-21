@@ -144,7 +144,11 @@ export default function CallMemoTray({ callMemos = [], currentUser, groups = [],
                   {m.status === 'resolved' ? '✓ 完了' : m.status === 'in_progress' ? '⏳ 対応中' : '⚠️ 未対応'}
                 </span>
                 <div className="call-memo-tray-item-body">
-                  <div className="call-memo-tray-item-title">{m.company_name} {m.contact_person && `様（${m.contact_person}）`}</div>
+                  <div className="call-memo-tray-item-title">
+                    {m.company_name
+                      ? <>{m.company_name}{m.contact_person && ` 様（${m.contact_person}）`}</>
+                      : (m.contact_person ? `${m.contact_person} 様` : '(お名前未登録)')}
+                  </div>
                   <div className="call-memo-tray-item-sub">
                     {m.target_type === 'dm' ? `${m.creator_name || '不明'}さんが記録` : m.target_name} ・ {timeAgo(m.created_at)}
                   </div>

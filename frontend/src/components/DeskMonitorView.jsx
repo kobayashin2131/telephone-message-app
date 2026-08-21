@@ -59,7 +59,7 @@ export default function DeskMonitorView({
 
   const handleQuickSubmit = (e) => {
     e.preventDefault();
-    if (!companyName.trim()) return alert('会社名を入力してください');
+    if (!companyName.trim() && !contactPerson.trim()) return alert('会社名またはお客様のお名前を入力してください');
 
     const mappedTargetType = targetCategory === 'user' ? 'dm' : targetCategory === 'dept' ? 'department' : 'group';
     const finalTargetId = Number(targetId) || (targetCategory === 'user' ? users[0]?.id : departments[0]?.id || 1);
@@ -108,14 +108,13 @@ export default function DeskMonitorView({
 
         <form onSubmit={handleQuickSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <div className="form-group">
-            <label className="form-label">相手先会社名 <span style={{ color: '#d97a6c' }}>*</span></label>
-            <input 
-              type="text" 
-              className="form-input" 
-              placeholder="例: 株式会社オアシス商事" 
+            <label className="form-label">会社名（個人のお客様なら空欄でOK）</label>
+            <input
+              type="text"
+              className="form-input"
+              placeholder="例: 株式会社オアシス商事"
               value={companyName}
               onChange={(e) => setCompanyName(e.target.value)}
-              required 
             />
           </div>
 

@@ -70,7 +70,7 @@ export default function NewCallMemoModal({
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!companyName.trim()) return alert('会社名を入力してください');
+    if (!companyName.trim() && !contactPerson.trim()) return alert('会社名またはお客様のお名前を入力してください');
 
     let finalBody = body.trim();
     if (targetType !== 'dm' && mentionTarget) {
@@ -182,21 +182,20 @@ export default function NewCallMemoModal({
             {/* 2. Caller Contact Info with Autocomplete */}
             <div className="form-group" style={{ position: 'relative' }}>
               <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span>🏢 相手先会社名（受電先リストから検索・登録） <span style={{ color: '#d97a6c' }}>*</span></span>
+                <span>🏢 会社名（受電先リストから検索・登録。個人のお客様なら空欄でOK）</span>
                 {selectedContactId && (
                   <span style={{ fontSize: '0.75rem', color: '#6fa382', fontWeight: 600 }}>✓ 登録済み受電先を選択中</span>
                 )}
               </label>
-              <input 
-                type="text" 
-                className="form-input" 
-                placeholder="会社名を入力（入力すると候補が表示されます）" 
+              <input
+                type="text"
+                className="form-input"
+                placeholder="会社名を入力（入力すると候補が表示されます。個人のお客様なら空欄でOK）"
                 value={companyName}
                 onChange={(e) => {
                   setCompanyName(e.target.value);
                   setSelectedContactId(null);
                 }}
-                required
               />
 
               {/* Suggestions dropdown */}

@@ -123,10 +123,18 @@ export default function CallMemoCard({ memo, onUpdateStatus, onOpenThread, curre
 
       {/* Caller Info */}
       <div className="caller-title">
-        🏢 {memo.memo_company} 
-        <span style={{ fontSize: '0.92rem', fontWeight: 600, color: '#4a5750', marginLeft: '6px' }}>
-          {memo.memo_contact}
-        </span>
+        {memo.memo_company ? (
+          <>
+            🏢 {memo.memo_company}
+            {memo.memo_contact && (
+              <span style={{ fontSize: '0.92rem', fontWeight: 600, color: '#4a5750', marginLeft: '6px' }}>
+                {memo.memo_contact}
+              </span>
+            )}
+          </>
+        ) : (
+          <>👤 {memo.memo_contact || '(お名前未登録)'}</>
+        )}
       </div>
 
       {memo.memo_phone && (
