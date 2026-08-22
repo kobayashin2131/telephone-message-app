@@ -591,7 +591,7 @@ Claude Codeによるコードレビュー＋大規模な不具合修正・デザ
 
 **今回準備したもの（本番反映済み）**:
 1. **署名鍵（アップロードキーストア）を新規生成**: このマシンにJava/keytoolが無かったため、Node.js + `node-forge`でPKCS12形式のキーストアを生成（ラウンドトリップ検証済み・有効期限2056年）。**`C:\Users\nonba\Desktop\ConnectSuite_署名鍵_取扱注意\`に保存済み**（`connectsuite-release.p12`本体、base64化したテキスト、パスワード等をまとめた`KEYSTORE_CREDENTIALS.txt`）。**この鍵を無くすとアプリを二度と更新できなくなるため、オーナーには早めにパスワードマネージャー等の安全な場所へ移してもらい、Desktopのコピーは移動後に削除してもらうよう伝達済み**
-2. **プライバシーポリシーページを新設**: `frontend/public/privacy.html` → 本番で`https://connectsuite.easystance.app/privacy`として公開済み（Cloudflareの静的アセット配信が`.html`拡張子を自動的に外してリダイレクトする仕様のため、正式URLは拡張子無し）。収集する情報・利用目的・委託先（Cloudflare・Google）・問い合わせ先（nonba30@gmail.com）を記載。Google Playはクローズドテストであってもこの手のアプリにはプライバシーポリシーURLを要求するため必須の準備
+2. **プライバシーポリシーページを新設**: `frontend/public/privacy.html` → 本番で`https://connectsuite.easystance.app/privacy`として公開済み（Cloudflareの静的アセット配信が`.html`拡張子を自動的に外してリダイレクトする仕様のため、正式URLは拡張子無し）。収集する情報・利用目的・委託先（Cloudflare・Google）・問い合わせ先を記載。**問い合わせ先はオーナーの指示で`support@easystance.app`に変更済み**（個人のGmailアドレスは使わない方針）。Google Playはクローズドテストであってもこの手のアプリにはプライバシーポリシーURLを要求するため必須の準備
 3. **`codemagic.yaml`の配信トラックを`internal`→`alpha`に変更**: クローズドテスト用の慣習的なトラック名。**オーナーがPlay Consoleで実際にトラックを作成したら、そのトラック名と一致しているか必ず確認・修正すること**（新しいPlay Console UIではカスタム名のトラックを作れるため、必ずしも`alpha`と一致しない）
 
 **オーナー自身がPlay Console上でやる必要があること（未着手・私からは操作不可）**:
