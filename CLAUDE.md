@@ -571,3 +571,36 @@ Claude Codeによるコードレビュー＋大規模な不具合修正・デザ
 オーナーが共有モーダル版（ヘッダーの＋ボタンから開く`NewCallMemoModal.jsx`）と見比べて発見（「こっちには件名まであるよ？」）。`DeskMonitorView.jsx`側は`subject`のstateはあったが常に`'折り返しのお願い'`固定で、入力欄・選択チップが一切無かった。モーダル側と同じ`COMMON_SUBJECTS`チップ＋自由入力欄を追加して解消。
 
 **（2026-08-22追記）オーナーの「なおしちゃって！」を受けて、上記のオートコンプリート/重複防止の差異も解消済み。** `NewCallMemoModal.jsx`のオートコンプリート検索・「✓ 登録済み受電先を選択中」バッジ・`frequentNotes`プレビュー・保存チェックボックス（既存受電先を選んだ場合は非表示）を`DeskMonitorView.jsx`にも移植し、2つのフォームは機能面で同等になった。**次にこの作業をする人へ**: もし3つ目の受電メモ登録フォームが必要になった場合は、今回のようにコピペで済ませず、共通コンポーネント/カスタムフックへの切り出しを検討すること。
+
+---
+
+## 🗓️ 2026-08-22 セッション終了：次回予定（オーナー明言）
+
+オーナーから「今日は終わりにする、明日以降でGoogle、iOS」と次回のテーマ表明あり。具体的な要件はまだ聞けていないが、文脈から推測される候補:
+
+- **Google**: ネイティブアプリでのGoogle Sign-In。現状はWebView内でのGoogle Identity Servicesがアンチフィッシングポリシーでブロックされる問題が未解決のまま（`connect-suite-callsync-project.md`メモリ参照）。システムブラウザ＋ディープリンク方式への切り替えが必要
+- **iOS**: 直近のAndroid向け修正（戻るボタン対応・POST_NOTIFICATIONS権限宣言）をiOS/Androidともに実機に届けるにはCodemagicでの新規ビルド＆配信が必要（まだ未実施）。TestFlightで子供たちの端末に最新版を届ける話の可能性が高い
+
+**次にこの作業をする人へ**: セッション開始時にまずオーナー本人に「Googleの件」「iOSの件」の具体的な要望を確認すること（上記は推測であり確定要件ではない）。今日時点で本番に未反映のものは無い（全て`git push`・`wrangler deploy`済み）。
+
+---
+
+## ✅ 2026-08-22：Google Playクローズドテストの準備を開始
+
+**背景**: オーナーから「クローズドテストの準備したい」との依頼。Google Play開発者アカウントは既にある（HOMEBASE等と共用）が、Connect Suiteはまだアプリとして未登録の状態。
+
+**今回準備したもの（本番反映済み）**:
+1. **署名鍵（アップロードキーストア）を新規生成**: このマシンにJava/keytoolが無かったため、Node.js + `node-forge`でPKCS12形式のキーストアを生成（ラウンドトリップ検証済み・有効期限2056年）。**`C:\Users\nonba\Desktop\ConnectSuite_署名鍵_取扱注意\`に保存済み**（`connectsuite-release.p12`本体、base64化したテキスト、パスワード等をまとめた`KEYSTORE_CREDENTIALS.txt`）。**この鍵を無くすとアプリを二度と更新できなくなるため、オーナーには早めにパスワードマネージャー等の安全な場所へ移してもらい、Desktopのコピーは移動後に削除してもらうよう伝達済み**
+2. **プライバシーポリシーページを新設**: `frontend/public/privacy.html` → 本番で`https://connectsuite.easystance.app/privacy`として公開済み（Cloudflareの静的アセット配信が`.html`拡張子を自動的に外してリダイレクトする仕様のため、正式URLは拡張子無し）。収集する情報・利用目的・委託先（Cloudflare・Google）・問い合わせ先（nonba30@gmail.com）を記載。Google Playはクローズドテストであってもこの手のアプリにはプライバシーポリシーURLを要求するため必須の準備
+3. **`codemagic.yaml`の配信トラックを`internal`→`alpha`に変更**: クローズドテスト用の慣習的なトラック名。**オーナーがPlay Consoleで実際にトラックを作成したら、そのトラック名と一致しているか必ず確認・修正すること**（新しいPlay Console UIではカスタム名のトラックを作れるため、必ずしも`alpha`と一致しない）
+
+**オーナー自身がPlay Console上でやる必要があること（未着手・私からは操作不可）**:
+1. Connect Suiteを新規アプリとして登録（アプリ名・言語・無料アプリ宣言など）
+2. 上記①の署名鍵をCodemagicの`google_play_signing`環境変数グループに登録（`CM_KEYSTORE`=base64テキストの中身、`CM_KEYSTORE_PASSWORD`・`CM_KEY_PASSWORD`・`CM_KEY_ALIAS`は`KEYSTORE_CREDENTIALS.txt`参照）
+3. Google Cloud ConsoleでPlay Developer APIを有効化→サービスアカウント作成→Play Consoleの「ユーザーと権限」でそのサービスアカウントに権限付与→JSONキーを`google_play_publishing`グループの`GCLOUD_SERVICE_ACCOUNT_CREDENTIALS`に登録
+4. ストア掲載情報の最低限（アイコン・スクリーンショット2枚以上・説明文）
+5. コンテンツに関する質問票（年齢レーティング・データセーフティ・広告有無）、②で作ったプライバシーポリシーURLもここで入力
+6. クローズドテストのトラック作成・テスター登録（メールアドレスまたはGoogleグループ）
+7. 「アプリへのアクセス」設定（ログイン必須アプリなので、審査用のテストID/PINを記入）
+
+**次にこの作業をする人へ**: オーナーが2〜7を進めたら、Codemagic APIトークンをもらって`android-release-publish`ワークフローを`v*`タグpushでトリガーし、実際にクローズドテストトラックへアップロードできるか確認するのが次のステップ。
