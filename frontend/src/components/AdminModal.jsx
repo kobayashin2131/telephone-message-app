@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Settings, Users, Building2, Plus, Edit, Trash2, ShieldCheck, UserCheck, KeyRound, FileSpreadsheet, CreditCard, Copy, Link2 } from 'lucide-react';
+import { X, Settings, Users, Building2, Plus, Edit, Trash2, ShieldCheck, UserCheck, KeyRound, FileSpreadsheet, CreditCard, Copy } from 'lucide-react';
 
 const COLORS = ['#7d68a8', '#6fa382', '#c9a04a', '#7d68a8', '#c97a94', '#6b8fa3', '#c2604f', '#4a5750'];
 const API_BASE = 'https://callsync-backend.nonba30.workers.dev/api';
@@ -13,110 +13,26 @@ function fmtBytes(bytes) {
 
 const PLAN_LABELS = { trial: 'トライアル' };
 
-function OrgUrlCard({ auth, org, onUpdated }) {
-  const isOwner = auth.user.role === 'owner';
-  const [editing, setEditing] = useState(false);
-  const [slug, setSlug] = useState('');
-  const [status, setStatus] = useState(null); // null | 'checking' | 'available' | 'unavailable'
-  const [reason, setReason] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
-
-  const checkSlug = async (value) => {
-    const cleaned = value.trim().toLowerCase();
-    if (!cleaned) { setStatus(null); setReason(''); return; }
-    setStatus('checking');
-    try {
-      const res = await fetch(`${API_BASE}/auth/check-slug?slug=${encodeURIComponent(cleaned)}`);
-      const data = await res.json();
-      setStatus(data.available ? 'available' : 'unavailable');
-      setReason(data.reason || (data.available ? '' : 'このURLは既に使われています'));
-    } catch {
-      setStatus(null);
-    }
-  };
-
-  const handleSave = async () => {
-    setError('');
-    if (status === 'unavailable') { setError('別のURLを入力してください'); return; }
-    setSaving(true);
-    try {
-      const res = await fetch(`${API_BASE}/organization/slug`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${auth.token}` },
-        body: JSON.stringify({ slug: slug.trim().toLowerCase() })
-      });
-      const data = await res.json();
-      if (!res.ok) { setError(data.error || '設定に失敗しました'); return; }
-      onUpdated(data.login_url);
-      setEditing(false);
-    } catch {
-      setError('通信エラーが発生しました');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  if (org.login_url && !editing) {
-    return (
-      <div style={{ border: '1px solid #e8e2d8', borderRadius: '10px', padding: '16px' }}>
-        <div style={{ fontSize: '0.72rem', color: '#66766c', fontWeight: 700, marginBottom: '4px' }}>組織の専用ログインURL</div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
-          <span style={{ fontSize: '0.88rem', fontWeight: 700, wordBreak: 'break-all' }}>{org.login_url}</span>
-          <button
-            type="button"
-            className="btn-secondary"
-            style={{ padding: '5px', flexShrink: 0 }}
-            onClick={() => navigator.clipboard?.writeText(org.login_url)}
-            title="コピー"
-          >
-            <Copy size={13} />
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (!isOwner) return null;
-
+// 専用ドメイン取得までワイルドカードルートを意図的に外しているため、URLを
+// 新規に設定するUIは表示しない（バックエンドのエンドポイント自体は残してある）。
+// 万一すでにslugが設定された組織があれば、そのURLの案内だけは表示する
+function OrgUrlCard({ org }) {
+  if (!org.login_url) return null;
   return (
     <div style={{ border: '1px solid #e8e2d8', borderRadius: '10px', padding: '16px' }}>
-      <div style={{ fontSize: '0.72rem', color: '#66766c', fontWeight: 700, marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '5px' }}>
-        <Link2 size={13} /> 組織の専用ログインURLを設定
+      <div style={{ fontSize: '0.72rem', color: '#66766c', fontWeight: 700, marginBottom: '4px' }}>組織の専用ログインURL</div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+        <span style={{ fontSize: '0.88rem', fontWeight: 700, wordBreak: 'break-all' }}>{org.login_url}</span>
+        <button
+          type="button"
+          className="btn-secondary"
+          style={{ padding: '5px', flexShrink: 0 }}
+          onClick={() => navigator.clipboard?.writeText(org.login_url)}
+          title="コピー"
+        >
+          <Copy size={13} />
+        </button>
       </div>
-      {!editing ? (
-        <>
-          <div style={{ fontSize: '0.78rem', color: '#66766c', marginTop: '4px' }}>
-            まだ専用URLが設定されていません。設定すると、社員が覚えやすい会社専用のログインページができます（任意）。
-          </div>
-          <button type="button" className="btn-secondary" style={{ marginTop: '8px', fontSize: '0.8rem' }} onClick={() => setEditing(true)}>
-            URLを設定する
-          </button>
-        </>
-      ) : (
-        <>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px' }}>
-            <input
-              type="text"
-              className="form-input"
-              value={slug}
-              onChange={(e) => { setSlug(e.target.value); setStatus(null); }}
-              onBlur={(e) => checkSlug(e.target.value)}
-              placeholder="例: sample-company"
-            />
-            <button type="button" className="btn-primary" style={{ whiteSpace: 'nowrap' }} onClick={handleSave} disabled={saving}>
-              {saving ? '保存中…' : '保存'}
-            </button>
-          </div>
-          <div style={{ fontSize: '0.72rem', marginTop: '4px', color: status === 'unavailable' ? '#c2604f' : '#66766c' }}>
-            {slug.trim() ? `https://${slug.trim().toLowerCase()}.easystance.app` : 'URLを入力してください'}
-            {status === 'checking' && ' （確認中…）'}
-            {status === 'available' && ' （使用できます）'}
-            {status === 'unavailable' && ` （${reason}）`}
-          </div>
-          {error && <div className="login-error" style={{ marginTop: '6px' }}>{error}</div>}
-        </>
-      )}
     </div>
   );
 }
@@ -147,7 +63,7 @@ function PlanTab({ auth }) {
         </div>
       </div>
 
-      <OrgUrlCard auth={auth} org={org} onUpdated={(login_url) => setOrg({ ...org, login_url })} />
+      <OrgUrlCard org={org} />
 
       <div style={{ border: '1px solid #e8e2d8', borderRadius: '10px', padding: '16px' }}>
         <div style={{ fontSize: '0.72rem', color: '#66766c', fontWeight: 700, marginBottom: '4px' }}>ストレージ使用量（添付ファイル）</div>

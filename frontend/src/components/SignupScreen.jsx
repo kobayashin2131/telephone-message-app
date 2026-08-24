@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { Sparkles, Building2, ArrowLeft, Check, Copy } from 'lucide-react';
+import { Sparkles, Building2, ArrowLeft } from 'lucide-react';
 
 const API_BASE = 'https://callsync-backend.nonba30.workers.dev/api';
-const SUBDOMAIN_BASE = 'easystance.app';
 
 export default function SignupScreen({ onSignup, onBackToLogin }) {
   const [orgName, setOrgName] = useState('');
@@ -10,27 +9,8 @@ export default function SignupScreen({ onSignup, onBackToLogin }) {
   const [loginId, setLoginId] = useState('');
   const [pin, setPin] = useState('');
   const [pin2, setPin2] = useState('');
-  const [slug, setSlug] = useState('');
-  const [slugStatus, setSlugStatus] = useState(null); // null | 'checking' | 'available' | 'unavailable'
-  const [slugReason, setSlugReason] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [result, setResult] = useState(null); // { data, loginUrl } once signup succeeds
-
-  const checkSlug = async (value) => {
-    const cleaned = value.trim().toLowerCase();
-    if (!cleaned) { setSlugStatus(null); setSlugReason(''); return; }
-    setSlugStatus('checking');
-    try {
-      const res = await fetch(`${API_BASE}/auth/check-slug?slug=${encodeURIComponent(cleaned)}`);
-      const data = await res.json();
-      setSlugStatus(data.available ? 'available' : 'unavailable');
-      setSlugReason(data.reason || (data.available ? '' : 'このURLは既に使われています'));
-    } catch {
-      setSlugStatus(null);
-      setSlugReason('');
-    }
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -47,10 +27,6 @@ export default function SignupScreen({ onSignup, onBackToLogin }) {
       setError('PINが一致しません');
       return;
     }
-    if (slug.trim() && slugStatus === 'unavailable') {
-      setError('専用URLを他の文字列に変更してください');
-      return;
-    }
     setSubmitting(true);
     try {
       const res = await fetch(`${API_BASE}/auth/signup`, {
@@ -60,8 +36,7 @@ export default function SignupScreen({ onSignup, onBackToLogin }) {
           organization_name: orgName.trim(),
           owner_name: ownerName.trim(),
           email: loginId.trim(),
-          pin: pin.trim(),
-          slug: slug.trim().toLowerCase()
+          pin: pin.trim()
         })
       });
       const data = await res.json();
@@ -69,57 +44,13 @@ export default function SignupScreen({ onSignup, onBackToLogin }) {
         setError(data.error || '登録に失敗しました');
         return;
       }
-      if (data.login_url) {
-        setResult(data);
-      } else {
-        onSignup(data);
-      }
+      onSignup(data);
     } catch {
       setError('通信エラーが発生しました');
     } finally {
       setSubmitting(false);
     }
   };
-
-  if (result) {
-    return (
-      <div className="login-screen">
-        <div className="login-card">
-          <div className="login-brand">
-            <div className="suite-logo-icon">
-              <Check size={20} color="#fff" />
-            </div>
-            <div className="suite-brand-text">
-              <span className="suite-title">登録完了</span>
-              <span className="suite-subtitle">Suite Pro</span>
-            </div>
-          </div>
-          <div style={{ fontSize: '0.85rem', color: '#48564c', lineHeight: 1.6 }}>
-            御社専用のログインURLができました。今後はこちらのURLからアクセスしてください（ブックマーク推奨）。
-          </div>
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 14px',
-            border: '1px solid var(--border-strong)', borderRadius: '8px', background: '#f8f5ef',
-            fontSize: '0.88rem', fontWeight: 700, wordBreak: 'break-all'
-          }}>
-            {result.login_url}
-            <button
-              type="button"
-              className="btn-secondary"
-              style={{ marginLeft: 'auto', flexShrink: 0, padding: '6px' }}
-              onClick={() => navigator.clipboard?.writeText(result.login_url)}
-              title="コピー"
-            >
-              <Copy size={14} />
-            </button>
-          </div>
-          <button type="button" className="login-submit-btn" onClick={() => onSignup(result)}>
-            続ける
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="login-screen">
@@ -162,27 +93,6 @@ export default function SignupScreen({ onSignup, onBackToLogin }) {
               placeholder="例: 山田太郎"
               required
             />
-          </label>
-          <label className="login-label">
-            会社専用URL（任意・後から設定も可）
-            <input
-              type="text"
-              className="login-input"
-              value={slug}
-              onChange={(e) => { setSlug(e.target.value); setSlugStatus(null); }}
-              onBlur={(e) => checkSlug(e.target.value)}
-              placeholder="例: sample-company"
-              autoCapitalize="off"
-              autoCorrect="off"
-            />
-            <div style={{ fontSize: '0.72rem', fontWeight: 400, color: slugStatus === 'unavailable' ? '#c2604f' : '#66766c' }}>
-              {slug.trim()
-                ? `https://${slug.trim().toLowerCase()}.${SUBDOMAIN_BASE}`
-                : '入力すると、この下にプレビューが表示されます'}
-              {slugStatus === 'checking' && ' （確認中…）'}
-              {slugStatus === 'available' && ' （このURLは使用できます）'}
-              {slugStatus === 'unavailable' && ` （${slugReason}）`}
-            </div>
           </label>
           <label className="login-label">
             ID（メールアドレス）
