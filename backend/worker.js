@@ -982,7 +982,7 @@ export default {
             const sender = await db.prepare('SELECT name FROM users WHERE id = ?').bind(body.sender_id).first();
             let title = sender?.name || '新着メッセージ';
             if (body.target_type === 'group') {
-              const group = await db.prepare('SELECT name FROM groups WHERE id = ?').bind(body.target_id).first();
+              const group = await db.prepare('SELECT name FROM chat_groups WHERE id = ?').bind(body.target_id).first();
               if (group) title = `${sender?.name || '新着'} #${group.name}`;
             } else if (body.target_type === 'department') {
               const dept = await db.prepare('SELECT name FROM departments WHERE id = ?').bind(body.target_id).first();
