@@ -15,6 +15,12 @@
 https://connectsuite.easystance.app/privacy
 ```
 
+## 利用規約URL（Play Console上は任意項目、参考まで）
+```
+https://connectsuite.easystance.app/terms
+```
+下書き段階（HOMEBASEの規約構成を踏襲）。オーナー自身で内容を見直してから正式版にする予定。
+
 ## アプリの基本情報（ストア掲載情報）
 - アプリ名: Connect Suite
 - カテゴリ: ビジネス
