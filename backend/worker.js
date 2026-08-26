@@ -264,41 +264,6 @@ async function sendWebPushToUsers(env, userIds, { title, body, data }) {
   }));
 }
 
-async function sendPushToSubscribers(env, excludeUserId, memo, orgId) {
-  const { results: subs } = await env.DB.prepare('SELECT * FROM push_subscriptions WHERE user_id != ? AND organization_id = ?')
-    .bind(excludeUserId || -1, orgId).all();
-  if (!subs || subs.length === 0) return;
-
-  const vapidKeys = await deserializeVapidKeys({
-    publicKey: env.VAPID_PUBLIC_KEY,
-    privateKey: env.VAPID_PRIVATE_KEY
-  });
-
-  const payload = JSON.stringify({
-    type: 'call_memo',
-    title: `📞 ${memo.company_name} より受電`,
-    body: memo.contact_person ? `${memo.contact_person} 様` : (memo.subject || '内容を確認してください'),
-    memoId: memo.id,
-    url: `/?app=callsync&memo_id=${memo.id}`
-  });
-
-  await Promise.all(subs.map(async (sub) => {
-    try {
-      const res = await sendPushNotification(
-        vapidKeys,
-        { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
-        'support@easystance.app',
-        payload
-      );
-      if (res.status === 404 || res.status === 410) {
-        await env.DB.prepare('DELETE FROM push_subscriptions WHERE endpoint = ?').bind(sub.endpoint).run();
-      }
-    } catch (e) {
-      console.error('push send failed', sub.id, e.message);
-    }
-  }));
-}
-
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -805,21 +770,26 @@ export default {
             .bind(messageId, body.created_by || 1).run();
         }
 
-        ctx.waitUntil(sendPushToSubscribers(env, body.created_by || 1, {
-          id: memoId,
-          company_name: body.company_name,
-          contact_person: body.contact_person,
-          subject: body.subject
-        }, orgId));
-
         ctx.waitUntil((async () => {
-          const { results: orgUsers } = await db.prepare('SELECT id FROM users WHERE organization_id = ? AND id != ?')
-            .bind(orgId, body.created_by || 1).all();
-          await sendFcmToUsers(env, orgUsers.map(u => u.id), {
-            title: `📞 ${body.company_name} より受電`,
-            body: body.contact_person ? `${body.contact_person} 様` : (body.subject || '内容を確認してください'),
-            data: { type: 'call_memo', memoId }
-          });
+          // 電話メモで指定した宛先（DM/グループ/部署）だけに通知する。チャットメッセージと
+          // 同じ絞り込みロジックを再利用——以前は組織の全員に送っていた（宛先を無視した設計）
+          const recipientIds = (body.target_type && body.target_id)
+            ? await getMessageRecipientUserIds(db, body.target_type, body.target_id, body.created_by || 1)
+            : [];
+          if (recipientIds.length === 0) return;
+
+          const pushData = {
+            type: 'call_memo',
+            memoId,
+            url: `/?app=callsync&memo_id=${memoId}`
+          };
+          const title = `📞 ${body.company_name} より受電`;
+          const pushBody = body.contact_person ? `${body.contact_person} 様` : (body.subject || '内容を確認してください');
+
+          await Promise.all([
+            sendFcmToUsers(env, recipientIds, { title, body: pushBody, data: pushData }),
+            sendWebPushToUsers(env, recipientIds, { title, body: pushBody, data: pushData })
+          ]);
         })());
 
         return jsonResponse({ id: memoId, company_name: body.company_name, status: 'pending' });
