@@ -7,7 +7,13 @@ export function isNativeApp() {
   return Capacitor.isNativePlatform();
 }
 
+const FCM_TOKEN_STORAGE_KEY = 'callsync_fcm_token';
+
 async function registerToken(token, userId) {
+  // ログアウト時にこの端末専用のトークンだけを解除できるよう、ローカルにも控えておく
+  // （Capacitorのプラグインには「今のトークンを取得する」APIがなく、登録イベントの
+  // タイミングでしか得られないため）
+  localStorage.setItem(FCM_TOKEN_STORAGE_KEY, token);
   await fetch(`${API_BASE}/push/register-fcm`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -17,6 +23,25 @@ async function registerToken(token, userId) {
       platform: Capacitor.getPlatform() // 'android' | 'ios'
     })
   });
+}
+
+// ログアウト時に呼ぶ。この端末のFCM登録だけを解除する（ユーザー単位ではなく
+// トークン単位で消すので、同じ人が複数端末でログインしていても他端末には影響しない）
+export async function unregisterNativePush() {
+  if (!isNativeApp()) return;
+  const token = localStorage.getItem(FCM_TOKEN_STORAGE_KEY);
+  if (!token) return;
+  try {
+    await fetch(`${API_BASE}/push/unregister-fcm`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token })
+    });
+  } catch (e) {
+    console.error('FCM unregister failed', e);
+  } finally {
+    localStorage.removeItem(FCM_TOKEN_STORAGE_KEY);
+  }
 }
 
 // ネイティブアプリ内でのみ有効。Web版ではWeb Push(utils/push.js)を使う。

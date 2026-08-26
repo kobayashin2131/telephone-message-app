@@ -827,6 +827,12 @@ export default {
         return jsonResponse({ success: true });
       }
 
+      if (path === '/api/push/unregister-fcm' && request.method === 'POST') {
+        const body = await request.json();
+        await db.prepare('DELETE FROM fcm_tokens WHERE token = ?').bind(body.token).run();
+        return jsonResponse({ success: true });
+      }
+
       if (path.startsWith('/api/call-memos/') && path.endsWith('/status') && request.method === 'PUT') {
         const id = path.split('/')[3];
         const body = await request.json();

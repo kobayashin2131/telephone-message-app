@@ -13,7 +13,7 @@ import SignupScreen from './components/SignupScreen';
 import { playChime } from './utils/chime';
 import { subscribeToPush, unsubscribeFromPush } from './utils/push';
 import { App as CapacitorApp } from '@capacitor/app';
-import { isNativeApp, setupNativePush, setupNativePushListeners } from './utils/nativePush';
+import { isNativeApp, setupNativePush, setupNativePushListeners, unregisterNativePush } from './utils/nativePush';
 import { loadAuth, saveAuth, clearAuth } from './utils/auth';
 import './App.css';
 
@@ -49,6 +49,17 @@ export default function App() {
       });
     } catch (e) {
       console.error('logout failed', e);
+    }
+    // この端末の通知登録を解除。共有端末で次の人がログインしても、
+    // 前の人宛ての通知が届き続けないようにするため
+    try {
+      if (isNativeApp()) {
+        await unregisterNativePush();
+      } else {
+        await unsubscribeFromPush();
+      }
+    } catch (e) {
+      console.error('push unsubscribe on logout failed', e);
     }
     clearAuth();
     setAuth(null);
