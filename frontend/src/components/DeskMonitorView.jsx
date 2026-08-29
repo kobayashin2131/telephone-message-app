@@ -17,6 +17,7 @@ export default function DeskMonitorView({
   const [companyName, setCompanyName] = useState('');
   const [contactPerson, setContactPerson] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [address, setAddress] = useState('');
   const [frequentNotes, setFrequentNotes] = useState('');
   const [selectedContactId, setSelectedContactId] = useState(null);
   const [suggestions, setSuggestions] = useState([]);
@@ -52,6 +53,7 @@ export default function DeskMonitorView({
     setCompanyName(c.company_name);
     setContactPerson(c.contact_person || '');
     setPhoneNumber(c.phone_number || '');
+    setAddress(c.address || '');
     setFrequentNotes(c.frequent_notes || '');
     setShowSuggestions(false);
   };
@@ -107,6 +109,7 @@ export default function DeskMonitorView({
       company_name: companyName.trim(),
       contact_person: contactPerson.trim(),
       phone_number: phoneNumber.trim(),
+      address: address.trim(),
       frequent_notes: frequentNotes.trim(),
       target_type: mappedTargetType,
       target_id: finalTargetId,
@@ -121,6 +124,7 @@ export default function DeskMonitorView({
     setCompanyName('');
     setContactPerson('');
     setPhoneNumber('');
+    setAddress('');
     setFrequentNotes('');
     setSelectedContactId(null);
     setBody('');
@@ -203,14 +207,25 @@ export default function DeskMonitorView({
             </div>
             <div className="form-group">
               <label className="form-label">電話番号</label>
-              <input 
-                type="text" 
-                className="form-input" 
-                placeholder="例: 03-xxxx-xxxx" 
+              <input
+                type="text"
+                className="form-input"
+                placeholder="例: 03-xxxx-xxxx"
                 value={phoneNumber}
                 onChange={(e) => setPhoneNumber(e.target.value)}
               />
             </div>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">住所（配送・現場対応がある場合など、任意）</label>
+            <input
+              type="text"
+              className="form-input"
+              placeholder="例: 東京都〇〇区〇〇1-2-3"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+            />
           </div>
 
           {frequentNotes && (

@@ -9,6 +9,7 @@ export default function NewCallMemoModal({
   const [companyName, setCompanyName] = useState(prefillContact?.company_name || '');
   const [contactPerson, setContactPerson] = useState(prefillContact?.contact_person || '');
   const [phoneNumber, setPhoneNumber] = useState(prefillContact?.phone_number || '');
+  const [address, setAddress] = useState(prefillContact?.address || '');
   const [frequentNotes, setFrequentNotes] = useState(prefillContact?.frequent_notes || '');
   const [selectedContactId, setSelectedContactId] = useState(prefillContact?.id || null);
   const [saveContact, setSaveContact] = useState(true);
@@ -64,6 +65,7 @@ export default function NewCallMemoModal({
     setCompanyName(c.company_name);
     setContactPerson(c.contact_person || '');
     setPhoneNumber(c.phone_number || '');
+    setAddress(c.address || '');
     setFrequentNotes(c.frequent_notes || '');
     setShowSuggestions(false);
   };
@@ -83,6 +85,7 @@ export default function NewCallMemoModal({
       company_name: companyName.trim(),
       contact_person: contactPerson.trim(),
       phone_number: phoneNumber.trim(),
+      address: address.trim(),
       frequent_notes: frequentNotes.trim(),
       save_contact: saveContact && !selectedContactId,
       target_type: targetType,
@@ -250,6 +253,17 @@ export default function NewCallMemoModal({
                   onChange={(e) => setPhoneNumber(e.target.value)}
                 />
               </div>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">住所（配送・現場対応がある場合など、任意）</label>
+              <input
+                type="text"
+                className="form-input"
+                placeholder="例: 東京都〇〇区〇〇1-2-3"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+              />
             </div>
 
             {/* Frequent Notes (CRM preview) */}

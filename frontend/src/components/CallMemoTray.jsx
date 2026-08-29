@@ -47,6 +47,12 @@ function CallMemoTrayDetail({ memo, onUpdateStatus }) {
         </a>
       )}
 
+      {memo.address && (
+        <div style={{ fontSize: '0.82rem', color: '#4a5750', marginTop: '2px' }}>
+          📍 {memo.address}
+        </div>
+      )}
+
       {memo.category_label && (
         <span className="call-badge-tag" style={{ background: 'var(--brand-soft)', color: 'var(--brand-dark)', marginBottom: '4px' }}>
           📋 {memo.category_label}

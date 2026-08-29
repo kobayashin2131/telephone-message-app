@@ -5,6 +5,7 @@ export function adaptCallMemo(m) {
     memo_company: m.company_name,
     memo_contact: m.contact_person,
     memo_phone: m.phone_number,
+    memo_address: m.address,
     memo_subject: m.subject,
     memo_body: m.body,
     memo_type: m.call_type,

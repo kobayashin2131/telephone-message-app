@@ -4,7 +4,7 @@ import { X, BookOpen, Plus, Search, Phone, Edit, Trash2, Building2 } from 'lucid
 export default function ContactsDirectoryModal({ onClose, contacts, onSaveContact, onDeleteContact, onOpenCallMemoForContact }) {
   const [search, setSearch] = useState('');
   const [isEditing, setIsEditing] = useState(false);
-  const [editForm, setEditForm] = useState({ id: null, company_name: '', contact_person: '', phone_number: '', frequent_notes: '' });
+  const [editForm, setEditForm] = useState({ id: null, company_name: '', contact_person: '', phone_number: '', address: '', frequent_notes: '' });
 
   const filtered = contacts.filter(c => 
     c.company_name.toLowerCase().includes(search.toLowerCase()) ||
@@ -16,15 +16,15 @@ export default function ContactsDirectoryModal({ onClose, contacts, onSaveContac
     if (c) {
       setEditForm(c);
     } else {
-      setEditForm({ id: null, company_name: '', contact_person: '', phone_number: '', frequent_notes: '' });
+      setEditForm({ id: null, company_name: '', contact_person: '', phone_number: '', address: '', frequent_notes: '' });
     }
     setIsEditing(true);
   };
 
   const handleSave = (e) => {
     e.preventDefault();
-    if (!editForm.company_name || !editForm.phone_number) {
-      return alert('会社名と電話番号は必須です');
+    if (!editForm.company_name && !editForm.contact_person) {
+      return alert('会社名またはお客様のお名前を入力してください');
     }
     onSaveContact(editForm);
     setIsEditing(false);
@@ -48,35 +48,43 @@ export default function ContactsDirectoryModal({ onClose, contacts, onSaveContac
                 {editForm.id ? '受電先情報の編集' : '新規受電先の登録'}
               </div>
               <div className="form-group">
-                <label className="form-label">会社名 <span style={{ color: '#d97a6c' }}>*</span></label>
-                <input 
-                  type="text" 
-                  className="form-input" 
-                  value={editForm.company_name} 
-                  onChange={(e) => setEditForm({ ...editForm, company_name: e.target.value })} 
-                  required 
+                <label className="form-label">会社名（個人のお客様なら空欄でOK）</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={editForm.company_name}
+                  onChange={(e) => setEditForm({ ...editForm, company_name: e.target.value })}
                 />
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                 <div className="form-group">
                   <label className="form-label">担当者名 / 役職</label>
-                  <input 
-                    type="text" 
-                    className="form-input" 
-                    value={editForm.contact_person || ''} 
-                    onChange={(e) => setEditForm({ ...editForm, contact_person: e.target.value })} 
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={editForm.contact_person || ''}
+                    onChange={(e) => setEditForm({ ...editForm, contact_person: e.target.value })}
                   />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">電話番号 <span style={{ color: '#d97a6c' }}>*</span></label>
-                  <input 
-                    type="text" 
-                    className="form-input" 
-                    value={editForm.phone_number} 
-                    onChange={(e) => setEditForm({ ...editForm, phone_number: e.target.value })} 
-                    required 
+                  <label className="form-label">電話番号</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={editForm.phone_number || ''}
+                    onChange={(e) => setEditForm({ ...editForm, phone_number: e.target.value })}
                   />
                 </div>
+              </div>
+              <div className="form-group">
+                <label className="form-label">住所（配送・現場対応がある場合など、任意）</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="例: 東京都〇〇区〇〇1-2-3"
+                  value={editForm.address || ''}
+                  onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
+                />
               </div>
               <div className="form-group">
                 <label className="form-label">定番の用件 / 注意事項メモ</label>
@@ -133,8 +141,8 @@ export default function ContactsDirectoryModal({ onClose, contacts, onSaveContac
                     >
                       <div>
                         <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#1e2620', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          🏢 {c.company_name}
-                          {c.contact_person && (
+                          {c.company_name ? `🏢 ${c.company_name}` : `👤 ${c.contact_person || '(名前未登録)'}`}
+                          {c.company_name && c.contact_person && (
                             <span style={{ fontSize: '0.85rem', fontWeight: 500, color: '#4a5750' }}>
                               ({c.contact_person})
                             </span>
@@ -143,9 +151,16 @@ export default function ContactsDirectoryModal({ onClose, contacts, onSaveContac
                             受電 {c.call_count}回
                           </span>
                         </div>
-                        <div style={{ fontSize: '0.85rem', color: '#7d68a8', marginTop: '2px' }}>
-                          📞 {c.phone_number}
-                        </div>
+                        {c.phone_number && (
+                          <div style={{ fontSize: '0.85rem', color: '#7d68a8', marginTop: '2px' }}>
+                            📞 {c.phone_number}
+                          </div>
+                        )}
+                        {c.address && (
+                          <div style={{ fontSize: '0.8rem', color: '#48564c', marginTop: '2px' }}>
+                            📍 {c.address}
+                          </div>
+                        )}
                         {c.frequent_notes && (
                           <div style={{ fontSize: '0.8rem', color: '#48564c', marginTop: '4px', background: '#f8f5ef', padding: '4px 8px', borderRadius: '4px' }}>
                             📝 {c.frequent_notes}

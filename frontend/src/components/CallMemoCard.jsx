@@ -145,6 +145,12 @@ export default function CallMemoCard({ memo, onUpdateStatus, onOpenThread, curre
         </a>
       )}
 
+      {memo.memo_address && (
+        <div style={{ fontSize: '0.82rem', color: '#4a5750', marginTop: '2px' }}>
+          📍 {memo.memo_address}
+        </div>
+      )}
+
       {memo.memo_category_label && (
         <span className="call-badge-tag" style={{ marginBottom: '4px', background: 'var(--brand-soft)', color: 'var(--brand-dark)' }}>
           📋 {memo.memo_category_label}

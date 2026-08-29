@@ -596,8 +596,8 @@ export default {
         const body = await request.json();
         const orgId = parseOrgId(body.organization_id);
         const info = await db.prepare(
-          'INSERT INTO caller_contacts (company_name, contact_person, phone_number, frequent_notes, organization_id) VALUES (?, ?, ?, ?, ?)'
-        ).bind(body.company_name, body.contact_person || '', body.phone_number, body.frequent_notes || '', orgId).run();
+          'INSERT INTO caller_contacts (company_name, contact_person, phone_number, address, frequent_notes, organization_id) VALUES (?, ?, ?, ?, ?, ?)'
+        ).bind(body.company_name, body.contact_person || '', body.phone_number, body.address || '', body.frequent_notes || '', orgId).run();
         return jsonResponse({ id: info.meta.last_row_id, ...body, call_count: 0 });
       }
 
@@ -606,8 +606,8 @@ export default {
         const body = await request.json();
         const orgId = parseOrgId(body.organization_id);
         await db.prepare(
-          'UPDATE caller_contacts SET company_name = ?, contact_person = ?, phone_number = ?, frequent_notes = ? WHERE id = ? AND organization_id = ?'
-        ).bind(body.company_name, body.contact_person, body.phone_number, body.frequent_notes, id, orgId).run();
+          'UPDATE caller_contacts SET company_name = ?, contact_person = ?, phone_number = ?, address = ?, frequent_notes = ? WHERE id = ? AND organization_id = ?'
+        ).bind(body.company_name, body.contact_person, body.phone_number, body.address || '', body.frequent_notes, id, orgId).run();
         return jsonResponse({ success: true });
       }
 
@@ -746,15 +746,15 @@ export default {
             .bind(now, contactId, orgId).run();
         } else if (body.save_contact) {
           const cInfo = await db.prepare(
-            'INSERT INTO caller_contacts (company_name, contact_person, phone_number, frequent_notes, call_count, last_called_at, organization_id) VALUES (?, ?, ?, ?, 1, ?, ?)'
-          ).bind(body.company_name, body.contact_person || '', body.phone_number || '', body.frequent_notes || '', now, orgId).run();
+            'INSERT INTO caller_contacts (company_name, contact_person, phone_number, address, frequent_notes, call_count, last_called_at, organization_id) VALUES (?, ?, ?, ?, ?, 1, ?, ?)'
+          ).bind(body.company_name, body.contact_person || '', body.phone_number || '', body.address || '', body.frequent_notes || '', now, orgId).run();
           contactId = cInfo.meta.last_row_id;
         }
 
         const memoInfo = await db.prepare(`
-          INSERT INTO call_memos (caller_contact_id, company_name, contact_person, phone_number, subject, body, call_type, status, created_by, organization_id, category_id)
-          VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?)
-        `).bind(contactId || null, body.company_name, body.contact_person || '', body.phone_number || '', body.subject || '受電連絡', body.body || '', body.call_type || 'callback', body.created_by || 1, orgId, body.category_id || null).run();
+          INSERT INTO call_memos (caller_contact_id, company_name, contact_person, phone_number, address, subject, body, call_type, status, created_by, organization_id, category_id)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?)
+        `).bind(contactId || null, body.company_name, body.contact_person || '', body.phone_number || '', body.address || '', body.subject || '受電連絡', body.body || '', body.call_type || 'callback', body.created_by || 1, orgId, body.category_id || null).run();
 
         const memoId = memoInfo.meta.last_row_id;
 
@@ -857,7 +857,7 @@ export default {
           stmt = db.prepare(`
             SELECT m.*,
                    u.name as sender_name, u.avatar_color as sender_avatar, u.role as sender_role,
-                   cm.id as memo_id, cm.company_name as memo_company, cm.contact_person as memo_contact, cm.phone_number as memo_phone,
+                   cm.id as memo_id, cm.company_name as memo_company, cm.contact_person as memo_contact, cm.phone_number as memo_phone, cm.address as memo_address,
                    cm.subject as memo_subject, cm.body as memo_body, cm.call_type as memo_type, cm.status as memo_status,
                    cm.created_at as memo_created_at,
                    cu.name as memo_creator_name,
@@ -882,7 +882,7 @@ export default {
           stmt = db.prepare(`
             SELECT m.*,
                    u.name as sender_name, u.avatar_color as sender_avatar, u.role as sender_role,
-                   cm.id as memo_id, cm.company_name as memo_company, cm.contact_person as memo_contact, cm.phone_number as memo_phone,
+                   cm.id as memo_id, cm.company_name as memo_company, cm.contact_person as memo_contact, cm.phone_number as memo_phone, cm.address as memo_address,
                    cm.subject as memo_subject, cm.body as memo_body, cm.call_type as memo_type, cm.status as memo_status,
                    cm.created_at as memo_created_at,
                    cu.name as memo_creator_name,
