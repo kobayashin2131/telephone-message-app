@@ -759,7 +759,10 @@ export default {
         const memoId = memoInfo.meta.last_row_id;
 
         if (body.target_type && body.target_id) {
-          const summary = `📞 【受電】${body.company_name} ${body.contact_person || ''}様より連絡`;
+          // 相手名に「様」等の敬称が既に含まれていても二重にならないよう正規化
+          const contactName = (body.contact_person || '').replace(/\s*[様さん君]\s*$/, '').trim();
+          const whoText = [body.company_name, contactName].filter(Boolean).join(' ');
+          const summary = `📞 【受電】${whoText}${contactName ? '様' : ''}より連絡`;
           const msgInfo = await db.prepare(`
             INSERT INTO messages (target_type, target_id, sender_id, message_type, content, call_memo_id)
             VALUES (?, ?, ?, 'call_card', ?, ?)
