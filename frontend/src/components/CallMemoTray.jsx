@@ -1,6 +1,11 @@
 import React, { useState } from 'react';
 import { Phone, ChevronDown, ChevronUp, Check, CheckCircle, AlertTriangle, Clock, ExternalLink } from 'lucide-react';
 
+// 相手名に「様」等の敬称が既に含まれていても表示側で二重にならないよう正規化
+function stripHonorific(name) {
+  return (name || '').replace(/\s*[様さん君]\s*$/, '').trim();
+}
+
 function timeAgo(dateStr) {
   const diffMs = Date.now() - new Date(dateStr.replace(' ', 'T') + 'Z').getTime();
   const mins = Math.floor(diffMs / 60000);
@@ -157,8 +162,8 @@ export default function CallMemoTray({ callMemos = [], currentUser, groups = [],
                 <div className="call-memo-tray-item-body">
                   <div className="call-memo-tray-item-title">
                     {m.company_name
-                      ? <>{m.company_name}{m.contact_person && ` 様（${m.contact_person}）`}</>
-                      : (m.contact_person ? `${m.contact_person} 様` : '(お名前未登録)')}
+                      ? <>{m.company_name}{m.contact_person && ` 様（${stripHonorific(m.contact_person)}様）`}</>
+                      : (m.contact_person ? `${stripHonorific(m.contact_person)}様` : '(お名前未登録)')}
                   </div>
                   <div className="call-memo-tray-item-sub">
                     {m.target_type === 'dm' ? `${m.creator_name || '不明'}さんが記録` : m.target_name} ・ {timeAgo(m.created_at)}
