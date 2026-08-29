@@ -119,10 +119,9 @@ workflows:
     publishing:
       google_play:
         credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
-        # クローズドテスト用。Play Consoleで作成したテストトラックの名前が
-        # "alpha" と違う場合はここを実際のトラック名に合わせて変更すること
-        # （Play Console → テスト → クローズドテスト → 該当トラックのURL/詳細画面で確認できる）
-        track: alpha
+        # クローズドテスト用トラック名。Play Console側で「test」という名前のトラックを
+        # 作成済み（2026-08-29確認）。トラックを作り直した場合はここも合わせて変更すること
+        track: test
         submit_as_draft: false
 
   # ビルドのみ。mainへのpushで毎回自動実行し、署名まわりの設定ミスやコンパイルエラーを早期発見する。
