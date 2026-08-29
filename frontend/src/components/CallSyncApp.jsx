@@ -26,10 +26,13 @@ export default function CallSyncApp({
   const isStaff = currentUser?.role === 'owner' || currentUser?.role === 'admin';
   const [subView, setSubView] = useState(() => {
     if (typeof window !== 'undefined') {
+      const isMobile = window.innerWidth < 768;
       const saved = localStorage.getItem('callsync_default_subview');
-      if (saved) return saved;
-      // If mobile screen (width < 768px), default to 'mobile' (現場ビュー), otherwise 'desk' (事務員デスクモニター)
-      return window.innerWidth < 768 ? 'mobile' : 'desk';
+      // 保存されたデフォルトは、今の画面サイズのカテゴリ（スマホ=mobile / PC=それ以外）と
+      // 一致する場合だけ採用する。例えば同じ端末で以前PC表示だった保存値がスマホ実機に
+      // 残っていた場合など、画面サイズに合わない保存値は無視して自動判定を優先する。
+      if (saved && (saved === 'mobile') === isMobile) return saved;
+      return isMobile ? 'mobile' : 'desk';
     }
     return 'desk';
   });
