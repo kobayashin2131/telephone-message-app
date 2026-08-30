@@ -14,10 +14,14 @@
   .plan-range { font-size: 0.8rem; color: #66766c; margin-bottom: 16px; }
   .plan-price { font-size: 1.8rem; font-weight: 800; color: #4a7361; }
   .plan-price span { font-size: 0.85rem; font-weight: 500; color: #66766c; }
+  .plan-storage { font-size: 0.8rem; color: #5c8f74; font-weight: 600; margin-top: 10px; }
   .section { background: #ffffff; border: 1px solid #e8e2d8; border-radius: 16px; padding: 24px 28px; margin-bottom: 20px; }
   .section h2 { font-size: 1.1rem; margin-top: 0; color: #4a7361; }
   ul { padding-left: 1.4em; margin: 8px 0; }
   li { font-size: 0.92rem; margin-bottom: 4px; }
+  table.addon { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin-top: 8px; }
+  table.addon th, table.addon td { text-align: left; padding: 8px 10px; border-bottom: 1px solid #e8e2d8; }
+  table.addon th { color: #66766c; font-weight: 600; }
   .updated { text-align: center; color: #8a978c; font-size: 0.78rem; margin-top: 40px; }
 </style>
 </head>
@@ -30,33 +34,45 @@
     <div class="plan-name">スモール</div>
     <div class="plan-range">〜15名</div>
     <div class="plan-price">¥3,000<span>/月</span></div>
+    <div class="plan-storage">標準容量 3GB</div>
   </div>
   <div class="plan-card">
     <div class="plan-name">スタンダード</div>
     <div class="plan-range">〜40名</div>
     <div class="plan-price">¥6,000<span>/月</span></div>
+    <div class="plan-storage">標準容量 8GB</div>
   </div>
   <div class="plan-card">
     <div class="plan-name">ビジネス</div>
     <div class="plan-range">〜80名</div>
     <div class="plan-price">¥10,000<span>/月</span></div>
+    <div class="plan-storage">標準容量 18GB</div>
   </div>
   <div class="plan-card">
     <div class="plan-name">エンタープライズ</div>
     <div class="plan-range">81名以上</div>
     <div class="plan-price" style="font-size: 1.2rem;">個別見積もり</div>
+    <div class="plan-storage">標準容量 応相談</div>
   </div>
 </div>
 
 <div class="section">
   <h2>すべてのプランに含まれる機能</h2>
   <ul>
-    <li>社内チャット（グループ・ダイレクトメッセージ・メンション・ファイル添付）</li>
+    <li>社内チャット（グループ・ダイレクトメッセージ・メンション・写真/短い動画/PDF添付）</li>
     <li>電話取次メモ（受電先台帳・カテゴリ管理・ステータス管理）</li>
     <li>受電分析ダッシュボード</li>
     <li>プッシュ通知（Android / iOS / Web）</li>
   </ul>
-  <p style="font-size: 0.85rem; color: #66766c;">添付ファイルの保存容量はプランの人数規模に応じて拡張されます。</p>
+</div>
+
+<div class="section">
+  <h2>容量が足りない場合（追加ストレージ）</h2>
+  <table class="addon">
+    <tr><th>追加パック</th><th>容量</th><th>月額</th></tr>
+    <tr><td>追加パックA</td><td>+10GB</td><td>¥500</td></tr>
+    <tr><td>追加パックB</td><td>+30GB</td><td>¥1,500</td></tr>
+  </table>
 </div>
 
 <div class="section">
