@@ -165,6 +165,19 @@ function getFreeTrialEndDate(orgCreatedAt) {
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 2, 1));
 }
 
+// PRICING.md（2026-08-29確定）の人数帯固定料金プラン。現在の人数から「今払うとしたらこのプラン」を
+// 見積もって表示するためだけの純粋な計算（実際の請求・自動アップグレードはまだ実装していない）。
+const PLAN_TIERS = [
+  { key: 'small', label: 'スモール', maxUsers: 15, priceYen: 3000, storageGb: 3 },
+  { key: 'standard', label: 'スタンダード', maxUsers: 40, priceYen: 6000, storageGb: 8 },
+  { key: 'business', label: 'ビジネス', maxUsers: 80, priceYen: 10000, storageGb: 18 },
+];
+function estimatePlanForUserCount(userCount) {
+  const tier = PLAN_TIERS.find(t => userCount <= t.maxUsers);
+  if (tier) return tier;
+  return { key: 'enterprise', label: 'エンタープライズ', maxUsers: null, priceYen: null, storageGb: null };
+}
+
 // Per-org subdomain login: {slug}.SUBDOMAIN_BASE. Free-tier Cloudflare SSL only
 // covers a first-level wildcard, so this stays a single label off the base
 // domain (not a second-level wildcard) — see CLAUDE.md for the cost tradeoff.
@@ -400,7 +413,8 @@ export default {
         `).bind(session.organization_id).first();
         if (!org) return jsonResponse({ error: '組織が見つかりません' }, 404);
         const trialEndDate = org.plan_tier === 'trial' ? getFreeTrialEndDate(org.created_at).toISOString().slice(0, 10) : null;
-        return jsonResponse({ ...org, login_url: org.slug ? `https://${org.slug}.${SUBDOMAIN_BASE}` : null, trial_end_date: trialEndDate });
+        const estimatedPlan = org.plan_tier === 'trial' ? estimatePlanForUserCount(org.user_count) : null;
+        return jsonResponse({ ...org, login_url: org.slug ? `https://${org.slug}.${SUBDOMAIN_BASE}` : null, trial_end_date: trialEndDate, estimated_plan: estimatedPlan });
       }
 
       // 1c. Org subdomain slug: availability check + owner-only assignment

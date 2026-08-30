@@ -63,8 +63,18 @@ function PlanTab({ auth }) {
             現在無料でご利用いただけます（{org.trial_end_date.replace(/-/g, '/')} 以降、正式なプランのご案内を予定しています）
           </div>
         )}
-        <div style={{ fontSize: '0.78rem', color: '#66766c', marginTop: '6px' }}>
-          正式な料金プランは現在準備中です。プランのアップグレードが可能になり次第、こちらからご案内します。
+        {org.estimated_plan && (
+          <div style={{ fontSize: '0.82rem', color: '#48564c', marginTop: '10px', background: '#f8f5ef', borderRadius: '8px', padding: '10px 12px' }}>
+            現在のご利用人数（{org.user_count}名）だと、正式プランでは
+            <strong style={{ color: '#1e2620' }}> {org.estimated_plan.label}</strong>
+            {org.estimated_plan.priceYen != null ? (
+              <> （<strong style={{ color: '#1e2620' }}>¥{org.estimated_plan.priceYen.toLocaleString()}/月</strong>、標準容量{org.estimated_plan.storageGb}GB）</>
+            ) : ' （個別見積もり）'}
+            が目安です。
+          </div>
+        )}
+        <div style={{ fontSize: '0.78rem', color: '#66766c', marginTop: '8px' }}>
+          料金プランの詳細は<a href="https://connectsuite.easystance.app/pricing" target="_blank" rel="noopener noreferrer" style={{ color: '#5c8f74', fontWeight: 600 }}>こちらの料金ページ</a>をご覧ください。お支払い方法のご登録が可能になり次第、あらためてご案内します。
         </div>
       </div>
 
