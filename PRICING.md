@@ -38,8 +38,13 @@
 
 この設計は、組織の「解約」時（ログイン停止だがデータは保持、再開すれば復帰）と同じ考え方を踏襲している。
 
-## 未実装（次のステップ）
+## 実装状況（2026-08-29更新）
 
-- 上記の料金・トライアル・閲覧専用モードは、実際の課金判定ロジック（`plan_tier`のチェック、書き込み系APIのブロックなど）としてはまだ実装していない
-- 実装は、HOMEBASE側の会費ペイ実装が固まってから、同じ設計を流用して着手する方針（`connect-suite-callsync-project`メモリ参照）
+- ✅ **トライアル終了日の計算・表示**: `getFreeTrialEndDate()`をHOMEBASE（`D:\baseball-saas\src\lib\billing.ts`）から移植し、`GET /api/organization`のレスポンスに`trial_end_date`として追加。組織オーナーの「プラン・容量」タブに「◯年◯月◯日以降、正式なプランのご案内を予定しています」と表示するところまでは完了・本番反映済み
+- ⬜ **機能制限（閲覧専用モード）は未実装**: 決済登録の導線が無い状態でロックすると復旧手段が無くなるため、意図的に後回しにしている
+- ⬜ **会費Pay連携そのものが未着手**: HOMEBASE側は`src/lib/kaihipay.ts`（APIクライアント）・`src/app/api/cron/billing-check`（督促・ロックの定期実行）まで実装済みで、参考にできる実装が存在する。Connect Suite側で今後必要になるのは:
+  1. 会費Pay管理画面でConnect Suite用のコース（プラン別金額）を手動作成
+  2. `organizations`テーブルに支払い状態列を追加（`kaihipay_customer_number`・`payment_method_registered_at`・`trial_locked_at`など、HOMEBASEの`Team`モデルと同じ考え方）
+  3. 支払い方法登録のUI画面（氏名・カナ・住所・電話番号・メールが必要、会費Pay側の会員登録項目に合わせる）
+  4. 督促・ロックの定期実行（HOMEBASEの`billing-check`をベースに、Connect Suite用の人数課金・成人数上限超過ロジックに置き換える）
 - 決めていないこと: 上位プランだけの機能差別化の有無、決済失敗時の猶予期間、年払い割引の有無
