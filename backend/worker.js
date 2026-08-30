@@ -414,7 +414,14 @@ export default {
         if (!org) return jsonResponse({ error: '組織が見つかりません' }, 404);
         const trialEndDate = org.plan_tier === 'trial' ? getFreeTrialEndDate(org.created_at).toISOString().slice(0, 10) : null;
         const estimatedPlan = org.plan_tier === 'trial' ? estimatePlanForUserCount(org.user_count) : null;
-        return jsonResponse({ ...org, login_url: org.slug ? `https://${org.slug}.${SUBDOMAIN_BASE}` : null, trial_end_date: trialEndDate, estimated_plan: estimatedPlan });
+        // トライアル中は、見込みプランの標準容量と実際の上限表示がずれて見えないよう、
+        // 保存済みの値より見込みプランの容量の方が大きい場合はそちらを表示に使う
+        // （プラットフォーム管理者が個別に多めの容量を設定していた場合はその値を優先し、減らすことはしない）。
+        let storageLimitBytes = org.storage_limit_bytes;
+        if (estimatedPlan && estimatedPlan.storageGb != null) {
+          storageLimitBytes = Math.max(storageLimitBytes, estimatedPlan.storageGb * 1024 * 1024 * 1024);
+        }
+        return jsonResponse({ ...org, storage_limit_bytes: storageLimitBytes, login_url: org.slug ? `https://${org.slug}.${SUBDOMAIN_BASE}` : null, trial_end_date: trialEndDate, estimated_plan: estimatedPlan });
       }
 
       // 1c. Org subdomain slug: availability check + owner-only assignment
