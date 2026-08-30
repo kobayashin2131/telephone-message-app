@@ -981,7 +981,7 @@ export default {
             }
 
             let previewBody = body.content?.trim();
-            if (!previewBody) previewBody = body.message_type === 'image' ? '📷 画像を送信しました' : '📎 ファイルを送信しました';
+            if (!previewBody) previewBody = body.message_type === 'image' ? '📷 画像を送信しました' : body.message_type === 'video' ? '🎥 動画を送信しました' : '📎 ファイルを送信しました';
 
             const deepLinkTargetId = body.target_type === 'dm' ? body.sender_id : body.target_id;
             const pushData = {
@@ -1099,8 +1099,10 @@ export default {
 
       // 6b. Chat attachments (images / PDF)
       if (path === '/api/upload' && request.method === 'POST') {
-        const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'];
-        const MAX_SIZE = 15 * 1024 * 1024; // 15MB
+        const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf', 'video/mp4', 'video/quicktime', 'video/webm'];
+        const VIDEO_TYPES = ['video/mp4', 'video/quicktime', 'video/webm'];
+        const MAX_SIZE = 15 * 1024 * 1024; // 15MB（画像・PDF）
+        const MAX_VIDEO_SIZE = 30 * 1024 * 1024; // 30MB（動画。短い業務連絡用の想定、長時間の動画は非対応）
 
         const formData = await request.formData();
         const file = formData.get('file');
@@ -1110,9 +1112,13 @@ export default {
           return jsonResponse({ error: 'ファイルが見つかりません' }, 400);
         }
         if (!ALLOWED_TYPES.includes(file.type)) {
-          return jsonResponse({ error: '画像またはPDFのみアップロードできます' }, 400);
+          return jsonResponse({ error: '画像・PDF・動画のみアップロードできます' }, 400);
         }
-        if (file.size > MAX_SIZE) {
+        const isVideo = VIDEO_TYPES.includes(file.type);
+        if (isVideo && file.size > MAX_VIDEO_SIZE) {
+          return jsonResponse({ error: '動画は30MBまでです。短い動画をご利用ください' }, 400);
+        }
+        if (!isVideo && file.size > MAX_SIZE) {
           return jsonResponse({ error: 'ファイルサイズは15MBまでです' }, 400);
         }
         if (!env.ATTACHMENTS) {

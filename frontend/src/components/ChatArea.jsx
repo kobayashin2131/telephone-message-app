@@ -3,7 +3,7 @@ import {
   Send, Phone, Users, Building2, MessageSquare, Check, Eye, Smile, Paperclip, Search, PlusCircle, ArrowLeft, FileText, X, Loader2, AtSign
 } from 'lucide-react';
 import CallMemoCard from './CallMemoCard';
-import { uploadAttachment, ALLOWED_ATTACHMENT_TYPES, MAX_ATTACHMENT_SIZE } from '../utils/upload';
+import { uploadAttachment, ALLOWED_ATTACHMENT_TYPES, MAX_ATTACHMENT_SIZE, MAX_VIDEO_ATTACHMENT_SIZE, isVideoAttachment } from '../utils/upload';
 import { formatTime } from '../utils/datetime';
 
 function formatFileSize(bytes) {
@@ -199,17 +199,22 @@ export default function ChatArea({
 
     setUploadError('');
     if (!ALLOWED_ATTACHMENT_TYPES.includes(file.type)) {
-      setUploadError('画像またはPDFのみ添付できます');
+      setUploadError('画像・PDF・動画のみ添付できます');
       return;
     }
-    if (file.size > MAX_ATTACHMENT_SIZE) {
+    const isVideo = isVideoAttachment(file.type);
+    if (isVideo && file.size > MAX_VIDEO_ATTACHMENT_SIZE) {
+      setUploadError('動画は30MBまでです。短い動画をご利用ください');
+      return;
+    }
+    if (!isVideo && file.size > MAX_ATTACHMENT_SIZE) {
       setUploadError('ファイルサイズは15MBまでです');
       return;
     }
 
     if (pendingPreviewUrl) URL.revokeObjectURL(pendingPreviewUrl);
     setPendingFile(file);
-    setPendingPreviewUrl(file.type.startsWith('image/') ? URL.createObjectURL(file) : null);
+    setPendingPreviewUrl((file.type.startsWith('image/') || isVideo) ? URL.createObjectURL(file) : null);
   };
 
   if (!activeChat) {
@@ -312,6 +317,8 @@ export default function ChatArea({
                         <a href={m.attachment_url} target="_blank" rel="noopener noreferrer">
                           <img src={m.attachment_url} alt={m.attachment_name || '添付画像'} className="attachment-image" />
                         </a>
+                      ) : m.message_type === 'video' ? (
+                        <video src={m.attachment_url} controls preload="metadata" className="attachment-video" />
                       ) : (
                         <a href={m.attachment_url} target="_blank" rel="noopener noreferrer" className="attachment-file-chip">
                           <FileText size={20} />
@@ -429,7 +436,9 @@ export default function ChatArea({
           <div className="input-box-wrapper">
             {pendingFile && (
               <div className="pending-attachment-chip">
-                {pendingPreviewUrl ? (
+                {pendingPreviewUrl && isVideoAttachment(pendingFile.type) ? (
+                  <video src={pendingPreviewUrl} className="pending-attachment-thumb" muted />
+                ) : pendingPreviewUrl ? (
                   <img src={pendingPreviewUrl} alt={pendingFile.name} className="pending-attachment-thumb" />
                 ) : (
                   <FileText size={18} />

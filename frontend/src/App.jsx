@@ -219,7 +219,7 @@ export default function App() {
         const title = m.target_type === 'dm' ? `💬 ${m.sender_name} さんより` : `💬 新着メッセージ (${m.sender_name})`;
         const deepTargetId = m.target_type === 'dm' ? m.sender_id : m.target_id;
         new Notification(title, {
-          body: m.content || (m.message_type === 'image' ? '📷 画像を送信しました' : '📎 ファイルを送信しました'),
+          body: m.content || (m.message_type === 'image' ? '📷 画像を送信しました' : m.message_type === 'video' ? '🎥 動画を送信しました' : '📎 ファイルを送信しました'),
           tag: `chat-${m.target_type}-${deepTargetId}`,
           data: {
             type: 'message',
@@ -439,7 +439,7 @@ export default function App() {
     if (!activeChat || (!content.trim() && !attachment)) return;
     try {
       const messageType = attachment
-        ? (attachment.type.startsWith('image/') ? 'image' : 'file')
+        ? (attachment.type.startsWith('image/') ? 'image' : attachment.type.startsWith('video/') ? 'video' : 'file')
         : 'text';
       const res = await fetch(`${API_BASE}/messages`, {
         method: 'POST',
