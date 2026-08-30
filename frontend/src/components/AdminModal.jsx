@@ -58,6 +58,11 @@ function PlanTab({ auth }) {
       <div style={{ border: '1px solid #e8e2d8', borderRadius: '10px', padding: '16px' }}>
         <div style={{ fontSize: '0.72rem', color: '#66766c', fontWeight: 700, marginBottom: '4px' }}>現在のプラン</div>
         <div style={{ fontSize: '1.1rem', fontWeight: 800 }}>{PLAN_LABELS[org.plan_tier] || org.plan_tier}</div>
+        {org.trial_end_date && (
+          <div style={{ fontSize: '0.82rem', color: '#5c8f74', fontWeight: 600, marginTop: '6px' }}>
+            現在無料でご利用いただけます（{org.trial_end_date.replace(/-/g, '/')} 以降、正式なプランのご案内を予定しています）
+          </div>
+        )}
         <div style={{ fontSize: '0.78rem', color: '#66766c', marginTop: '6px' }}>
           正式な料金プランは現在準備中です。プランのアップグレードが可能になり次第、こちらからご案内します。
         </div>

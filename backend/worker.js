@@ -154,6 +154,17 @@ const generateToken = () => bufToHex(crypto.getRandomValues(new Uint8Array(32)))
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 const STAFF_ROLES = ['owner', 'admin']; // roles allowed to manage users/departments
 
+// 無料トライアル「登録月＋翌月は無料」。組織のcreated_atの月を起点に、その2ヶ月後(暦月)の
+// 1日を最初の課金対象月とする（例: 8/15登録 → 8月・9月無料、10月から課金）。
+// HOMEBASE（同オーナーの別プロダクト、会費Pay連携済み）のsrc/lib/billing.tsと同じロジック。
+// 月末登録者だけ無料期間が極端に短くなる不公平を避けつつ、暦月境界に揃えて実装をシンプルにするため。
+// 現時点では表示用の計算のみで、これを理由に機能を制限する処理はまだ実装していない
+// （決済登録の導線が無い状態でロックすると復旧手段が無くなるため、会費Pay連携が整ってから着手する）。
+function getFreeTrialEndDate(orgCreatedAt) {
+  const d = new Date(orgCreatedAt.replace(' ', 'T') + (orgCreatedAt.includes('Z') ? '' : 'Z'));
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 2, 1));
+}
+
 // Per-org subdomain login: {slug}.SUBDOMAIN_BASE. Free-tier Cloudflare SSL only
 // covers a first-level wildcard, so this stays a single label off the base
 // domain (not a second-level wildcard) — see CLAUDE.md for the cost tradeoff.
@@ -388,7 +399,8 @@ export default {
           FROM organizations o WHERE o.id = ?
         `).bind(session.organization_id).first();
         if (!org) return jsonResponse({ error: '組織が見つかりません' }, 404);
-        return jsonResponse({ ...org, login_url: org.slug ? `https://${org.slug}.${SUBDOMAIN_BASE}` : null });
+        const trialEndDate = org.plan_tier === 'trial' ? getFreeTrialEndDate(org.created_at).toISOString().slice(0, 10) : null;
+        return jsonResponse({ ...org, login_url: org.slug ? `https://${org.slug}.${SUBDOMAIN_BASE}` : null, trial_end_date: trialEndDate });
       }
 
       // 1c. Org subdomain slug: availability check + owner-only assignment
