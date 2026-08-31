@@ -37,6 +37,58 @@ function OrgUrlCard({ org }) {
   );
 }
 
+function CancelOrgCard({ auth }) {
+  const [canceling, setCanceling] = useState(false);
+  if (auth.user.role !== 'owner') return null;
+
+  const handleCancel = async () => {
+    const sure = window.confirm(
+      '組織を解約しますか？\n\n'
+      + '・解約すると、あなたを含む全メンバーがログインできなくなります\n'
+      + '・チャット・電話メモなどのデータは削除されません\n'
+      + '・再開したい場合は、サポート（support@easystance.app）までご連絡ください\n\n'
+      + '本当に解約する場合は「OK」を押してください。'
+    );
+    if (!sure) return;
+    setCanceling(true);
+    try {
+      const res = await fetch(`${API_BASE}/organization/cancel`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${auth.token}` }
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || '解約処理に失敗しました');
+        setCanceling(false);
+        return;
+      }
+      localStorage.removeItem('callsync_auth');
+      window.location.reload();
+    } catch {
+      alert('通信エラーが発生しました');
+      setCanceling(false);
+    }
+  };
+
+  return (
+    <div style={{ border: '1px solid #e8dcd8', borderRadius: '10px', padding: '16px' }}>
+      <div style={{ fontSize: '0.72rem', color: '#66766c', fontWeight: 700, marginBottom: '4px' }}>組織の解約</div>
+      <div style={{ fontSize: '0.78rem', color: '#66766c', marginTop: '4px' }}>
+        解約してもデータは削除されません。ログインができなくなるだけで、再開のご連絡はいつでも承ります。
+      </div>
+      <button
+        type="button"
+        className="btn-secondary"
+        style={{ marginTop: '10px', fontSize: '0.8rem', color: '#c2604f', borderColor: '#e8dcd8' }}
+        onClick={handleCancel}
+        disabled={canceling}
+      >
+        {canceling ? '処理中…' : '組織を解約する'}
+      </button>
+    </div>
+  );
+}
+
 function PlanTab({ auth }) {
   const [org, setOrg] = useState(null);
   const [error, setError] = useState('');
@@ -94,6 +146,8 @@ function PlanTab({ auth }) {
       <div style={{ fontSize: '0.78rem', color: '#66766c' }}>
         ユーザー数: {org.user_count}名
       </div>
+
+      <CancelOrgCard auth={auth} />
     </div>
   );
 }

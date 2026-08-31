@@ -229,6 +229,46 @@ async function resolveSession(db, request) {
   return row;
 }
 
+// --- Transactional email (Resend) ---
+// MailChannels' free Workers integration was sunset; Cloudflare's own native
+// email sending is still beta and can't send to arbitrary addresses anyway.
+// Resend is Cloudflare's own current recommendation for this.
+async function sendEmail(env, { to, subject, html }) {
+  if (!env.RESEND_API_KEY) {
+    console.error('RESEND_API_KEY not set, skipping email send');
+    return;
+  }
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ from: 'Connect Suite <noreply@easystance.app>', to, subject, html })
+  });
+  if (!res.ok) {
+    console.error('Resend send failed', res.status, await res.text());
+  }
+}
+
+async function sendVerificationEmail(env, { email, name, token }) {
+  const verifyUrl = `https://connectsuite.easystance.app/api/auth/verify-email?token=${token}`;
+  await sendEmail(env, {
+    to: email,
+    subject: '【Connect Suite】メールアドレスの確認をお願いします',
+    html: `
+      <div style="font-family: sans-serif; line-height: 1.7; color: #1e2620;">
+        <p>${name} 様</p>
+        <p>Connect Suiteへのご登録ありがとうございます。以下のボタンから、メールアドレスのご確認をお願いします。</p>
+        <p style="margin: 24px 0;">
+          <a href="${verifyUrl}" style="background: #6fa382; color: #fff; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">
+            メールアドレスを確認する
+          </a>
+        </p>
+        <p style="font-size: 0.85rem; color: #66766c;">ボタンが動作しない場合は、以下のURLをブラウザにコピーしてください。<br>${verifyUrl}</p>
+        <p style="font-size: 0.85rem; color: #66766c;">このメールに心当たりがない場合は、破棄してください。</p>
+      </div>
+    `
+  });
+}
+
 async function resolvePlatformSession(db, request) {
   const auth = request.headers.get('Authorization') || '';
   const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
@@ -452,6 +492,18 @@ export default {
         }
         await db.prepare('UPDATE organizations SET slug = ? WHERE id = ?').bind(slug, session.organization_id).run();
         return jsonResponse({ success: true, login_url: `https://${slug}.${SUBDOMAIN_BASE}` });
+      }
+
+      // オーナーによるセルフサービス解約。完全削除（復元不可）とは異なり、これは安全な操作:
+      // データは一切消さず、ログインをブロックするだけ。プラットフォーム管理者側でいつでも再開できる
+      if (path === '/api/organization/cancel' && request.method === 'POST') {
+        const session = await resolveSession(db, request);
+        if (!session || session.role !== 'owner') return jsonResponse({ error: 'オーナー権限が必要です' }, 403);
+
+        await db.prepare("UPDATE organizations SET status = 'cancelled', cancelled_at = ? WHERE id = ?")
+          .bind(new Date().toISOString(), session.organization_id).run();
+        await db.prepare('DELETE FROM sessions WHERE user_id IN (SELECT id FROM users WHERE organization_id = ?)').bind(session.organization_id).run();
+        return jsonResponse({ success: true });
       }
 
       // 2. Departments
@@ -1197,12 +1249,14 @@ export default {
         const orgId = orgInfo.meta.last_row_id;
         const passwordHash = await hashPin(pin);
 
+        const emailVerifyToken = generateToken();
+
         let userInfo;
         try {
           userInfo = await db.prepare(`
-            INSERT INTO users (name, email, password_hash, role, organization_id)
-            VALUES (?, ?, ?, 'owner', ?)
-          `).bind(ownerName, email, passwordHash, orgId).run();
+            INSERT INTO users (name, email, password_hash, role, organization_id, email_verification_token)
+            VALUES (?, ?, ?, 'owner', ?, ?)
+          `).bind(ownerName, email, passwordHash, orgId, emailVerifyToken).run();
         } catch (e) {
           await db.prepare('DELETE FROM organizations WHERE id = ?').bind(orgId).run();
           return jsonResponse({ error: 'このIDはすでに使われています' }, 409);
@@ -1212,11 +1266,28 @@ export default {
         const expiresAt = new Date(Date.now() + SESSION_TTL_MS).toISOString();
         await db.prepare('INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)').bind(token, userInfo.meta.last_row_id, expiresAt).run();
 
+        ctx.waitUntil(sendVerificationEmail(env, { email, name: ownerName, token: emailVerifyToken }).catch((e) => console.error('verification email failed', e.message)));
+
         return jsonResponse({
           token,
-          user: { id: userInfo.meta.last_row_id, name: ownerName, email, role: 'owner', organization_id: orgId, must_change_pin: false },
+          user: { id: userInfo.meta.last_row_id, name: ownerName, email, role: 'owner', organization_id: orgId, must_change_pin: false, email_verified: false },
           login_url: slug ? `https://${slug}.${SUBDOMAIN_BASE}` : null
         });
+      }
+
+      if (path === '/api/auth/verify-email' && request.method === 'GET') {
+        const verifyToken = url.searchParams.get('token') || '';
+        const user = await db.prepare('SELECT id, name FROM users WHERE email_verification_token = ?').bind(verifyToken).first();
+        const successPage = (message) => new Response(`<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><title>メール確認 | Connect Suite</title>
+          <style>body{font-family:-apple-system,sans-serif;background:#f8f5ef;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;color:#1e2620;}
+          .box{background:#fff;border:1px solid #e8e2d8;border-radius:12px;padding:32px 40px;text-align:center;max-width:400px;}</style></head>
+          <body><div class="box"><h1 style="color:#4a7361;">${message}</h1><p><a href="https://connectsuite.easystance.app" style="color:#4a7361;">Connect Suiteを開く</a></p></div></body></html>`,
+          { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+
+        if (!user) return successPage('このリンクは無効か、期限切れです');
+
+        await db.prepare('UPDATE users SET email_verified_at = CURRENT_TIMESTAMP, email_verification_token = NULL WHERE id = ?').bind(user.id).run();
+        return successPage('メールアドレスを確認しました ✓');
       }
 
       if (path === '/api/auth/login' && request.method === 'POST') {
@@ -1237,7 +1308,7 @@ export default {
         await db.prepare('INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)').bind(token, user.id, expiresAt).run();
         return jsonResponse({
           token,
-          user: { id: user.id, name: user.name, email: user.email, role: user.role, organization_id: user.organization_id, must_change_pin: !!user.must_change_pin }
+          user: { id: user.id, name: user.name, email: user.email, role: user.role, organization_id: user.organization_id, must_change_pin: !!user.must_change_pin, email_verified: !!user.email_verified_at }
         });
       }
 
@@ -1264,7 +1335,7 @@ export default {
         await db.prepare('INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)').bind(token, user.id, expiresAt).run();
         return jsonResponse({
           token,
-          user: { id: user.id, name: user.name, email: user.email, role: user.role, organization_id: user.organization_id, must_change_pin: !!user.must_change_pin }
+          user: { id: user.id, name: user.name, email: user.email, role: user.role, organization_id: user.organization_id, must_change_pin: !!user.must_change_pin, email_verified: !!user.email_verified_at }
         });
       }
 
