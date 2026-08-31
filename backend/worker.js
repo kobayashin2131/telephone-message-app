@@ -1262,17 +1262,42 @@ export default {
           return jsonResponse({ error: 'このIDはすでに使われています' }, 409);
         }
 
-        const token = generateToken();
-        const expiresAt = new Date(Date.now() + SESSION_TTL_MS).toISOString();
-        await db.prepare('INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)').bind(token, userInfo.meta.last_row_id, expiresAt).run();
-
+        // ここではセッションを発行しない——メール内のリンクを踏んで確認が完了するまでは
+        // ログインできない仕様（オーナーのIDが実在するかを登録の入口で保証するため）
         ctx.waitUntil(sendVerificationEmail(env, { email, name: ownerName, token: emailVerifyToken }).catch((e) => console.error('verification email failed', e.message)));
 
         return jsonResponse({
-          token,
-          user: { id: userInfo.meta.last_row_id, name: ownerName, email, role: 'owner', organization_id: orgId, must_change_pin: false, email_verified: false },
+          pending_verification: true,
+          email,
           login_url: slug ? `https://${slug}.${SUBDOMAIN_BASE}` : null
         });
+      }
+
+      if (path === '/api/auth/resend-verification' && request.method === 'POST') {
+        const body = await request.json();
+        const currentEmail = (body.email || '').trim();
+        const newEmail = (body.new_email || '').trim();
+        const emailToUse = newEmail || currentEmail;
+
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailToUse)) {
+          return jsonResponse({ error: '有効なメールアドレスを入力してください' }, 400);
+        }
+
+        const user = await db.prepare('SELECT id, name FROM users WHERE email = ? AND email_verification_token IS NOT NULL')
+          .bind(currentEmail).first();
+        if (!user) return jsonResponse({ error: '確認待ちのアカウントが見つかりません' }, 404);
+
+        if (newEmail && newEmail !== currentEmail) {
+          const taken = await db.prepare('SELECT id FROM users WHERE email = ?').bind(newEmail).first();
+          if (taken) return jsonResponse({ error: 'このIDはすでに使われています' }, 409);
+        }
+
+        const newToken = generateToken();
+        await db.prepare('UPDATE users SET email = ?, email_verification_token = ? WHERE id = ?')
+          .bind(emailToUse, newToken, user.id).run();
+
+        ctx.waitUntil(sendVerificationEmail(env, { email: emailToUse, name: user.name, token: newToken }).catch((e) => console.error('resend verification email failed', e.message)));
+        return jsonResponse({ success: true, email: emailToUse });
       }
 
       if (path === '/api/auth/verify-email' && request.method === 'GET') {
@@ -1281,7 +1306,7 @@ export default {
         const successPage = (message) => new Response(`<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><title>メール確認 | Connect Suite</title>
           <style>body{font-family:-apple-system,sans-serif;background:#f8f5ef;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;color:#1e2620;}
           .box{background:#fff;border:1px solid #e8e2d8;border-radius:12px;padding:32px 40px;text-align:center;max-width:400px;}</style></head>
-          <body><div class="box"><h1 style="color:#4a7361;">${message}</h1><p><a href="https://connectsuite.easystance.app" style="color:#4a7361;">Connect Suiteを開く</a></p></div></body></html>`,
+          <body><div class="box"><h1 style="color:#4a7361;">${message}</h1><p><a href="https://connectsuite.easystance.app" style="color:#4a7361;">ログイン画面へ</a></p></div></body></html>`,
           { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
 
         if (!user) return successPage('このリンクは無効か、期限切れです');
@@ -1298,6 +1323,9 @@ export default {
           : await db.prepare('SELECT * FROM users WHERE email = ? AND deleted_at IS NULL').bind(body.email || '').first();
         if (!user || !(await verifyPin(body.pin || '', user.password_hash))) {
           return jsonResponse({ error: 'メールアドレスまたはPINが正しくありません' }, 401);
+        }
+        if (user.email_verification_token) {
+          return jsonResponse({ error: 'ご登録のメールアドレスに送信した確認メールのリンクをクリックしてから、ログインしてください。', code: 'EMAIL_NOT_VERIFIED' }, 403);
         }
         const org = await db.prepare('SELECT status FROM organizations WHERE id = ?').bind(user.organization_id).first();
         if (org?.status === 'cancelled') {
@@ -1328,6 +1356,9 @@ export default {
         const user = await db.prepare('SELECT * FROM users WHERE email = ? AND deleted_at IS NULL').bind(payload.email).first();
         if (!user) {
           return jsonResponse({ error: 'このメールアドレスは登録されていません。管理者に連絡してください。' }, 403);
+        }
+        if (user.email_verification_token) {
+          return jsonResponse({ error: 'ご登録のメールアドレスに送信した確認メールのリンクをクリックしてから、ログインしてください。', code: 'EMAIL_NOT_VERIFIED' }, 403);
         }
 
         const token = generateToken();
