@@ -64,15 +64,43 @@ export default function ChatArea({
 
   const fileInputRef = useRef(null);
   const textareaRef = useRef(null);
+  const timelineRef = useRef(null);
   const timelineEndRef = useRef(null);
+  // ポーリングで数秒おきにmessagesが更新される度に強制スクロールされると、
+  // 過去の会話を読んでいる最中に問答無用で最新へ飛ばされてしまう。
+  // 「元々一番下にいた場合」「自分が今送信した場合」だけ追従スクロールする。
+  const isNearBottomRef = useRef(true);
+  const prevChatKeyRef = useRef(null);
 
-  const scrollToBottom = () => {
-    timelineEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  const scrollToBottom = (behavior = 'smooth') => {
+    timelineEndRef.current?.scrollIntoView({ behavior });
+  };
+
+  const handleTimelineScroll = () => {
+    const el = timelineRef.current;
+    if (!el) return;
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    isNearBottomRef.current = distanceFromBottom < 120;
   };
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    const chatKey = activeChat ? `${activeChat.type}-${activeChat.id}` : null;
+    const chatSwitched = chatKey !== prevChatKeyRef.current;
+    prevChatKeyRef.current = chatKey;
+
+    if (chatSwitched) {
+      isNearBottomRef.current = true;
+      scrollToBottom('auto');
+      return;
+    }
+
+    const lastMessage = messages[messages.length - 1];
+    const lastIsMine = lastMessage?.sender_id === currentUser?.id;
+
+    if (isNearBottomRef.current || lastIsMine) {
+      scrollToBottom('smooth');
+    }
+  }, [messages, activeChat]);
 
   useEffect(() => {
     return () => {
@@ -261,7 +289,7 @@ export default function ChatArea({
       </div>
 
       {/* Timeline */}
-      <div className="chat-timeline">
+      <div className="chat-timeline" ref={timelineRef} onScroll={handleTimelineScroll}>
         {messages.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '60px 20px', color: '#5e6b60' }}>
             <div style={{ fontSize: '2.5rem', marginBottom: '8px' }}>💬</div>
