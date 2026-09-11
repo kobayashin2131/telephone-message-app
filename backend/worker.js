@@ -657,6 +657,7 @@ export default {
         const id = path.split('/')[3];
         const orgId = orgIdFromQuery();
         await db.prepare('DELETE FROM group_members WHERE group_id = ?').bind(id).run();
+        await db.prepare('DELETE FROM message_reads WHERE message_id IN (SELECT id FROM messages WHERE target_type = "group" AND target_id = ?)').bind(id).run();
         await db.prepare('DELETE FROM messages WHERE target_type = "group" AND target_id = ?').bind(id).run();
         await db.prepare('DELETE FROM chat_groups WHERE id = ? AND organization_id = ?').bind(id, orgId).run();
         return jsonResponse({ success: true });
