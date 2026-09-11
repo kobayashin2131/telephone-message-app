@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   Send, Phone, Users, Building2, MessageSquare, Check, Eye, Smile, Paperclip, Search, PlusCircle, ArrowLeft, FileText, X, Loader2, AtSign
 } from 'lucide-react';
-import CallMemoCard from './CallMemoCard';
 import { uploadAttachment, ALLOWED_ATTACHMENT_TYPES, MAX_ATTACHMENT_SIZE, MAX_VIDEO_ATTACHMENT_SIZE, isVideoAttachment } from '../utils/upload';
 import { formatTime } from '../utils/datetime';
 
@@ -46,11 +45,14 @@ function renderContentWithMentions(content, currentUserName) {
 }
 
 export default function ChatArea({
-  activeChat, currentUser, users = [], messages, organizationId, onSendMessage, onUpdateStatus, onOpenThread, onOpenNewCallMemo, onBack
+  activeChat, currentUser, users = [], messages, organizationId, onSendMessage, onOpenThread, onOpenNewCallMemo, onBack
 }) {
   const isDM = activeChat?.type === 'dm';
   // スマホはShift+Enterが使いにくいため、Enterでの送信はPC幅のみ。スマホは常に改行、送信は送信ボタンで行う
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+  // 電話メモは専用の通知欄（CallMemoTray）が唯一の入り口。チャット本文に流すと
+  // 「電話連絡を埋もれさせない」という製品の目的と矛盾するため、ここでは表示しない
+  const visibleMessages = (messages || []).filter(m => m.message_type !== 'call_card');
   const [text, setText] = useState('');
   const [activeReadersPopover, setActiveReadersPopover] = useState(null);
   const [pendingFile, setPendingFile] = useState(null);
@@ -94,13 +96,13 @@ export default function ChatArea({
       return;
     }
 
-    const lastMessage = messages[messages.length - 1];
+    const lastMessage = visibleMessages[visibleMessages.length - 1];
     const lastIsMine = lastMessage?.sender_id === currentUser?.id;
 
     if (isNearBottomRef.current || lastIsMine) {
       scrollToBottom('smooth');
     }
-  }, [messages, activeChat]);
+  }, [visibleMessages, activeChat]);
 
   useEffect(() => {
     return () => {
@@ -290,17 +292,16 @@ export default function ChatArea({
 
       {/* Timeline */}
       <div className="chat-timeline" ref={timelineRef} onScroll={handleTimelineScroll}>
-        {messages.length === 0 ? (
+        {visibleMessages.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '60px 20px', color: '#5e6b60' }}>
             <div style={{ fontSize: '2.5rem', marginBottom: '8px' }}>💬</div>
             <div style={{ fontWeight: 600, fontSize: '1rem', color: '#4a5750' }}>まだメッセージはありません</div>
             <div style={{ fontSize: '0.85rem' }}>最初のメッセージや受電メモを投稿してみましょう！</div>
           </div>
         ) : (
-          messages.map(m => {
+          visibleMessages.map(m => {
             const isMe = m.sender_id === currentUser?.id;
             const isSystem = m.message_type === 'system';
-            const isCallCard = m.message_type === 'call_card';
             const isMentionedToMe = !isMe && hasMentionToMe(m.content, currentUser?.name);
 
             if (isSystem) {
@@ -332,14 +333,7 @@ export default function ChatArea({
                     </span>
                   </div>
 
-                  {isCallCard ? (
-                    <CallMemoCard
-                      memo={m}
-                      onUpdateStatus={onUpdateStatus}
-                      onOpenThread={onOpenThread}
-                      currentUserId={currentUser?.id}
-                    />
-                  ) : m.attachment_url ? (
+                  {m.attachment_url ? (
                     <div className="message-attachment">
                       {m.message_type === 'image' ? (
                         <a href={m.attachment_url} target="_blank" rel="noopener noreferrer">
@@ -403,12 +397,10 @@ export default function ChatArea({
                       </div>
                     )}
 
-                    {!isCallCard && (
-                      <button className="thread-link-btn" onClick={() => onOpenThread(m)}>
-                        <MessageSquare size={13} />
-                        {m.thread_count > 0 ? `返信 (${m.thread_count})` : '返信'}
-                      </button>
-                    )}
+                    <button className="thread-link-btn" onClick={() => onOpenThread(m)}>
+                      <MessageSquare size={13} />
+                      {m.thread_count > 0 ? `返信 (${m.thread_count})` : '返信'}
+                    </button>
                   </div>
                 </div>
               </div>

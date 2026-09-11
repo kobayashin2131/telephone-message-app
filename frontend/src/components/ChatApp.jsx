@@ -175,7 +175,6 @@ export default function ChatApp({
           messages={messages}
           organizationId={organizationId}
           onSendMessage={onSendMessage}
-          onUpdateStatus={onUpdateStatus}
           onOpenThread={onOpenThread}
           onOpenNewCallMemo={onOpenNewCallMemo}
           onBack={() => onSelectChat(null)}
