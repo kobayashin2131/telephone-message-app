@@ -2150,34 +2150,6 @@ button, input, select, textarea {
   margin-bottom: 4px;
 }
 
-.login-google-btn {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 40px;
-}
-
-.login-google-loading {
-  font-size: 0.82rem;
-  color: var(--ink-faint);
-}
-
-.login-divider {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  color: var(--ink-faint);
-  font-size: 12px;
-}
-
-.login-divider::before,
-.login-divider::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: var(--border);
-}
-
 .login-form {
   display: flex;
   flex-direction: column;
